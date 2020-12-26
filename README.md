@@ -37,6 +37,7 @@ GPU-FFW-64-JAX | `gymnax`/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 208
 TPU-FFW-64-JAX | `gymnax`/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1
 GPU-FFW-64-JAX-2000 | `gymnax`/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000
 TPU-FFW-64-JAX-2000 | `gymnax`/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000
+
 </details>
 
 ### Classic Control Tasks
