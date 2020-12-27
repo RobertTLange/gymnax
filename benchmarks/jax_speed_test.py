@@ -8,10 +8,12 @@ from gymnax import make_env
 
 def policy_step(state_input, tmp):
     """ lax.scan compatible step transition in jax env. """
-    obs, state, policy_params, env_params = state_input
+    rng, obs, state, policy_params, env_params = state_input
+    rng, rng_input = jax.random.split(rng)
     action = ffw_policy(policy_params, obs)
-    next_o, next_s, reward, done, _ = step(env_params, state, action)
-    carry, y = [next_o.squeeze(), next_s.squeeze(),
+    next_o, next_s, reward, done, _ = step(rng_input, env_params,
+                                           state, action)
+    carry, y = [rng, next_o.squeeze(), next_s.squeeze(),
                 policy_params, env_params], [reward]
     return carry, y
 
@@ -20,7 +22,7 @@ def policy_rollout(rng_input, policy_params, env_params, num_steps):
     """ Rollout a pendulum episode with lax.scan. """
     obs, state = reset(rng_input)
     scan_out1, scan_out2 = jax.lax.scan(policy_step,
-                                        [obs, state, policy_params, env_params],
+                                        [rng_input, obs, state, policy_params, env_params],
                                         [jnp.zeros(num_steps)])
     return scan_out1, jnp.array(scan_out2)
 

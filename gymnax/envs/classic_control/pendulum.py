@@ -2,6 +2,8 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
+# JAX Compatible version of Pendulum-v0 OpenAI gym environment. Source:
+# github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
 
 # Default environment parameters for Pendulum-v0
 params_pendulum = {"max_speed": 8,
@@ -12,7 +14,7 @@ params_pendulum = {"max_speed": 8,
                    "l": 1.}
 
 
-def step(params, state, u):
+def step(rng_input, params, state, u):
     """ Integrate pendulum ODE and return transition. """
     th, thdot = state[0], state[1]
     u = jnp.clip(u, -params["max_torque"], params["max_torque"])
@@ -28,10 +30,10 @@ def step(params, state, u):
     return get_obs(state), state, -costs[0].squeeze(), False, {}
 
 
-def reset(rng):
+def reset(rng_input):
     """ Reset environment state by sampling theta, thetadot. """
     high = jnp.array([jnp.pi, 1])
-    state = jax.random.uniform(rng, shape=(2,),
+    state = jax.random.uniform(rng_input, shape=(2,),
                                minval=-high, maxval=high)
     return get_obs(state), state
 
