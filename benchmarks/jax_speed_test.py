@@ -53,6 +53,9 @@ def run_speed_test_jax(rng, num_episodes=50, num_env_steps=200, num_evals=100):
 
 
 if __name__ == "__main__":
-    rng = jax.random.PRNGKey(0)
-    reset, step, env_params = make_env("Pendulum-v0")
-    run_speed_test_jax(rng, num_episodes=200, num_env_steps=200, num_evals=200)
+    env_names = ["Pendulum-v0 "]
+    for env_name in env_names:
+        rng = jax.random.PRNGKey(0)
+        reset, step, env_params = make_env(env_name)
+        run_speed_test_jax(rng, num_episodes=200, num_env_steps=200,
+                           num_evals=200)

@@ -81,14 +81,26 @@ cd gymnax
 pip install -e .
 ```
 
+<details><summary>
+
+How do you make it work?
+
+</summary>
+
+| All | I'm | Getting |
+| --- | --- | --- |
+| is | this | :(  |
+</details>
+<details>
+
 This will install all required dependencies. Please note that `gymnax` is only tested for Python 3.6. You can run the test from the repo directory via `pytest`.
 
 ## Benchmarks & Speed Gains
 
 <details>
-  <summary>Device and benchmark details.</summary>
-
-The speed comparisons were benchmarked for the devices and transition rollout settings listed below. Multi-episode rollouts are collected synchronously and using a composition of `jit`, `vmap`/`pmap` (over episodes) and `lax.scan` (over the action-perception/RL loop).
+  <summary>
+  Device and benchmark details.
+  </summary>
 
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
 |:---:|:---:|:---:| :---:| :---:| :---:| :---:|
@@ -104,6 +116,8 @@ TPU-FFW-64-JAX | `gymnax`/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM |
 GPU-FFW-64-JAX-2000 | `gymnax`/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000
 TPU-FFW-64-JAX-2000 | `gymnax`/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000
 
+
+The speed comparisons were benchmarked for the devices and transition rollout settings listed above. Multi-episode rollouts are collected synchronously and using a composition of `jit`, `vmap`/`pmap` (over episodes) and `lax.scan` (over the action-perception/RL loop).
 </details>
 
 ### Classic Control Tasks
@@ -127,9 +141,15 @@ TPU-FFW-64-JAX-2000 |
 ## Examples, Notebooks & Colabs
 * :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout `Pendulum-v0` and other accelerated control tasks.
 
+## Contributing and Development
 
-## TODOs, Notes, Development & Questions
-- [ ] Add backdoor for rendering in OpenAI gym
+
+## TODOs, Notes & Questions
 - [ ] Add test for transition correctness compared to OpenAI gym
-    - [ ] Pendulum-v0
+    - [x] Pendulum-v0
+    - [ ] CartPole-v0
+    - [ ] MountainCar-v0
+    - [ ] MountainCarContinuous-v0
+- [ ] Add state, observation, action space table description of envs
+- [ ] Add backdoor for rendering in OpenAI gym
 - [ ] Connect notebooks with Colab https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb#scrollTo=K-NVg7RjyeTk
