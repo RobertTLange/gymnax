@@ -54,7 +54,7 @@ def run_speed_test_jax(rng, num_episodes=50, num_env_steps=200,
 
 
 if __name__ == "__main__":
-    env_names = ["Pendulum-v0 "]
+    env_names = ["Pendulum-v0"]
     for seed_id, env_name in enumerate(env_names):
         rng, reset, step, env_params = gymnax.make(env_name, seed_id)
         run_speed_test_jax(rng, num_episodes=200, num_env_steps=200,

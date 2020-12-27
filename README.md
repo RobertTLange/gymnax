@@ -16,6 +16,15 @@ next_obs, next_state, reward, done, _ = step(key_step, env_params,
                                              state, action)
 ```
 
+<details><summary>
+Available environments
+
+</summary>
+
+| Environment Class | Environment Name | Implemented | Tested |
+| --- | --- | --- | --- |
+| is | this | :(  |  |
+</details>
 
 <details>
   <summary><code>jit</code>-ting entire episode rollouts & vectorization via <code>vmap</code>.
@@ -79,22 +88,13 @@ cd gymnax
 pip install -e .
 ```
 
-<details><summary>
-How do you make it work?
-
-</summary>
-
-| All | I'm | Getting |
-| --- | --- | --- |
-| is | this | :(  |
-</details>
-
 This will install all required dependencies. Please note that `gymnax` is only tested for Python 3.6. You can directly run the test from the repo directory via `pytest`.
 
 ## Benchmarks & Speed Gains
 
 <details> <summary>
   Device and benchmark details.
+
 </summary>
 
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
