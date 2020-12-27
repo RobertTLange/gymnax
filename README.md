@@ -5,12 +5,11 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 ## Basic API Usage
 
 ```python
-import gymnax, jax
+import jax, gymnax
 
-rng = jax.random.PRNGKey(0)
+rng, reset, step, env_params = gymnax.make("Pendulum-v0", seed_id=1234)
 rng, key_reset, key_step = jax.random.split(rng, 3)
 
-reset, step, env_params = gymnax.make("Pendulum-v0")
 obs, state = reset(key_reset, env_params)
 action = your_jax_policy(policy_params, obs)
 next_obs, next_state, reward, done, _ = step(key_step, env_params,
@@ -99,22 +98,22 @@ This will install all required dependencies. Please note that `gymnax` is only t
 </summary>
 
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
-|:---:|:---:|:---:| :---:| :---:| :---:| :---:|
+| --- | --- | --- | --- | --- | --- | --- |
 CPU-STEP-GYM | OpenAI gym/NumPy | Single transition |2,7 GHz Intel Core i7| 1 | - |
 CPU-STEP-JAX | gymnax/JAX | Single transition |2,7 GHz Intel Core i7| 1 | - |
 CPU-RANDOM-GYM | OpenAI gym/NumPy | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
 CPU-RANDOM-JAX | gymnax/JAX | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
 CPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
 CPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
-GPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1
-GPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1
-TPU-FFW-64-JAX | gymnax/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1
-GPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000
-TPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000
+GPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1 |
+GPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1 |
+TPU-FFW-64-JAX | gymnax/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1 |
+GPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000 |
+TPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000 |
+</details>
 
 
 The speed comparisons were benchmarked for the devices and transition rollout settings listed above. Multi-episode rollouts are collected synchronously and using a composition of `jit`, `vmap`/`pmap` (over episodes) and `lax.scan` (over the action-perception/RL loop).
-</details>
 
 ### Classic Control Tasks
 
