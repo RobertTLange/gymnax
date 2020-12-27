@@ -1,1 +1,1 @@
-from gymnax.envs.registration import make_env
+from gymnax.envs.registration import make

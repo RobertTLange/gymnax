@@ -29,7 +29,7 @@ def step(rng_input, params, state, action):
     return get_obs(state), state, reward, done, info
 
 
-def reset(rng_input):
+def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
     high = jnp.array([jnp.pi, 1])
     state = jax.random.uniform(rng_input, shape=(2,),
@@ -38,7 +38,7 @@ def reset(rng_input):
 
 
 def get_obs(state):
-    """ Return angle in polar coordinates and change. """
+    """ Return observation from raw state trafo. """
     obs = 2*state
     return obs
 

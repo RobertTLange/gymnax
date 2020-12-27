@@ -1,6 +1,6 @@
 import jax
 import gym
-from gymnax import make_env
+import gymnax
 import unittest, math
 import numpy as np
 
@@ -13,7 +13,7 @@ class TestPendulum(unittest.TestCase):
     def test_pendulum_step(self):
         """ Test a step transition for the env. """
         env = gym.make("Pendulum-v0")
-        reset, step, env_params = make_env("Pendulum-v0")
+        reset, step, env_params = gymnax.make("Pendulum-v0")
 
         # Loop over test episodes
         for ep in range(TestPendulum.num_episodes):
@@ -39,7 +39,7 @@ class TestPendulum(unittest.TestCase):
     def test_pendulum_reset(self):
         """ Test reset obs/state is in space of OpenAI version. """
         env = gym.make("Pendulum-v0")
-        reset, step, env_params = make_env("Pendulum-v0")
+        reset, step, env_params = gymnax.make("Pendulum-v0")
         for ep in range(TestPendulum.num_episodes):
             TestPendulum.rng, rng_input = jax.random.split(TestPendulum.rng)
             obs, state = reset(rng_input)

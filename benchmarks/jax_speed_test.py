@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 from jax import jit, vmap, lax
 from jax_ffw_policy import init_ffw_policy, ffw_policy
-from gymnax import make_env
+import gymnax
 
 
 def policy_step(state_input, tmp):
@@ -20,7 +20,7 @@ def policy_step(state_input, tmp):
 
 def policy_rollout(rng_input, policy_params, env_params, num_steps):
     """ Rollout a pendulum episode with lax.scan. """
-    obs, state = reset(rng_input)
+    obs, state = reset(rng_input, env_params)
     scan_out1, scan_out2 = jax.lax.scan(policy_step,
                                         [rng_input, obs, state, policy_params, env_params],
                                         [jnp.zeros(num_steps)])
@@ -31,7 +31,8 @@ network_rollouts = jit(vmap(policy_rollout, in_axes=(0, None, None, None),
                             out_axes=0), static_argnums=(3))
 
 
-def run_speed_test_jax(rng, num_episodes=50, num_env_steps=200, num_evals=100):
+def run_speed_test_jax(rng, num_episodes=50, num_env_steps=200,
+                       num_evals=100):
     """ Evaluate the runtime of gymnax-based OpenAI environments. """
     rng, rng_input = jax.random.split(rng)
     network_params = init_ffw_policy(rng_input, sizes=[3, 64, 1])
@@ -56,6 +57,6 @@ if __name__ == "__main__":
     env_names = ["Pendulum-v0 "]
     for env_name in env_names:
         rng = jax.random.PRNGKey(0)
-        reset, step, env_params = make_env(env_name)
+        reset, step, env_params = gymnax.make(env_name)
         run_speed_test_jax(rng, num_episodes=200, num_env_steps=200,
                            num_evals=200)

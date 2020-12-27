@@ -5,15 +5,13 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 ## Basic API Usage
 
 ```python
-import jax
-import jax.numpy as jnp
-from gymnax import make_env
+import gymnax, jax
 
 rng = jax.random.PRNGKey(0)
 rng, key_reset, key_step = jax.random.split(rng, 3)
 
-reset, step, env_params = make_env("Pendulum-v0")
-obs, state = reset(key_reset)
+reset, step, env_params = gymnax.make("Pendulum-v0")
+obs, state = reset(key_reset, env_params)
 action = your_jax_policy(policy_params, obs)
 next_obs, next_state, reward, done, _ = step(key_step, env_params,
                                              state, action)
@@ -39,7 +37,7 @@ def policy_step(state_input, tmp):
 
 def policy_rollout(rng_input, policy_params, env_params, num_steps):
     """ Rollout a pendulum episode with lax.scan. """
-    obs, state = reset(rng_input)
+    obs, state = reset(rng_input, env_params)
     scan_out1, scan_out2 = jax.lax.scan(policy_step,
                                         [rng_input, obs, state, policy_params, env_params],
                                         [jnp.zeros(num_steps)])
@@ -59,9 +57,10 @@ traces, rewards = network_rollouts(rollout_keys, network_params,
 </details>
 
 <details>
-  <summary>Important design questions (Random numbers). </summary>
+  <summary>Important design questions (Random numbers, episode termination). </summary>
 
 1. All random number/PRNGKey handling has to be done explicitly outside of the function calls.
+2. Episode termination has to be handled outside of the simple transition call. This could for example be done using placeholder output in the scanned function.
 
 </details>
 
@@ -82,7 +81,6 @@ pip install -e .
 ```
 
 <details><summary>
-
 How do you make it work?
 
 </summary>
@@ -91,30 +89,28 @@ How do you make it work?
 | --- | --- | --- |
 | is | this | :(  |
 </details>
-<details>
 
-This will install all required dependencies. Please note that `gymnax` is only tested for Python 3.6. You can run the test from the repo directory via `pytest`.
+This will install all required dependencies. Please note that `gymnax` is only tested for Python 3.6. You can directly run the test from the repo directory via `pytest`.
 
 ## Benchmarks & Speed Gains
 
-<details>
-  <summary>
+<details> <summary>
   Device and benchmark details.
-  </summary>
+</summary>
 
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
 |:---:|:---:|:---:| :---:| :---:| :---:| :---:|
 CPU-STEP-GYM | OpenAI gym/NumPy | Single transition |2,7 GHz Intel Core i7| 1 | - |
-CPU-STEP-JAX | `gymnax`/JAX | Single transition |2,7 GHz Intel Core i7| 1 | - |
+CPU-STEP-JAX | gymnax/JAX | Single transition |2,7 GHz Intel Core i7| 1 | - |
 CPU-RANDOM-GYM | OpenAI gym/NumPy | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
-CPU-RANDOM-JAX | `gymnax`/JAX | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
+CPU-RANDOM-JAX | gymnax/JAX | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
 CPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
-CPU-FFW-64-JAX | `gymnax`/JAX |  1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
+CPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
 GPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1
-GPU-FFW-64-JAX | `gymnax`/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1
-TPU-FFW-64-JAX | `gymnax`/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1
-GPU-FFW-64-JAX-2000 | `gymnax`/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000
-TPU-FFW-64-JAX-2000 | `gymnax`/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000
+GPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1
+TPU-FFW-64-JAX | gymnax/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1
+GPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000
+TPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000
 
 
 The speed comparisons were benchmarked for the devices and transition rollout settings listed above. Multi-episode rollouts are collected synchronously and using a composition of `jit`, `vmap`/`pmap` (over episodes) and `lax.scan` (over the action-perception/RL loop).
@@ -152,4 +148,6 @@ TPU-FFW-64-JAX-2000 |
     - [ ] MountainCarContinuous-v0
 - [ ] Add state, observation, action space table description of envs
 - [ ] Add backdoor for rendering in OpenAI gym
+- [ ] Add some random action sampling utility ala env.action_space.sample()
+- [ ] Figure out if numerical errors really matter
 - [ ] Connect notebooks with Colab https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb#scrollTo=K-NVg7RjyeTk

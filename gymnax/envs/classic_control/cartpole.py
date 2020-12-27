@@ -1,107 +1,76 @@
-"""
-Classic cart-pole system implemented by Rich Sutton et al.
-Copied from http://incompleteideas.net/sutton/book/code/pole.c
-permalink: https://perma.cc/C9ZM-652R
-"""
+import jax
+import jax.numpy as jnp
+from jax import jit
 
-import math
-import gym
-from gym import spaces, logger
-from gym.utils import seeding
-import numpy as np
+# JAX Compatible version of CartPole-v0 OpenAI gym environment. Source:
+# github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
+
+# Default environment parameters for CartPole-v0
+params_cartpole = {"gravity": 9.8,
+                   "masscart": 1.0,
+                   "masspole": 0.1,
+                   "total_mass": 1.0 + 0.1,  # (masscart + masspole)
+                   "length": 0.5,
+                   "polemass_length": 0.05,  # (masspole * length)
+                   "force_mag": 10.0,
+                   "tau": 0.02,
+                   "theta_threshold_radians": 12*2*jnp.pi/360,
+                   "x_threshold": 2.4}
 
 
-    def __init__(self):
-        self.gravity = 9.8
-        self.masscart = 1.0
-        self.masspole = 0.1
-        self.total_mass = (self.masspole + self.masscart)
-        self.length = 0.5  # actually half the pole's length
-        self.polemass_length = (self.masspole * self.length)
-        self.force_mag = 10.0
-        self.tau = 0.02  # seconds between state updates
-        self.kinematics_integrator = 'euler'
+def step(rng_input, params, state, action):
+    """ Perform single timestep state transition. """
+    x, x_dot, theta, theta_dot, done_prev = state
+    force = params["force_mag"] * action -params["force_mag"]*(1-action)
+    costheta = jnp.cos(theta)
+    sintheta = jnp.sin(theta)
 
-        # Angle at which to fail the episode
-        self.theta_threshold_radians = 12 * 2 * math.pi / 360
-        self.x_threshold = 2.4
+    temp = (force + params["polemass_length"] * theta_dot ** 2
+            * sintheta) / params["total_mass"]
+    thetaacc = ((params["gravity"] * sintheta - costheta * temp) /
+                (params["length"] * (4.0 / 3.0 - params["masspole"]
+                 * costheta ** 2 / params["total_mass"])))
+    xacc = (temp - params["polemass_length"] * thetaacc * costheta
+            / params["total_mass"])
 
-        # Angle limit set to 2 * theta_threshold_radians so failing observation
-        # is still within bounds.
-        high = np.array([self.x_threshold * 2,
-                         np.finfo(np.float32).max,
-                         self.theta_threshold_radians * 2,
-                         np.finfo(np.float32).max],
-                        dtype=np.float32)
+    # Only default Euler integration option available here!
+    x = x + params["tau"] * x_dot
+    x_dot = x_dot + params["tau"] * xacc
+    theta = theta + params["tau"] * theta_dot
+    theta_dot = theta_dot + params["tau"] * thetaacc
 
-        self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(-high, high, dtype=np.float32)
+    # Check termination criteria
+    done1 = jnp.logical_or(x < -params["x_threshold"],
+                           x > params["x_threshold"])
+    done2 = jnp.logical_or(theta < -params["theta_threshold_radians"],
+                           theta > params["theta_threshold_radians"])
+    done = jnp.logical_or(done1, done2)
+    state = jnp.hstack([x, x_dot, theta, theta_dot, done])
+    reward = 1.0 * (1-done) * (1-done_prev)
+    return get_obs(state), state, reward, done, {}
 
-        self.seed()
-        self.viewer = None
-        self.state = None
 
-        self.steps_beyond_done = None
+def get_obs(state):
+    """ Return observation from raw state trafo. """
+    return jnp.array([state[0], state[1], state[2], state[3]])
 
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
 
-    def step(self, action):
-        err_msg = "%r (%s) invalid" % (action, type(action))
-        assert self.action_space.contains(action), err_msg
+def reset(rng_input, params):
+    """ Reset environment state by sampling initial position. """
+    state = jax.random.uniform(rng_input, minval=-0.05, maxval=0.05, shape=(4,))
+    state = jnp.hstack([state, 0])
+    return get_obs(state), state
 
-        x, x_dot, theta, theta_dot = self.state
-        force = self.force_mag if action == 1 else -self.force_mag
-        costheta = math.cos(theta)
-        sintheta = math.sin(theta)
 
-        # For the interested reader:
-        # https://coneural.org/florian/papers/05_cart_pole.pdf
-        temp = (force + self.polemass_length * theta_dot ** 2 * sintheta) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta * temp) / (self.length * (4.0 / 3.0 - self.masspole * costheta ** 2 / self.total_mass))
-        xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
+reset_cartpole = jit(reset)
+step_cartpole = jit(step)
 
-        if self.kinematics_integrator == 'euler':
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-        else:  # semi-implicit euler
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
+# Angle limit set to 2 * theta_threshold_radians so failing observation
+# is still within bounds.
+#high = np.array([self.x_threshold * 2,
+#                 np.finfo(np.float32).max,
+#                 self.theta_threshold_radians * 2,
+#                 np.finfo(np.float32).max],
+#                dtype=np.float32)
 
-        self.state = (x, x_dot, theta, theta_dot)
-
-        done = bool(
-            x < -self.x_threshold
-            or x > self.x_threshold
-            or theta < -self.theta_threshold_radians
-            or theta > self.theta_threshold_radians
-        )
-
-        if not done:
-            reward = 1.0
-        elif self.steps_beyond_done is None:
-            # Pole just fell!
-            self.steps_beyond_done = 0
-            reward = 1.0
-        else:
-            if self.steps_beyond_done == 0:
-                logger.warn(
-                    "You are calling 'step()' even though this "
-                    "environment has already returned done = True. You "
-                    "should always call 'reset()' once you receive 'done = "
-                    "True' -- any further steps are undefined behavior."
-                )
-            self.steps_beyond_done += 1
-            reward = 0.0
-
-        return np.array(self.state), reward, done, {}
-
-    def reset(self):
-        self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
-        self.steps_beyond_done = None
-        return np.array(self.state)
+#self.observation_space = spaces.Box(-high, high, dtype=np.float32)

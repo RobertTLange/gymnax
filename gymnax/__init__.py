@@ -1,3 +1,3 @@
-from gymnax.envs import make_env
+from gymnax.envs import make
 
-__all__ = ["make_env"]
+__all__ = ["make"]

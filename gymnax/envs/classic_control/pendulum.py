@@ -16,7 +16,7 @@ params_pendulum = {"max_speed": 8,
 
 def step(rng_input, params, state, u):
     """ Integrate pendulum ODE and return transition. """
-    th, thdot = state[0], state[1]
+    th, thdot = state
     u = jnp.clip(u, -params["max_torque"], params["max_torque"])
     costs = angle_normalize(th) ** 2 + .1 * thdot ** 2 + .001 * (u ** 2)
 
@@ -30,7 +30,7 @@ def step(rng_input, params, state, u):
     return get_obs(state), state, -costs[0].squeeze(), False, {}
 
 
-def reset(rng_input):
+def reset(rng_input, params):
     """ Reset environment state by sampling theta, thetadot. """
     high = jnp.array([jnp.pi, 1])
     state = jax.random.uniform(rng_input, shape=(2,),
