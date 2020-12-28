@@ -25,6 +25,7 @@ Available classic OpenAI environments.
 | --- | --- | --- | --- | --- |
 | Classic Control | `Pendulum-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 | Classic Control | `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| Classic Control | `MountainCar-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 </details>
 
 <details>
@@ -102,7 +103,7 @@ This will install all required dependencies. Please note that `gymnax` is only t
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
 | --- | --- | --- | --- | --- | --- |
 CPU-STEP-GYM | OpenAI gym/NumPy | Single transition |2,7 GHz Intel Core i7| 1 | - |
-| Classic Control | CartPole-v0 | :heavy_check_mark:  | :heavy_check_mark: |
+CPU-STEP-JAX | gymnax/JAX | Single transition |2,7 GHz Intel Core i7| 1 | - |
 </details>
 
 
@@ -151,7 +152,7 @@ TPU-FFW-64-JAX-2000 |
 - [ ] Add test for transition correctness compared to OpenAI gym
     - [x] Pendulum-v0
     - [x] CartPole-v0
-    - [ ] MountainCar-v0
+    - [x] MountainCar-v0
     - [ ] MountainCarContinuous-v0
     - [ ] Acrobot-v0
 - [ ] Add state, observation, action space table description of envs

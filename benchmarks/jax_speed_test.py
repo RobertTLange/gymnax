@@ -61,7 +61,7 @@ def run_speed_test_jax_step(rng, env_name, num_evals=100):
     env = gym.make(env_name)
 
     # Call once outside of benchmark loop for jit-compilation
-    action = env.action_space.sample()
+    action = jnp.array(env.action_space.sample())
     rng, key_reset, key_step = jax.random.split(rng, 3)
     obs, state = reset(key_reset, env_params)
     start_t = time.time()
