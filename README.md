@@ -17,14 +17,14 @@ next_obs, next_state, reward, done, _ = step(key_step, env_params,
 ```
 
 <details><summary>
-Available classic OpenAI environments
+Available classic OpenAI environments.
 
 </summary>
 
 | Environment Class | Environment Name | Implemented | Tested | Single Step Speed Gain (Estimate vs. OpenAI) |
 | --- | --- | --- | --- | --- |
-| Classic Control | Pendulum-v0 | :heavy_check_mark:  | :heavy_check_mark: |
-| Classic Control | CartPole-v0 | :heavy_check_mark:  | :x: |
+| Classic Control | `Pendulum-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| Classic Control | `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 </details>
 
 <details>
@@ -101,7 +101,7 @@ This will install all required dependencies. Please note that `gymnax` is only t
 
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
 | --- | --- | --- | --- | --- | --- |
-| Classic Control | Pendulum-v0 | :heavy_check_mark:  | :heavy_check_mark: |
+CPU-STEP-GYM | OpenAI gym/NumPy | Single transition |2,7 GHz Intel Core i7| 1 | - |
 | Classic Control | CartPole-v0 | :heavy_check_mark:  | :heavy_check_mark: |
 </details>
 
