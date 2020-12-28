@@ -49,9 +49,7 @@ class TestPendulum(unittest.TestCase):
             self.assertTrue(env.observation_space.low[1]
                             <= obs[1]
                             <= env.observation_space.high[1])
-            self.assertTrue(env.observation_space.low[1]
-                            <= obs[1]
-                            <= env.observation_space.high[1])
+            
             # Check state space
             self.assertTrue(-np.pi <= state[0] <= np.pi)
             self.assertTrue(-1 <= state[1] <= 1)

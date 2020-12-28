@@ -20,7 +20,7 @@ params_cartpole = {"gravity": 9.8,
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
-    x, x_dot, theta, theta_dot, done_prev = state
+    x, x_dot, theta, theta_dot, just_done = state
     force = params["force_mag"] * action -params["force_mag"]*(1-action)
     costheta = jnp.cos(theta)
     sintheta = jnp.sin(theta)
@@ -46,7 +46,7 @@ def step(rng_input, params, state, action):
                            theta > params["theta_threshold_radians"])
     done = jnp.logical_or(done1, done2)
     state = jnp.hstack([x, x_dot, theta, theta_dot, done])
-    reward = 1.0 * (1-done) * (1-done_prev)
+    reward = 1.0 - just_done
     return get_obs(state), state, reward, done, {}
 
 
@@ -65,6 +65,7 @@ def reset(rng_input, params):
 reset_cartpole = jit(reset)
 step_cartpole = jit(step)
 
+
 # Angle limit set to 2 * theta_threshold_radians so failing observation
 # is still within bounds.
 #high = np.array([self.x_threshold * 2,
@@ -72,5 +73,4 @@ step_cartpole = jit(step)
 #                 self.theta_threshold_radians * 2,
 #                 np.finfo(np.float32).max],
 #                dtype=np.float32)
-
 #self.observation_space = spaces.Box(-high, high, dtype=np.float32)

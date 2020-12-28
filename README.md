@@ -17,13 +17,14 @@ next_obs, next_state, reward, done, _ = step(key_step, env_params,
 ```
 
 <details><summary>
-Available environments
+Available classic OpenAI environments
 
 </summary>
 
-| Environment Class | Environment Name | Implemented | Tested |
-| --- | --- | --- | --- |
-| is | this | :(  |  |
+| Environment Class | Environment Name | Implemented | Tested | Single Step Speed Gain (Estimate vs. OpenAI) |
+| --- | --- | --- | --- | --- |
+| Classic Control | Pendulum-v0 | :heavy_check_mark:  | :heavy_check_mark: |
+| Classic Control | CartPole-v0 | :heavy_check_mark:  | :x: |
 </details>
 
 <details>
@@ -69,6 +70,7 @@ traces, rewards = network_rollouts(rollout_keys, network_params,
 
 1. All random number/PRNGKey handling has to be done explicitly outside of the function calls.
 2. Episode termination has to be handled outside of the simple transition call. This could for example be done using placeholder output in the scanned function.
+3. The estimated speed gains may depend on hardware as well as your specific policy parametrization.
 
 </details>
 
@@ -90,12 +92,19 @@ pip install -e .
 
 This will install all required dependencies. Please note that `gymnax` is only tested for Python 3.6. You can directly run the test from the repo directory via `pytest`.
 
-## Benchmarks & Speed Gains
+## Benchmarking Details
 
 <details> <summary>
   Device and benchmark details.
 
 </summary>
+
+| Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
+| --- | --- | --- | --- | --- | --- |
+| Classic Control | Pendulum-v0 | :heavy_check_mark:  | :heavy_check_mark: |
+| Classic Control | CartPole-v0 | :heavy_check_mark:  | :heavy_check_mark: |
+</details>
+
 
 | Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -110,8 +119,6 @@ GPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 2080T
 TPU-FFW-64-JAX | gymnax/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1 |
 GPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000 |
 TPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000 |
-</details>
-
 
 The speed comparisons were benchmarked for the devices and transition rollout settings listed above. Multi-episode rollouts are collected synchronously and using a composition of `jit`, `vmap`/`pmap` (over episodes) and `lax.scan` (over the action-perception/RL loop).
 
@@ -140,11 +147,13 @@ TPU-FFW-64-JAX-2000 |
 
 
 ## TODOs, Notes & Questions
+- [ ] Add different speed tests - Gym, Torch, CPU, GPU, TPU, etc.
 - [ ] Add test for transition correctness compared to OpenAI gym
     - [x] Pendulum-v0
-    - [ ] CartPole-v0
+    - [x] CartPole-v0
     - [ ] MountainCar-v0
     - [ ] MountainCarContinuous-v0
+    - [ ] Acrobot-v0
 - [ ] Add state, observation, action space table description of envs
 - [ ] Add backdoor for rendering in OpenAI gym
 - [ ] Add some random action sampling utility ala env.action_space.sample()
