@@ -5,6 +5,9 @@ from gymnax.envs.classic_control import (reset_cartpole, step_cartpole,
                                          params_cartpole)
 from gymnax.envs.classic_control import (reset_mountain_car, step_mountain_car,
                                          params_mountain_car)
+from gymnax.envs.classic_control import (reset_continuous_mountain_car,
+                                         step_continuous_mountain_car,
+                                         params_continuous_mountain_car)
 
 
 def make(env_id: str, seed_id: int = 0):
@@ -16,6 +19,10 @@ def make(env_id: str, seed_id: int = 0):
     elif env_id == "MountainCar-v0":
         reset, step, env_params = (reset_mountain_car, step_mountain_car,
                                    params_mountain_car)
+    elif env_id == "MountainCarContinuous-v0":
+        reset, step, env_params = (reset_continuous_mountain_car,
+                                   step_continuous_mountain_car,
+                                   params_continuous_mountain_car)
     else:
         raise ValueError("Env ID is not in set of defined environments.")
 
