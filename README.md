@@ -27,6 +27,7 @@ Available classic OpenAI environments.
 | Classic Control | `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 | Classic Control | `MountainCar-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 | Classic Control | `MountainCarContinuous-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| Classic Control | `Acrobot-v1` | :heavy_check_mark:  | :heavy_check_mark: |
 </details>
 
 <details>
@@ -151,7 +152,7 @@ TPU-FFW-64-JAX-2000 |
     - [x] CartPole-v0
     - [x] MountainCar-v0
     - [x] MountainCarContinuous-v0
-    - [ ] Acrobot-v0
+    - [x] Acrobot-v0
 - [ ] Add state, observation, action space table description of envs
 - [ ] Add backdoor for rendering in OpenAI gym
 - [ ] Add some random action sampling utility ala env.action_space.sample()

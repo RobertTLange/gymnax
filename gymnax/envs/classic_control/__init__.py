@@ -14,3 +14,7 @@ from gymnax.envs.classic_control.continuous_mountain_car import (
                                         reset_continuous_mountain_car,
                                         step_continuous_mountain_car,
                                         params_continuous_mountain_car)
+
+from gymnax.envs.classic_control.acrobot import (reset_acrobot,
+                                                  step_acrobot,
+                                                  params_acrobot)
