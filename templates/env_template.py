@@ -2,8 +2,9 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
-# Template for JAX Compatible Environments. Source: {OpenAI Link}
 """
+Template for JAX Compatible Environments.
+-------------------------------------------
 Steps for adding your own environments/contributing to the repository:
 0. Fork and clone the repository.
 1. Modify step, reset, get_obs functions from template for your needs.
@@ -11,7 +12,7 @@ Steps for adding your own environments/contributing to the repository:
 3. Add a unit test to the tests directory and check correctness.
 4. Add any reference to the original version/documentation of the environment.
 5. [OPTIONAL] Add a link to the Readme of projects that use this environment.
-6. [OPTIONAL] Add an example notebook with an episode rollout.
+6. [OPTIONAL] Add an example notebook with a step transition/episode rollout.
 7. [OPTIONAL] Run a speed benchmark comparing performance on different devices.
 8. Open a pull request.
 """
@@ -22,6 +23,9 @@ params_env_name = {"max_speed": 8,}
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
+    action = jnp.clip(action,
+                      -params["max_speed"],
+                      params["max_speed"])
     state = 0
     reward = 0
     done = False

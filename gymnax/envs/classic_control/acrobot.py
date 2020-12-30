@@ -89,13 +89,8 @@ def wrap(x, m, M):
     diff_x_m = x - m
     go_down = diff_x_M > 0
     go_up = diff_x_m < 0
-
     how_often = (jnp.ceil(diff_x_M/diff)*go_down
                  + jnp.ceil(diff_x_m/diff)*go_up)
-    #while x > M:
-    #    x = x - diff
-    #while x < m:
-    #    x = x + diff
     x_out = x - how_often*diff*go_down + how_often*diff*go_up
     return x_out
 
