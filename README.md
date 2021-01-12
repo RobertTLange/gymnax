@@ -7,7 +7,7 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 ```python
 import jax, gymnax
 
-rng, reset, step, env_params = gymnax.make("Pendulum-v0", seed_id=1234)
+rng, reset, step, env_params = gymnax.make("Pendulum-v0")
 rng, key_reset, key_step = jax.random.split(rng, 3)
 
 obs, state = reset(key_reset, env_params)
@@ -17,7 +17,7 @@ next_obs, next_state, reward, done, _ = step(key_step, env_params,
 ```
 
 <details><summary>
-Available classic OpenAI environments.
+Implemented classic OpenAI environments.
 
 </summary>
 
