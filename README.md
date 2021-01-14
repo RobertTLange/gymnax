@@ -1,6 +1,6 @@
-# `gymnax` - Bringing `jit` & `vmap` to OpenAI gym
+![](docs/gymnax_logo.png)
 
-Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? This repo allows you to accelerate not only your model, but also exploit XLA and the power of JAX's primitives for a collection of classic Open AI gym environments.
+Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap` to classic OpenAI gym environments.
 
 ## Basic API Usage
 
