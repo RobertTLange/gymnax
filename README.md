@@ -35,35 +35,7 @@ Implemented classic OpenAI environments.
   </summary>
 
 ```python
-def policy_step(state_input, tmp):
-    """ lax.scan compatible step transition in JAX env. """
-    rng, obs, state, policy_params, env_params = state_input
-    rng, rng_input = jax.random.split(rng)
-    action = your_jax_policy(policy_params, obs)
-    next_o, next_s, reward, done, _ = step(rng_input, env_params,
-                                           state, action)
-    carry, y = [rng, next_o.squeeze(), next_s.squeeze(),
-                policy_params, env_params], [reward]
-    return carry, y
-
-
-def policy_rollout(rng_input, policy_params, env_params, num_steps):
-    """ Rollout a pendulum episode with lax.scan. """
-    obs, state = reset(rng_input, env_params)
-    scan_out1, scan_out2 = jax.lax.scan(policy_step,
-                                        [rng_input, obs, state, policy_params, env_params],
-                                        [jnp.zeros(num_steps)])
-    return scan_out1, jnp.array(scan_out2)
-
-
-# vmap across random keys used to initialize an episode
-network_rollouts = jit(vmap(policy_rollout, in_axes=(0, None, None, None),
-                            out_axes=0), static_argnums=(3))
-
-rng, rng_input = jax.random.split(rng)
-rollout_keys = jax.random.split(rng, num_episodes)
-traces, rewards = network_rollouts(rollout_keys, network_params,
-                                   env_params, num_env_steps)
+Wrapper!
 ```
 
 </details>
@@ -105,46 +77,7 @@ You can find more details in the [JAX documentation](https://github.com/google/j
 
 ## Benchmarking Details
 
-<details> <summary>
-  Device and benchmark details.
-
-</summary>
-
-| Name | Framework | Description | Device | Steps in Ep. | Number of Ep. |
-| --- | --- | --- | --- | --- | --- |
-CPU-STEP-GYM | OpenAI gym/NumPy | Single transition |2,7 GHz Intel Core i7| 1 | - |
-CPU-STEP-JAX | gymnax/JAX | Single transition |2,7 GHz Intel Core i7| 1 | - |
-CPU-STEP-GYM | OpenAI gym/NumPy | Single transition |2,7 GHz Intel Core i7| 1 | - |
-CPU-STEP-JAX | gymnax/JAX | Single transition |2,7 GHz Intel Core i7| 1 | - |
-CPU-RANDOM-GYM | OpenAI gym/NumPy | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
-CPU-RANDOM-JAX | gymnax/JAX | Random episode |2,7 GHz Intel Core i7| 200 | 1 |
-CPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
-CPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | 2,7 GHz Intel Core i7| 200 | 1 |
-GPU-FFW-64-GYM-TORCH | OpenAI gym/NumPy + PyTorch | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1 |
-GPU-FFW-64-JAX | gymnax/JAX |  1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 1 |
-TPU-FFW-64-JAX | gymnax/JAX | JAX 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 1 |
-GPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GeForce RTX 2080Ti | 200 | 2000 |
-TPU-FFW-64-JAX-2000 | gymnax/JAX | 1-Hidden Layer MLP (64 Units) | GCP TPU VM | 200 | 2000 |
-</details>
-
-
-The speed comparisons were benchmarked for the devices and transition rollout settings listed above. Multi-episode rollouts are collected synchronously and using a composition of `jit`, `vmap`/`pmap` (over episodes) and `lax.scan` (over the action-perception/RL loop).
-
-### Classic Control Tasks
-
-| Environment | `Pendulum-v0` | `CartPole-v1` | `MountainCar-v0` | `MountainCarContinuous-v0` | `Acrobot-v1` |
-|:---:|:---:|:---:| :---:| :---:| :---:|
-CPU-STEP-GYM |  | |  |  |
-CPU-STEP-JAX |  | |  |  |
-CPU-RANDOM-GYM | | | |
-CPU-RANDOM-JAX | | | | |
-CPU-FFW-64-GYM-TORCH |  |
-CPU-FFW-64-JAX |
-GPU-FFW-64-GYM-TORCH |
-GPU-FFW-64-JAX |
-GPU-FFW-64-JAX-2000 |
-TPU-FFW-64-JAX-2000 |
-
+![](docs/classic_runtime_benchmark.png)
 
 ## Examples, Notebooks & Colabs
 * :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout `Pendulum-v0` and other accelerated control tasks.
@@ -153,13 +86,3 @@ TPU-FFW-64-JAX-2000 |
 ## Contributing and Development
 
 You can find a template and instructions for how to add a new environment [here](templates/env_template). Feel free to ping me ([@RobertTLange](https://twitter.com/RobertTLange)), open an issue or start contributing yourself.
-
-## TODOs, Notes & Questions
-- [ ] Add different speed tests - Gym, Torch, CPU, GPU, TPU, etc.
-- [ ] Add test for transition correctness compared to OpenAI gym
-    - [x] Continuous Control
-- [ ] Add state, observation, action space table description of envs
-- [ ] Add backdoor for rendering in OpenAI gym
-- [ ] Add some random action sampling utility ala env.action_space.sample()
-- [ ] Figure out if numerical errors really matter
-- [ ] Connect notebooks with example Colab https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb#scrollTo=K-NVg7RjyeTk
