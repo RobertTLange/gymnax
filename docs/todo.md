@@ -20,4 +20,6 @@
 ## 19/01/20 - Start working on episode wrappers
 
 - Want a template that wraps around `step`, `reset`, `make` and provides nice `lax.scan` if policy is given in the right format.
-    -
+    - As much flexibility while giving highest level of abstraction
+    - `policy_step` function is where the magic is happening
+    - Allow for stochastic rollout and flexible data storage
