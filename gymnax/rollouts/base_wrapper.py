@@ -6,13 +6,12 @@ from functools import partial
 
 class BaseWrapper(object):
     """ Base wrapper for episode rollouts. """
-    def __init__(self, policy, step, reset,
-             env_params, max_steps_in_episode):
+    def __init__(self, policy, step, reset, env_params):
         self.policy = policy
         self.step = step
         self.reset = reset
         self.env_params = env_params
-        self.max_steps_in_episode = max_steps_in_episode
+        self.max_steps_in_episode = env_params["max_steps_in_episode"]
 
     def policy_step(self, state_input, tmp):
         """ lax.scan compatible step transition in JAX env. """
