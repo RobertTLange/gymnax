@@ -11,7 +11,8 @@ params_pendulum = {"max_speed": 8,
                    "dt": 0.05,
                    "g": 10.0,
                    "m": 1.,
-                   "l": 1.}
+                   "l": 1.,
+                   "max_steps_in_episode": 200}
 
 
 def step(rng_input, params, state, u):

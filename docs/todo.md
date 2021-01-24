@@ -22,4 +22,21 @@
 - Want a template that wraps around `step`, `reset`, `make` and provides nice `lax.scan` if policy is given in the right format.
     - As much flexibility while giving highest level of abstraction
     - `policy_step` function is where the magic is happening
-    - Allow for stochastic rollout and flexible data storage
+    - Allow for stochastic rollout
+    - Flexible data storage - what are stats to store
+
+- Base wrapper running as well for haiku, flax MLP policies
+    - Do we also need a recurrent wrapper?
+    - Implement PPO and DQN examples with rlax
+
+
+## Next thing to do
+
+- Add another vmap for parameter dimension - useful for ES
+- Decide what variables to store and provide specialized wrapper on top
+    - Disentangled base wrapper from specialized ones
+    - Value based: states, rewards, actions, dones
+    - PG based: log prob pi, entropy, returns
+    - ES: only cumulated rewards
+- Implement catch environment from bsuite
+- Adopt DQN example from rlax

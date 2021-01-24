@@ -80,7 +80,7 @@ You can find more details in the [JAX documentation](https://github.com/google/j
 ![](docs/classic_runtime_benchmark.png)
 
 ## Examples, Notebooks & Colabs
-* :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout `Pendulum-v0` and other accelerated control tasks.
+* :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout the API and accelerated control tasks.
 
 
 ## Contributing and Development

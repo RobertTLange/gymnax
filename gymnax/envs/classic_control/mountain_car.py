@@ -12,7 +12,8 @@ params_mountain_car = {"min_position": -1.2,
                        "goal_position": 0.5,
                        "goal_velocity": 0.0,
                        "force": 0.001,
-                       "gravity": 0.0025}
+                       "gravity": 0.0025,
+                       "max_steps_in_episode": 200}
 
 
 def step(rng_input, params, state, action):

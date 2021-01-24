@@ -18,7 +18,8 @@ params_acrobot = {"dt": 0.2,
                   "max_vel_1": 4*jnp.pi,
                   "max_vel_2": 9*jnp.pi,
                   "available_torque": jnp.array([-1., 0., +1]),
-                  "torque_noise_max": 0.0}
+                  "torque_noise_max": 0.0,
+                  "max_steps_in_episode": 500}
 
 
 def step(rng_input, params, state, action):

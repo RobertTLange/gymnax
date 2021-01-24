@@ -15,7 +15,8 @@ params_cartpole = {"gravity": 9.8,
                    "force_mag": 10.0,
                    "tau": 0.02,
                    "theta_threshold_radians": 12*2*jnp.pi/360,
-                   "x_threshold": 2.4}
+                   "x_threshold": 2.4,
+                   "max_steps_in_episode": 200}
 
 
 def step(rng_input, params, state, action):
