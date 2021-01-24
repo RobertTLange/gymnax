@@ -4,15 +4,15 @@
     - [ ] Policy Gradient Wrapper with update only after transition
     - [ ] Q-Learning Wrapper with update after each transition
     - [ ] Deterministic vs. stochastic policy rollout
-- [ ] Learn more about setup in dm_env
 - [ ] Add TPU speed tests
 - [ ] Add more environments
-    - [ ] bsuite classics - catch for transfer of catch rlax dqn example
+    - [ ] bsuite classic example
     - [ ] Gridworld/4 rooms
     - [ ] Toy text from gym
     - [ ] Simple bandit environments
 - [ ] Add test for transition correctness compared to OpenAI gym
     - [x] Continuous Control
+    - [x] Catch Bsuite
 - [ ] Add backdoor for rendering in OpenAI gym
 - [ ] Add random policy/sampling for basic rollout
 - [ ] Figure out if numerical errors really matter
@@ -37,8 +37,8 @@
 - [x] Get rollout wrapper to smoothly integrate with `evosax`
 - [x] Refactor envs -> environments
 - [x] Implement bsuite catch env
-- [ ] Different types of wrappers?
-- [ ] Include timestep in state and terminate/set done
+- [x] Move 2-arm Bernoulli bandit from evosax to gymnax
+- Include timestep in state and terminate/set done?
 
 ## Next thing to do
 
