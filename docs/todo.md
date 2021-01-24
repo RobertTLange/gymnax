@@ -35,13 +35,14 @@
 ## 24/01/21 - Episode wrappers + bsuite catch
 
 - [x] Get rollout wrapper to smoothly integrate with `evosax`
-- [ ] Implement bsuite catch env
+- [x] Refactor envs -> environments
+- [x] Implement bsuite catch env
 - [ ] Different types of wrappers?
 - [ ] Include timestep in state and terminate/set done
 
 ## Next thing to do
 
-- Add another vmap for parameter dimension - useful for ES
+- Figure out solution for action and observation space
 - Decide what variables to store and provide specialized wrapper on top
     - Disentangled base wrapper from specialized ones
     - Value based: states, rewards, actions, dones
@@ -50,4 +51,4 @@
     - PG based: log prob pi, entropy, returns
     - ES: only cumulated rewards
 - Implement catch environment from bsuite
-- Adopt DQN example from rlax
+- Adopt DQN example from rlax and jit through entire thing

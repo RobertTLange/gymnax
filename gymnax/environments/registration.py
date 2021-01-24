@@ -11,6 +11,9 @@ from gymnax.environments.classic_control import (reset_continuous_mountain_car,
                                                  params_continuous_mountain_car)
 from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
                                                  params_acrobot)
+# =============================================================================
+from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
+
 
 def make(env_id: str, seed_id: int = 0):
     """ A JAX-version of of OpenAI's infamous env.make(env_name)"""
@@ -27,6 +30,8 @@ def make(env_id: str, seed_id: int = 0):
                                    params_continuous_mountain_car)
     elif env_id == "Acrobot-v1":
         reset, step, env_params = reset_acrobot, step_acrobot, params_acrobot
+    elif env_id == "Catch-bsuite":
+        reset, step, env_params = reset_catch, step_catch, params_catch
     else:
         raise ValueError("Env ID is not in set of defined environments.")
 
