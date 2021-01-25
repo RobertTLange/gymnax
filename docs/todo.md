@@ -16,7 +16,10 @@
 - [ ] Add backdoor for rendering in OpenAI gym
 - [ ] Add random policy/sampling for basic rollout
 - [ ] Figure out if numerical errors really matter
-- [ ] Connect notebooks with example Colab https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb#scrollTo=K-NVg7RjyeTk
+
+- [ ] Documentation
+    - [ ] Add state, obs, action space info as in dm_control paper
+    - [ ] Connect notebooks with example Colab https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb#scrollTo=K-NVg7RjyeTk
 
 
 ## 19/01/21 - Start working on episode wrappers
@@ -40,8 +43,17 @@
 - [x] Move 2-arm Bernoulli bandit from evosax to gymnax
 - Include timestep in state and terminate/set done?
 
+
+## 25/01/21 - Start work on porting RLax DQN over
+
+- [x] Move animator class from evosax to gymnax + example
+- [ ] Copy code over from repo and run - get feeling for time
+- [ ] Naively replace step with catch env
+- [ ] Work on wrapper for alternating step-update procedure
+
 ## Next thing to do
 
+- Adopt DQN example from rlax and jit through entire thing
 - Figure out solution for action and observation space
 - Decide what variables to store and provide specialized wrapper on top
     - Disentangled base wrapper from specialized ones
@@ -50,5 +62,5 @@
         - Add buffer system to store transitions?!
     - PG based: log prob pi, entropy, returns
     - ES: only cumulated rewards
+    - Recurrent policy rollout wrapper
 - Implement catch environment from bsuite
-- Adopt DQN example from rlax and jit through entire thing
