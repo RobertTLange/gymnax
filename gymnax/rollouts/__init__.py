@@ -1,3 +1,5 @@
-from gymnax.rollouts.base_wrapper import BaseWrapper
+from gymnax.rollouts.base_rollouts import BaseRollouts
+from gymnax.rollouts.deterministic_rollouts import DeterministicRollouts
 
-__all__ = ["BaseWrapper"]
+__all__ = ["BaseRollouts",
+           "DeterministicRollouts"]

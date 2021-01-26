@@ -54,6 +54,42 @@
 
 - [x] Refactor examples and notebooks
 - [x] Run rlax DQN example + eval runtime = ca. 90 secs - 300 eps
+
+- Considerations when replacing bsuite catch env with gymnax
+    - Want to jit over entire episode rollout. So one wrapped loop
+        for ep in range(train_eps):
+            run_jitted_episode <- step, push, update
+    - Probably need a function to initialize the buffer. Fill it up until batchsize is met - to circumvent 'if' statement
+    - Rollout wrapper should look something like this
+    ```python
+    class DQNStyleWrapper:
+        def __init__():
+            ...
+
+        def action_selection():
+            ...
+
+        def get_transition():
+            ...
+
+        def store_transition():
+            ...
+
+        def update_policy():
+            ...
+
+        def actor_learner_step():
+            a = action_selection
+            transition = get_transition(a)
+            buffer = store_transition(transition)
+            policy = update_policy(buffer)
+
+        def lax_rollout():
+            # scan over actor-learner-step
+            ...
+    ```
+
+- [ ] Rewrite base wrapper to be more abstract
 - [ ] Naively replace step with catch env
 - [ ] Work on wrapper for alternating step-update procedure
 

@@ -8,7 +8,7 @@ from haiku import nets
 import time
 import collections
 import random
-from bsuite.environments import catch
+import gymnax
 
 
 class ReplayBuffer(object):
@@ -73,7 +73,7 @@ class DQN:
 
     def actor_step(self, params, env_output, actor_state, key, evaluation):
         obs = jnp.expand_dims(env_output.observation, 0)  # add dummy batch
-        q = self._network.apply(params.online, obs)[0]  # remove dummy batch
+        q = self._network.apply(params.online, obs)[0]    # remove dummy batch
         epsilon = self._epsilon_by_frame(actor_state.count)
         train_a = rlax.epsilon_greedy(epsilon).sample(key, q)
         eval_a = rlax.greedy().sample(key, q)
