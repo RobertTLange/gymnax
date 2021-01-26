@@ -18,6 +18,7 @@
 - [ ] Figure out if numerical errors really matter
 
 - [ ] Documentation
+    - [ ] Pypi installation and github workflow for releases
     - [ ] Add state, obs, action space info as in dm_control paper
     - [ ] Connect notebooks with example Colab https://colab.research.google.com/github/googlecolab/colabtools/blob/master/notebooks/colab-github-demo.ipynb#scrollTo=K-NVg7RjyeTk
 
@@ -44,10 +45,15 @@
 - Include timestep in state and terminate/set done?
 
 
-## 25/01/21 - Start work on porting RLax DQN over
+## 25/01/21 - Clean Up animation for determ. policy
 
 - [x] Move animator class from evosax to gymnax + example
-- [ ] Copy code over from repo and run - get feeling for time
+- [x] Copy rlax DQN over from repo and run - get feeling for time
+
+## 26/01/21 - Start work on porting RLax DQN over
+
+- [x] Refactor examples and notebooks
+- [x] Run rlax DQN example + eval runtime = ca. 90 secs - 300 eps
 - [ ] Naively replace step with catch env
 - [ ] Work on wrapper for alternating step-update procedure
 

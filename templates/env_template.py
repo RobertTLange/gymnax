@@ -18,7 +18,8 @@ Steps for adding your own environments/contributing to the repository:
 """
 
 # Default environment parameters
-params_env_name = {"max_speed": 8,}
+params_env_name = {"max_speed": 8,
+                   "max_steps_in_episode": 100}
 
 
 def step(rng_input, params, state, action):

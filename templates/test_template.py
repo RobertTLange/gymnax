@@ -10,7 +10,7 @@ class TestEnv(unittest.TestCase):
     tolerance = 1e-04
     env_name = 'env-v0'
 
-    def test_acrobot_step(self):
+    def test_env_step(self):
         """ Test a step transition for the env. """
         env = gym.make(TestEnv.env_name)
         rng, reset, step, env_params = gymnax.make(TestEnv.env_name)
@@ -36,9 +36,9 @@ class TestEnv(unittest.TestCase):
                 assert np.allclose(obs_gym, obs_jax,
                                    atol=TestEnv.tolerance)
 
-    def test_acrobot_reset(self):
+    def test_env_reset(self):
         """ Test reset obs/state is in space of OpenAI version. """
-        env = gym.make("Acrobot-v1")
+        env = gym.make(TestEnv.env_name)
         rng, reset, step, env_params = gymnax.make(TestEnv.env_name)
         for ep in range(TestEnv.num_episodes):
             rng, rng_input = jax.random.split(rng)
