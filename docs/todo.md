@@ -89,7 +89,13 @@
             ...
     ```
 
-- [ ] Rewrite base wrapper to be more abstract
+- [x] Rewrite base wrapper to be more abstract
+- [x] Add trax example to episode wrappers
+
+## 26/01/21 - Work on stochastic wrapper, value-based wrapper, PG wrapper
+
+- [ ] Add a ER buffer style class for both on and off-policy RL
+- [ ] Make decision on discount vs done syntax
 - [ ] Naively replace step with catch env
 - [ ] Work on wrapper for alternating step-update procedure
 
