@@ -30,9 +30,9 @@ class BaseRollouts(object):
 
     def perform_transition(self, rng, env_params, state, action):
         """ Perform the step transition in the environment. """
-        next_o, next_s, reward, done, _ = self.step(rng, env_params,
-                                                    state, action)
-        return next_o, next_s, reward, done, _
+        next_obs, next_state, reward, done, _ = self.step(rng, env_params,
+                                                          state, action)
+        return next_obs, next_state, reward, done, _
 
     def actor_learner_step(self, carry_input, tmp):
         """ lax.scan compatible step transition in JAX env.
@@ -48,9 +48,9 @@ class BaseRollouts(object):
         action, net_output = self.action_selection(rng_act, agent_params, obs)
 
         # 2. Perform the step transition in the environment & format env output
-        next_o, next_s, reward, done, _ = self.perform_transition(rng_step,
-                                            env_params, state, action)
-        env_output = (state, next_s, obs, next_o, action, reward, done)
+        next_obs, next_state, reward, done, _ = self.perform_transition(
+                                    rng_step, env_params, state, action)
+        env_output = (state, next_state, obs, next_obs, action, reward, done)
 
         # 3. Prepare gathered info from transition (env + net) [keep state info]
         step_experience = self.prepare_experience(env_output, net_output)
@@ -62,7 +62,7 @@ class BaseRollouts(object):
         self.update_learner(agent_params)
 
         # 6. Collect all relevant data for next actor-learner-step
-        carry, y = [rng, next_o.squeeze(), next_s.squeeze(),
+        carry, y = [rng, next_obs.squeeze(), next_state.squeeze(),
                     agent_params, env_params], [reward]
         return carry, y
 

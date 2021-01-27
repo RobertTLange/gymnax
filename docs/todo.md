@@ -60,31 +60,24 @@
     - Want to jit over entire episode rollout. So one wrapped loop
         for ep in range(train_eps):
             run_jitted_episode <- step, push, update
-    - Probably need a function to initialize the buffer. Fill it up until batchsize is met - to circumvent 'if' statement
     - Rollout wrapper should look something like this
     ```python
     class DQNStyleWrapper:
         def __init__():
             ...
-
         def action_selection():
             ...
-
         def get_transition():
             ...
-
         def store_transition():
             ...
-
         def update_policy():
             ...
-
         def actor_learner_step():
             a = action_selection
             transition = get_transition(a)
             buffer = store_transition(transition)
             policy = update_policy(buffer)
-
         def lax_rollout():
             # scan over actor-learner-step
             ...
@@ -95,16 +88,26 @@
 
 ## 27/01/21 - Work on stochastic wrapper, value-based wrapper, PG wrapper
 
+- [x] Work on wrapper for alternating step-update procedure
 - [ ] Add a ER buffer style class for both on and off-policy RL
 - [ ] Make decision on discount vs done syntax
 - [ ] Naively replace step with catch env
-- [ ] Work on wrapper for alternating step-update procedure
 
-- Do we also want to vmap over the update?! Learning rate has to be adapted in that case to be eta/batch_dim.
+- Do we also want to vmap over the update?! Learning rate has to be adapted in that case to be eta/batch_dim. E.g. make many small updates = 1 batch update
 - This is mainly relevant for PG methods where the update is done outside anyways
 - Also keep around state transition info - even if agent only sees obs
 
 - Probably should rename `DeterministicRollouts` to `PlainRollouts` and make it work on stochastic policies.
+
+- Test rollout wrappers on more policy types as well as environments
+    - Write tests in the first place!
+
+- Probably need a function to initialize the buffer. Fill it up until batchsize is met - to circumvent 'if' statement
+    - E.g. run 1 episode with random policy
+
+- Check if squeeze for obs/state is really required - different env?
+
+## 28/01/21 - Continue Replay Buffer Work
 
 ## Next thing to do
 
