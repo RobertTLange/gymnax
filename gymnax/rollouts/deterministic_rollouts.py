@@ -6,22 +6,29 @@ from gymnax.rollouts.base_rollouts import BaseRollouts
 
 
 class DeterministicRollouts(BaseRollouts):
-    """ Base wrapper for episode rollouts. """
+    """ Deterministic episode rollouts without learning.
+        As for example used in neuroevolution experiments.
+    """
     def __init__(self, policy, step, reset, env_params):
-        BaseRollouts.__init__(self, policy, step, reset, env_params)
+        BaseRollouts.__init__(self, step, reset, env_params)
+        self.policy = policy
 
-    def action_selection(self, rng, policy_params, obs):
+    def action_selection(self, rng, agent_params, obs):
         """ Compute action to be executed in environment. """
-        action = self.policy(policy_params, obs)
-        return action
+        action = self.policy(agent_params, obs)
+        return action, None
 
-    def store_transition(self, obs, state, reward, done):
-        """ Store the transition in a buffer. """
+    def prepare_experience(self, env_output, net_output):
+        """ Prepare the generated data (net/env) to be stored in a buffer. """
         return None
 
-    def update_learner(self, policy_params, buffer):
+    def store_experience(self, step_experience):
+        """ Store the transition data (net + env) in a buffer. """
+        return None
+
+    def update_learner(self, agent_params):
         """ Perform an update to the parameters of the learner. """
-        return policy_params
+        return agent_params
 
     def perform_transition(self, rng, env_params, state, action):
         """ Perform the step transition in the environment. """

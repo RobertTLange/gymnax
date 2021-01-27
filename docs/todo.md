@@ -1,9 +1,10 @@
 ## TODOs, Notes & Questions
 - [ ] Add timeout condition with env_params and t in state!
 - [ ] Episode rollout wrapper
-    - [ ] Policy Gradient Wrapper with update only after transition
-    - [ ] Q-Learning Wrapper with update after each transition
     - [ ] Deterministic vs. stochastic policy rollout
+    - [ ] Q-Learning Wrapper with update after each transition
+    - [ ] Policy Gradient Wrapper with update only after transition
+    - [ ] Recurrent Wrapper for training LSTM-style policies
 - [ ] Add TPU speed tests
 - [ ] Add more environments
     - [ ] bsuite classic example
@@ -90,14 +91,20 @@
     ```
 
 - [x] Rewrite base wrapper to be more abstract
-- [x] Add trax example to episode wrappers
+- [x] Add trax example to episode wrappers = Problem with how inputs and params are passed to the policy - not params, input but other way around
 
-## 26/01/21 - Work on stochastic wrapper, value-based wrapper, PG wrapper
+## 27/01/21 - Work on stochastic wrapper, value-based wrapper, PG wrapper
 
 - [ ] Add a ER buffer style class for both on and off-policy RL
 - [ ] Make decision on discount vs done syntax
 - [ ] Naively replace step with catch env
 - [ ] Work on wrapper for alternating step-update procedure
+
+- Do we also want to vmap over the update?! Learning rate has to be adapted in that case to be eta/batch_dim.
+- This is mainly relevant for PG methods where the update is done outside anyways
+- Also keep around state transition info - even if agent only sees obs
+
+- Probably should rename `DeterministicRollouts` to `PlainRollouts` and make it work on stochastic policies.
 
 ## Next thing to do
 
