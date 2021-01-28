@@ -107,7 +107,10 @@
 
 - Check if squeeze for obs/state is really required - different env?
 
-## 28/01/21 - Continue Replay Buffer Work
+## 28/01/21 - Continue Replay Buffer Work + DQN setup
+
+- Do we need an `actorState`, `learnerState` - check if we can jit through named tuples!
+
 
 ## Next thing to do
 

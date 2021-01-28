@@ -11,12 +11,12 @@ class DeterministicRollouts(BaseRollouts):
         BaseRollouts.__init__(self, step, reset, env_params)
         self.policy = policy
 
-    def action_selection(self, rng, agent_params, obs):
+    def action_selection(self, key, obs, agent_params, actor_state):
         """ Compute action to be executed in environment. """
         action = self.policy(agent_params, obs)
         return action, None
 
-    def prepare_experience(self, env_output, net_output):
+    def prepare_experience(self, env_output, actor_state):
         """ Prepare the generated data (net/env) to be stored in a buffer. """
         return None
 
@@ -24,12 +24,14 @@ class DeterministicRollouts(BaseRollouts):
         """ Store the transition data (net + env) in a buffer. """
         return None
 
-    def update_learner(self, agent_params):
+    def update_learner(self, agent_params, learner_state):
         """ Perform an update to the parameters of the learner. """
-        return agent_params
+        return agent_params, None
 
-    def perform_transition(self, rng, env_params, state, action):
-        """ Perform the step transition in the environment. """
-        next_o, next_s, reward, done, _ = self.step(rng, env_params,
-                                                    state, action)
-        return next_o, next_s, reward, done, _
+    def init_learner_state(self, agent_params):
+        """ Initialize the state of the learner (e.g. optimizer). """
+        return None
+
+    def init_actor_state(self):
+        """ Initialize the state of the actor (e.g. for exploration). """
+        return None

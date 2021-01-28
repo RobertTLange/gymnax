@@ -42,7 +42,8 @@ class DQN:
         opt_state = self._optimizer.init(params.online)
         return LearnerState(learner_count, opt_state)
 
-    def actor_step(self, params, env_output, actor_state, key, evaluation):
+    def actor_step(self, params, env_output, actor_state,
+                   key, evaluation):
         obs = jnp.expand_dims(env_output.observation, 0)  # add dummy batch
         q = self._network.apply(params.online, obs)[0]    # remove dummy batch
         epsilon = self._epsilon_by_frame(actor_state.count)
@@ -56,7 +57,8 @@ class DQN:
         target_params = rlax.periodic_update(
             params.online, params.target,
             learner_state.count, self._target_period)
-        dloss_dtheta = jax.grad(self._loss)(params.online, target_params, *data)
+        dloss_dtheta = jax.grad(self._loss)(params.online,
+                                            target_params, *data)
         updates, opt_state = self._optimizer.update(dloss_dtheta,
                                                     learner_state.opt_state)
         online_params = optax.apply_updates(params.online, updates)
