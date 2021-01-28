@@ -109,8 +109,14 @@
 
 ## 28/01/21 - Continue Replay Buffer Work + DQN setup
 
-- Do we need an `actorState`, `learnerState` - check if we can jit through named tuples!
+- We need an `actorState`, `learnerState` - check if we can jit through named tuples!
+- How can we do evaluation episodes?!
+    - Use evaluation actor state? And no update of agent params
+    - Or separate lax.scan setup?
+- Want a function that updates `agent_params` after vmap spits them out
 
+- Problem in buffer sampling with self.total_transitions to sample from and jit
+    - Not a problem if resampling is allowed
 
 ## Next thing to do
 

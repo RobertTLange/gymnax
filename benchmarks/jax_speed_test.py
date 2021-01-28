@@ -27,7 +27,8 @@ def policy_rollout(rng_input, policy_params, env_params, num_steps):
 
     obs, state = reset(rng_input, env_params)
     scan_out1, scan_out2 = jax.lax.scan(policy_step,
-                                        [rng_input, obs, state, policy_params, env_params],
+                                        [rng_input, obs, state,
+                                         policy_params, env_params],
                                         [jnp.zeros(num_steps)])
     return scan_out1, jnp.array(scan_out2)
 

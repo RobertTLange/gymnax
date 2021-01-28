@@ -120,7 +120,7 @@ class BaseRollouts(object):
                                              self.actor_state,
                                              self.learner_state)
         except AttributeError as err:
-            raise AttributeError(f"{err}. You need to initialize the "
+            raise AttributeError(f"{err}. Please initialize the "
                                   "agent's parameters and the states "
                                   "of the actor and learner.")
         return trace, reward
@@ -135,6 +135,6 @@ class BaseRollouts(object):
                                                 self.actor_state,
                                                 self.learner_state)
         except AttributeError as err:
-            raise AttributeError(f"{err}. You need to initialize the "
+            raise AttributeError(f"{err}. Please initialize the "
                                   "agent params and actor/learner states.")
         return traces, rewards

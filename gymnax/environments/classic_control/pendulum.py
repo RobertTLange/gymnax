@@ -28,7 +28,7 @@ def step(rng_input, params, state, u):
     newthdot = jnp.clip(newthdot, -params["max_speed"], params["max_speed"])
 
     state = jnp.array([newth, newthdot])
-    return get_obs(state), state, -costs[0].squeeze(), False, {}
+    return get_obs(state), state.squeeze(), -costs[0].squeeze(), False, {}
 
 
 def reset(rng_input, params):
