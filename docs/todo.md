@@ -123,8 +123,14 @@
 - Play around with randint instead of choice - Ultimately rewrite buffer without usage of class instances. There was some leakage of untraced vars coming from self
 
 - Now use 3 separate functions: `init_buffer`, `push_to_buffer`, `sample_from_buffer`
+    - `push_to_buffer` takes `step_experience` dict as input and returns update buffer dict
+    - 'sample_from_buffer' returns dict of batches with same keys as `step_experience`
+    - Dicts allow for max flexibility when adding things like prioritization
+    - In future: Make buffer structure more abstract for easy extension
 
 - Go back to interleaved wrapper and add storage of trajectory
+    - Include buffer data collection
+    - First jitted episode rollout!
 
 
 ## Next thing to do

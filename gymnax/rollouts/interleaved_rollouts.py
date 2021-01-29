@@ -22,13 +22,19 @@ class InterleavedRollouts(BaseRollouts):
         return action, None
 
     def prepare_experience(self, env_output, actor_state):
-        """ Prepare the generated data (net/env) to be stored in a buffer. """
-        return env_output
+        """ Prepare generated data (net/env) to be stored in buffer. """
+        step_experience = {"state": env_output[0],
+                           "next_state": env_output[1],
+                           "obs": env_output[2],
+                           "next_obs": env_output[3],
+                           "action": env_output[4],
+                           "reward": env_output[5],
+                           "done": env_output[6]}
+        return step_experience
 
     def store_experience(self, step_experience):
         """ Store the transition data (net + env) in a buffer. """
-        self.buffer = self.push_to_buffer(buffer, step_experience)
-        return
+        self.buffer = self.push_to_buffer(self.buffer, step_experience)
 
     def update_learner(self, agent_params, learner_state):
         """ Perform an update to the parameters of the learner. """
