@@ -3,9 +3,12 @@ from gymnax.rollouts.base_rollouts import BaseRollouts
 from gymnax.rollouts.deterministic_rollouts import DeterministicRollouts
 from gymnax.rollouts.interleaved_rollouts import InterleavedRollouts
 
-from gymnax.rollouts.replay_buffer import ReplayBuffer
+# Helpers for storing collected trajectory data
+from gymnax.rollouts.replay_buffer import (init_buffer, push_to_buffer,
+                                           sample_from_buffer)
 
 __all__ = ["BaseRollouts",
            "DeterministicRollouts",
-           "InterleavedRollouts",
-           "ReplayBuffer"]
+           "init_buffer",
+           "push_to_buffer",
+           "sample_from_buffer",]

@@ -118,6 +118,13 @@
 - Problem in buffer sampling with self.total_transitions to sample from and jit
     - Not a problem if resampling is allowed
 
+## 29/01/21 - Jitted Sampling + InterleavedWrapper
+
+- Play around with randint instead of choice - Ultimately rewrite buffer without usage of class instances. There was some leakage of untraced vars coming from self
+
+- Now use 3 separate functions: `init_buffer`, `push_to_buffer`, `sample_from_buffer`
+
+
 ## Next thing to do
 
 - Adopt DQN example from rlax and jit through entire thing
