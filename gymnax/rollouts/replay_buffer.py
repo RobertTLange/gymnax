@@ -29,23 +29,29 @@ def init_buffer(state_template, obs_template, action_template, capacity):
 
 
 @jax.jit
-def push_to_buffer(buffer, state, next_state, obs, next_obs,
-                   action, reward, done):
+def push_to_buffer(buffer, step_experience):
     """ Store transition tuple data at step pointer location. """
     buffer["state"] = jax.ops.index_update(buffer["state"],
-                        jax.ops.index[buffer["pointer"], :], state)
+                        jax.ops.index[buffer["pointer"], :],
+                        step_experience["state"])
     buffer["next_state"] = jax.ops.index_update(buffer["next_state"],
-                        jax.ops.index[buffer["pointer"], :], next_state)
+                        jax.ops.index[buffer["pointer"], :],
+                        step_experience["next_state"])
     buffer["obs"] = jax.ops.index_update(buffer["obs"],
-                      jax.ops.index[buffer["pointer"], :], obs)
+                      jax.ops.index[buffer["pointer"], :],
+                      step_experience["obs"])
     buffer["next_obs"] = jax.ops.index_update(buffer["next_obs"],
-                           jax.ops.index[buffer["pointer"], :], next_obs)
+                           jax.ops.index[buffer["pointer"], :],
+                           step_experience["next_obs"])
     buffer["action"] = jax.ops.index_update(buffer["action"],
-                         jax.ops.index[buffer["pointer"], :], action)
+                         jax.ops.index[buffer["pointer"], :],
+                         step_experience["action"])
     buffer["reward"] = jax.ops.index_update(buffer["reward"],
-                         jax.ops.index[buffer["pointer"]], reward)
+                         jax.ops.index[buffer["pointer"]],
+                         step_experience["reward"])
     buffer["done"] = jax.ops.index_update(buffer["done"],
-                        jax.ops.index[buffer["pointer"]], done)
+                        jax.ops.index[buffer["pointer"]],
+                        step_experience["done"])
 
     # Update the buffer pointer, reset once capacity is full - overwrite
     buffer["pointer"] += 1

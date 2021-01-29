@@ -124,6 +124,8 @@
 
 - Now use 3 separate functions: `init_buffer`, `push_to_buffer`, `sample_from_buffer`
 
+- Go back to interleaved wrapper and add storage of trajectory
+
 
 ## Next thing to do
 
