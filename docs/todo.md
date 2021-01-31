@@ -132,6 +132,8 @@
     - Include buffer data collection
     - First jitted episode rollout!
 
+## 30/01/21 - Add learner step and make actor step for DQN!
+
 
 ## Next thing to do
 

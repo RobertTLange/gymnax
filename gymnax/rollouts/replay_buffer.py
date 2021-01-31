@@ -4,6 +4,7 @@ from jax import jit
 from functools import partial
 
 
+@partial(jit, static_argnums=(0, 1, 2, 3))
 def init_buffer(state_template, obs_template, action_template, capacity):
     """ Initialize jnp arrays based on shape of obs and capacity. """
     # Get shape of obs, state, action from template arrays

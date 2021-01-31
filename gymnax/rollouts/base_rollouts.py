@@ -104,36 +104,54 @@ class BaseRollouts(object):
         rollout_map = vmap(self.lax_rollout,
                            in_axes=(0, None, None, None, None, None),
                            out_axes=0)
-        traces, rewards = rollout_map(key_input, self.env_params,
-                                      self.max_steps_in_episode,
-                                      self.agent_params,
-                                      self.actor_state, self.learner_state)
+        traces, rewards = rollout_map(key_input, env_params,
+                                      max_steps_in_episode,
+                                      agent_params,
+                                      actor_state, learner_state)
         return traces, rewards
 
-    def episode_rollout(self, key_rollout):
+    def episode_rollout(self, key_rollout, agent_params=None):
         """ Jitted episode rollout for single episode. """
         try:
-            trace, reward = self.lax_rollout(key_rollout,
-                                             self.env_params,
-                                             self.max_steps_in_episode,
-                                             self.agent_params,
-                                             self.actor_state,
-                                             self.learner_state)
+            # Differentiate cases: agent_params explicitly supplied/when not
+            if agent_params is None:
+                trace, reward = self.lax_rollout(key_rollout,
+                                                 self.env_params,
+                                                 self.max_steps_in_episode,
+                                                 self.agent_params,
+                                                 self.actor_state,
+                                                 self.learner_state)
+            else:
+                trace, reward = self.lax_rollout(key_rollout,
+                                                 self.env_params,
+                                                 self.max_steps_in_episode,
+                                                 agent_params,
+                                                 self.actor_state,
+                                                 self.learner_state)
         except AttributeError as err:
             raise AttributeError(f"{err}. Please initialize the "
                                   "agent's parameters and the states "
                                   "of the actor and learner.")
         return trace, reward
 
-    def batch_rollout(self, key_rollout):
+    def batch_rollout(self, key_rollout, agent_params=None):
         """ Vmapped episode rollout for set of episodes. """
         try:
-            traces, rewards = self.vmap_rollout(key_rollout,
-                                                self.env_params,
-                                                self.max_steps_in_episode,
-                                                self.agent_params,
-                                                self.actor_state,
-                                                self.learner_state)
+            # Differentiate cases: agent_params explicitly supplied/when not
+            if agent_params is None:
+                traces, rewards = self.vmap_rollout(key_rollout,
+                                                    self.env_params,
+                                                    self.max_steps_in_episode,
+                                                    self.agent_params,
+                                                    self.actor_state,
+                                                    self.learner_state)
+            else:
+                traces, rewards = self.vmap_rollout(key_rollout,
+                                                    self.env_params,
+                                                    self.max_steps_in_episode,
+                                                    agent_params,
+                                                    self.actor_state,
+                                                    self.learner_state)
         except AttributeError as err:
             raise AttributeError(f"{err}. Please initialize the "
                                   "agent params and actor/learner states.")
