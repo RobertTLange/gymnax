@@ -17,14 +17,14 @@ class DeterministicRollouts(BaseRollouts):
         return action, None
 
     def prepare_experience(self, env_output, actor_state):
-        """ Prepare the generated data (net/env) to be stored in a buffer. """
+        """ Prepare generated data (net/env) to be stored in buffer. """
         return None
 
     def store_experience(self, step_experience):
         """ Store the transition data (net + env) in a buffer. """
         return None
 
-    def update_learner(self, agent_params, learner_state):
+    def update_learner(self, key, agent_params, learner_state):
         """ Perform an update to the parameters of the learner. """
         return agent_params, None
 
@@ -33,5 +33,5 @@ class DeterministicRollouts(BaseRollouts):
         return None
 
     def init_actor_state(self):
-        """ Initialize the state of the actor (e.g. for exploration). """
+        """ Initialize the state of the actor (e.g. exploration). """
         return None

@@ -20,6 +20,7 @@ class GymAnimator():
         """ Rollout a single episode using provided policy + params. """
         state = self.env.reset()
         frames = []
+        total_reward = 0
         for t in range(num_steps):
             # Render to frames buffer
             frame = self.env.render(mode="rgb_array")
@@ -28,15 +29,16 @@ class GymAnimator():
             # to be exectued in the environment
             action = self.policy(self.policy_params, state)
             state, reward, done, _ = self.env.step(action)
+            total_reward += reward
             if done:
                 break
         self.env.close()
-        return frames
+        return frames, total_reward
 
     def rollout_and_animate(self, num_steps, title, filename):
         """ Rollout an episode given the provided policy and visualize it. """
-        frames = self.collect_frames(num_steps)
-        print("Finished rolling out agent & collecting frames.")
+        frames, reward = self.collect_frames(num_steps)
+        print(f"Finished rolling out agent & collecting frames - R: {reward}.")
         self.save_frames_as_gif(frames, title=title,
                                 filename=filename)
         print("Finished processing frames to .gif.")

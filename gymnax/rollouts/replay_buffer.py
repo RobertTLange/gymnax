@@ -4,7 +4,7 @@ from jax import jit
 from functools import partial
 
 
-@partial(jit, static_argnums=(0, 1, 2, 3))
+@partial(jit, static_argnums=(3))
 def init_buffer(state_template, obs_template, action_template, capacity):
     """ Initialize jnp arrays based on shape of obs and capacity. """
     # Get shape of obs, state, action from template arrays
@@ -30,7 +30,7 @@ def init_buffer(state_template, obs_template, action_template, capacity):
 
 
 @jax.jit
-def push_to_buffer(buffer, step_experience):
+def push_buffer(buffer, step_experience):
     """ Store transition tuple data at step pointer location. """
     buffer["state"] = jax.ops.index_update(buffer["state"],
                         jax.ops.index[buffer["pointer"], :],
@@ -63,7 +63,7 @@ def push_to_buffer(buffer, step_experience):
 
 
 @partial(jit, static_argnums=(2,))
-def sample_from_buffer(key, buffer, batch_size):
+def sample_buffer(key, buffer, batch_size):
     """ Sample a batch from buffer: (idx, o_t, o_t_1, a_t, r_t_1, done_t) """
     sample_idx = jax.random.randint(key, shape=(batch_size, ),
                                     minval=0,

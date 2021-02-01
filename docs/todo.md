@@ -132,8 +132,13 @@
     - Include buffer data collection
     - First jitted episode rollout!
 
-## 30/01/21 - Add learner step and make actor step for DQN!
+## 01/02/21 - Add learner step and make actor step for DQN!
 
+- Small buffer jitting bug fix with static_argnums.
+- Rewrite PlainRollouts to include an agent class.
+    - This allows to easily differentiate between types of policies.
+    - Test compatibility with evosax examples.
+- Need to get key into update learner step - i.e. for sampling from buffer
 
 ## Next thing to do
 

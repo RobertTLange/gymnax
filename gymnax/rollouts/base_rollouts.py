@@ -24,7 +24,7 @@ class BaseRollouts(object):
         """ Store the transition data (net + env) in a buffer. """
         raise NotImplementedError
 
-    def update_learner(self, agent_params, learner_state):
+    def update_learner(self, key, agent_params, learner_state):
         """ Perform an update to the parameters of the learner. """
         raise NotImplementedError
 
@@ -36,7 +36,7 @@ class BaseRollouts(object):
         """ Initialize the state of the actor (e.g. for exploration). """
         raise NotImplementedError
 
-    def init_collector(self, agent_params):
+    def init_collector(self, agent_params=None):
         """ Initialize the rollout collector/learning dojo. """
         self.agent_params = agent_params
         self.learner_state = self.init_learner_state(agent_params)
@@ -57,26 +57,28 @@ class BaseRollouts(object):
         # 0. Unpack carry, split rng key for action selection + transition
         rng, obs, state, env_params = carry_input[0:4]
         agent_params, actor_state, learner_state = carry_input[4:7]
-        rng, key_act, key_step = jax.random.split(rng, 3)
+        rng, key_act, key_step, key_learn = jax.random.split(rng, 4)
 
         # 1. Perform action selection using actor NN
         action, actor_state = self.action_selection(key_act, obs,
                                                     agent_params,
                                                     actor_state)
 
-        # 2. Perform the step transition in the environment & format env output
+        # 2. Perform step transition in the environment & format env output
         next_obs, next_state, reward, done, _ = self.perform_transition(
                                     key_step, env_params, state, action)
-        env_output = (state, next_state, obs, next_obs, action, reward, done)
+        env_output = (state, next_state, obs, next_obs,
+                      action, reward, done)
 
-        # 3. Prepare gathered info from transition (env + net) [keep state info]
+        # 3. Prepare info from transition (env + net) [keep state info]
         step_experience = self.prepare_experience(env_output, actor_state)
 
         # 4. Store the transition in a transition buffer
         self.store_experience(step_experience)
 
         # 5. Update the learner by e.g. performing some SGD update
-        agent_params, learner_state = self.update_learner(agent_params,
+        agent_params, learner_state = self.update_learner(key_learn,
+                                                          agent_params,
                                                           learner_state)
 
         # 6. Collect all relevant data for next actor-learner-step
@@ -113,7 +115,7 @@ class BaseRollouts(object):
     def episode_rollout(self, key_rollout, agent_params=None):
         """ Jitted episode rollout for single episode. """
         try:
-            # Differentiate cases: agent_params explicitly supplied/when not
+            # Different cases: agent_params explicitly supplied/when not
             if agent_params is None:
                 trace, reward = self.lax_rollout(key_rollout,
                                                  self.env_params,
@@ -137,7 +139,7 @@ class BaseRollouts(object):
     def batch_rollout(self, key_rollout, agent_params=None):
         """ Vmapped episode rollout for set of episodes. """
         try:
-            # Differentiate cases: agent_params explicitly supplied/when not
+            # Different cases: agent_params explicitly supplied/when not
             if agent_params is None:
                 traces, rewards = self.vmap_rollout(key_rollout,
                                                     self.env_params,

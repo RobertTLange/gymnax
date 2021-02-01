@@ -8,18 +8,19 @@ from gymnax.rollouts.base_rollouts import BaseRollouts
 class InterleavedRollouts(BaseRollouts):
     """ Interleaved rollouts of acting-learning as in DQN-style algorithms. """
     def __init__(self, agent,
-                 buffer, push_to_buffer, sample_from_buffer,
+                 buffer, push_buffer, sample_buffer,
                  step, reset, env_params):
         BaseRollouts.__init__(self, step, reset, env_params)
         self.agent = agent
         self.buffer = buffer
-        self.push_to_buffer = push_to_buffer
-        self.sample_from_buffer = sample_from_buffer
+        self.push_buffer = push_buffer
+        self.sample_buffer = sample_buffer
 
     def action_selection(self, key, obs, agent_params, actor_state):
         """ Compute action to be executed in environment. """
-        action = self.agent.actor_step(agent_params, obs)
-        return action, None
+        action, actor_state = self.agent.actor_step(key, agent_params,
+                                                    obs, actor_state)
+        return action, actor_state
 
     def prepare_experience(self, env_output, actor_state):
         """ Prepare generated data (net/env) to be stored in buffer. """
@@ -34,16 +35,18 @@ class InterleavedRollouts(BaseRollouts):
 
     def store_experience(self, step_experience):
         """ Store the transition data (net + env) in a buffer. """
-        self.buffer = self.push_to_buffer(self.buffer, step_experience)
+        self.buffer = self.push_buffer(self.buffer, step_experience)
 
-    def update_learner(self, agent_params, learner_state):
+    def update_learner(self, key, agent_params, learner_state):
         """ Perform an update to the parameters of the learner. """
-        return agent_params, None
+        data = self.sample_buffer(key, self.buffer, 10)
+        agent_params, learner_state = self.agent.learner_step()
+        return agent_params, learner_state
 
     def init_learner_state(self, agent_params):
         """ Initialize the state of the learner (e.g. optimizer). """
-        return None
+        return self.agent.init_learner_state(agent_params)
 
     def init_actor_state(self):
         """ Initialize the state of the actor (e.g. for exploration). """
-        return None
+        return self.agent.init_actor_state()
