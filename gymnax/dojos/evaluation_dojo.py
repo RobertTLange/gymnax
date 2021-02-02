@@ -7,14 +7,15 @@ from gymnax.dojos.base_dojo import BaseDojo
 
 class EvaluationDojo(BaseDojo):
     """ Evaluation episode rollouts w\o learning (e.g. neuroevo/RL testing). """
-    def __init__(self, policy, step, reset, env_params):
+    def __init__(self, agent, step, reset, env_params):
         BaseDojo.__init__(self, step, reset, env_params)
-        self.policy = policy
+        self.agent = agent
 
     def action_selection(self, key, obs, agent_params, actor_state):
         """ Compute action to be executed in environment. """
-        action = self.policy(agent_params, obs)
-        return action, None
+        action, actor_state = self.agent.actor_step(key, agent_params,
+                                                    obs, actor_state)
+        return action, actor_state
 
     def prepare_experience(self, env_output, actor_state):
         """ Prepare generated data (net/env) to be stored in buffer. """
@@ -34,4 +35,4 @@ class EvaluationDojo(BaseDojo):
 
     def init_actor_state(self):
         """ Initialize the state of the actor (e.g. exploration). """
-        return None
+        return self.agent.init_actor_state()
