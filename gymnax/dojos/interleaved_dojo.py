@@ -2,15 +2,15 @@ import jax
 import jax.numpy as jnp
 from jax import lax, jit, vmap
 from functools import partial
-from gymnax.rollouts.base_rollouts import BaseRollouts
+from gymnax.dojos.base_dojo import BaseDojo
 
 
-class InterleavedRollouts(BaseRollouts):
+class InterleavedDojo(BaseDojo):
     """ Interleaved rollouts of acting-learning as in DQN-style algorithms. """
     def __init__(self, agent,
                  buffer, push_buffer, sample_buffer,
                  step, reset, env_params):
-        BaseRollouts.__init__(self, step, reset, env_params)
+        BaseDojo.__init__(self, step, reset, env_params)
         self.agent = agent
         self.buffer = buffer
         self.push_buffer = push_buffer
@@ -40,7 +40,8 @@ class InterleavedRollouts(BaseRollouts):
     def update_learner(self, key, agent_params, learner_state):
         """ Perform an update to the parameters of the learner. """
         data = self.sample_buffer(key, self.buffer, 10)
-        agent_params, learner_state = self.agent.learner_step()
+        agent_params, learner_state = self.agent.learner_step(key,
+                                        agent_params, learner_state)
         return agent_params, learner_state
 
     def init_learner_state(self, agent_params):

@@ -140,6 +140,11 @@
     - Test compatibility with evosax examples.
 - Need to get key into update learner step - i.e. for sampling from buffer
 
+
+## 02/02/21 - DQN run?! + PlainWrapper rename
+
+- Rename the `DetermisticRollouts` to `EvaluationDojo`.
+
 ## Next thing to do
 
 - Adopt DQN example from rlax and jit through entire thing

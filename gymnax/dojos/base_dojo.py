@@ -4,7 +4,7 @@ from jax import lax, jit, vmap
 from functools import partial
 
 
-class BaseRollouts(object):
+class BaseDojo(object):
     """ Base wrapper for episode rollouts. """
     def __init__(self, step, reset, env_params):
         self.step = step
@@ -36,7 +36,7 @@ class BaseRollouts(object):
         """ Initialize the state of the actor (e.g. for exploration). """
         raise NotImplementedError
 
-    def init_collector(self, agent_params=None):
+    def init_dojo(self, agent_params=None):
         """ Initialize the rollout collector/learning dojo. """
         self.agent_params = agent_params
         self.learner_state = self.init_learner_state(agent_params)

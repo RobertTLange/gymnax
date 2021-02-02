@@ -2,13 +2,13 @@ import jax
 import jax.numpy as jnp
 from jax import lax, jit, vmap
 from functools import partial
-from gymnax.rollouts.base_rollouts import BaseRollouts
+from gymnax.dojos.base_dojo import BaseDojo
 
 
-class DeterministicRollouts(BaseRollouts):
-    """ Deterministic episode rollouts without learning (e.g. in neuroevo). """
+class EvaluationDojo(BaseDojo):
+    """ Evaluation episode rollouts w\o learning (e.g. neuroevo/RL testing). """
     def __init__(self, policy, step, reset, env_params):
-        BaseRollouts.__init__(self, step, reset, env_params)
+        BaseDojo.__init__(self, step, reset, env_params)
         self.policy = policy
 
     def action_selection(self, key, obs, agent_params, actor_state):
