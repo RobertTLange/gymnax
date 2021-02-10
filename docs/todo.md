@@ -152,8 +152,15 @@
 - Problem with env_params that affect the observation shapes. `FrozenDict` non-hashable?!
     - For now pull out of env_params - no longer `static_argnums`
 
+- DQN `_loss` call problem withs chex in rlax double q loss fct
+    - Rank compatibility = squeeze inputs
+    - Type compatibility = make actions of type int
+
+- Next: figure out evaluation - maybe in separate dojo? Train and test dojos?!
+
 ## Next thing to do
 
+- Would love to put together a plot of wall-clock time vs performance + visualization of catch game next to it
 - Add `env_info` dict to all envs - collects action space/observation space - important: Not part of `env_params`
 - Make decision on discount vs done syntax
 - Adopt DQN example from rlax and jit through entire thing
