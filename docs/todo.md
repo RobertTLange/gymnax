@@ -89,9 +89,8 @@
 ## 27/01/21 - Work on stochastic wrapper, value-based wrapper, PG wrapper
 
 - [x] Work on wrapper for alternating step-update procedure
-- [ ] Add a ER buffer style class for both on and off-policy RL
-- [ ] Make decision on discount vs done syntax
-- [ ] Naively replace step with catch env
+- [x] Add a ER buffer style class for both on and off-policy RL
+- [x] Naively replace step with catch env
 
 - Do we also want to vmap over the update?! Learning rate has to be adapted in that case to be eta/batch_dim. E.g. make many small updates = 1 batch update
 - This is mainly relevant for PG methods where the update is done outside anyways
@@ -144,9 +143,19 @@
 ## 02/02/21 - DQN run?! + PlainWrapper rename
 
 - Rename the `DetermisticRollouts` to `EvaluationDojo`.
+- Adapt DQN agent class to our setup.
+- Problem with catch env frozen dict + static_argnums. Can't have both!
+
+
+## 10/02/21 - Back at it!
+
+- Problem with env_params that affect the observation shapes. `FrozenDict` non-hashable?!
+    - For now pull out of env_params - no longer `static_argnums`
 
 ## Next thing to do
 
+- Add `env_info` dict to all envs - collects action space/observation space - important: Not part of `env_params`
+- Make decision on discount vs done syntax
 - Adopt DQN example from rlax and jit through entire thing
 - Figure out solution for action and observation space
 - Decide what variables to store and provide specialized wrapper on top

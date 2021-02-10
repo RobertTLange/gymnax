@@ -41,7 +41,7 @@ class InterleavedDojo(BaseDojo):
         """ Perform an update to the parameters of the learner. """
         data = self.sample_buffer(key, self.buffer, 10)
         agent_params, learner_state = self.agent.learner_step(key,
-                                        agent_params, learner_state)
+                                        agent_params, learner_state, data)
         return agent_params, learner_state
 
     def init_learner_state(self, agent_params):

@@ -35,22 +35,21 @@ class GymAnimator():
         self.env.close()
         return frames, total_reward
 
-    def rollout_and_animate(self, num_steps, title, filename):
+    def animate(self, frames, title, reward, filename):
         """ Rollout an episode given the provided policy and visualize it. """
-        frames, reward = self.collect_frames(num_steps)
-        print(f"Finished rolling out agent & collecting frames - R: {reward}.")
         self.save_frames_as_gif(frames, title=title,
-                                filename=filename)
+                                filename=filename, reward=reward)
         print("Finished processing frames to .gif.")
 
     def save_frames_as_gif(self, frames, title,
-                           filename='gym_animation.gif'):
+                           filename='gym_animation.gif',
+                           reward=0):
         """ Animate a set of collected episode frames. """
         plt.figure(figsize=(frames[0].shape[1] / 72.0,
                             frames[0].shape[0] / 72.0), dpi=72)
 
         patch = plt.imshow(frames[0])
-        plt.title(title, fontsize=50)
+        plt.title(title + r" | R: {:.1f}".format(reward), fontsize=50)
         plt.axis('off')
 
         def animate(i):
