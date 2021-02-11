@@ -148,7 +148,6 @@
 
 
 ## 10/02/21 - Back at it!
-
 - Problem with env_params that affect the observation shapes. `FrozenDict` non-hashable?!
     - For now pull out of env_params - no longer `static_argnums`
 
@@ -158,10 +157,18 @@
 
 - Next: figure out evaluation - maybe in separate dojo? Train and test dojos?!
 
+## 11/02/21 - Check if DQN is actually learning!
+- Put agent/loop into .py script.
+- Need to make a decision about the discount settings and what/how to store
+    - Rollout steps not episodes
+    - How do we deal with discount annealing? and state resets?
+    - 'Purify' buffer from transitions after termination - discount = 0
+
 ## Next thing to do
 
 - Would love to put together a plot of wall-clock time vs performance + visualization of catch game next to it
 - Add `env_info` dict to all envs - collects action space/observation space - important: Not part of `env_params`
+- Add `chex` tests to `gymnax`
 - Make decision on discount vs done syntax
 - Adopt DQN example from rlax and jit through entire thing
 - Figure out solution for action and observation space

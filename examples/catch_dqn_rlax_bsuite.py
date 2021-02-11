@@ -104,23 +104,23 @@ class DQN:
 
 
 def run_loop(agent, environment, accumulator, seed,
-             batch_size, train_episodes, evaluate_every, eval_episodes):
+             batch_size, total_env_transitions, evaluate_every, eval_episodes):
     """A simple run loop for examples of reinforcement learning with rlax."""
 
     # Init agent.
     rng = hk.PRNGSequence(jax.random.PRNGKey(seed))
     params = agent.initial_params(next(rng))
     learner_state = agent.initial_learner_state(params)
-
-    print(f"Training agent for {train_episodes} episodes")
-    for episode in range(train_episodes):
+    step_counter = 0
+    print(f"Training agent for {total_env_transitions} transitions")
+    while step_counter < total_env_transitions:
         # Prepare agent, environment and accumulator for a new episode.
         timestep = environment.reset()
         accumulator.push(timestep, None)
+        # Resets exploration always at beginning of episode?!
         actor_state = agent.initial_actor_state()
 
         while not timestep.last():
-
             # Acting.
             actor_output, actor_state = agent.actor_step(
                 params, timestep, actor_state, next(rng), evaluation=False)
@@ -136,22 +136,23 @@ def run_loop(agent, environment, accumulator, seed,
                 params, learner_state = agent.learner_step(
                     params, accumulator.sample(batch_size),
                     learner_state, next(rng))
+            step_counter += 1
 
-        # Evaluation.
-        if not episode % evaluate_every:
-            returns = 0.
-            for _ in range(eval_episodes):
-                timestep = environment.reset()
-                actor_state = agent.initial_actor_state()
+            # Evaluation.
+            if not step_counter % evaluate_every:
+                returns = 0.
+                for _ in range(eval_episodes):
+                    timestep = environment.reset()
+                    eval_actor_state = agent.initial_actor_state()
 
-                while not timestep.last():
-                    actor_output, actor_state = agent.actor_step(
-                      params, timestep, actor_state, next(rng), evaluation=True)
-                    timestep = environment.step(int(actor_output.actions))
-                    returns += timestep.reward
+                    while not timestep.last():
+                        actor_output, eval_actor_state = agent.actor_step(
+                          params, timestep, eval_actor_state, next(rng), evaluation=True)
+                        timestep = environment.step(int(actor_output.actions))
+                        returns += timestep.reward
 
-            avg_returns = returns / eval_episodes
-            print(f"Episode {episode:4d}: Average returns: {avg_returns:.2f}")
+                avg_returns = returns / eval_episodes
+                print(f"Step {step_counter:4d}: Average returns: {avg_returns:.2f}")
 
 
 def build_network(num_actions: int) -> hk.Transformed:
@@ -182,7 +183,7 @@ def main(train_config):
              accumulator=accumulator,
              seed=train_config["seed"],
              batch_size=train_config["batch_size"],
-             train_episodes=train_config["train_episodes"],
+             total_env_transitions=train_config["total_env_transitions"],
              evaluate_every=train_config["evaluate_every"],
              eval_episodes=train_config["eval_episodes"])
 
@@ -195,7 +196,7 @@ Data = collections.namedtuple("Data", "obs_tm1 a_tm1 r_t discount_t obs_t")
 
 
 train_config = {"seed": 42,
-                "train_episodes": 301,
+                "total_env_transitions": 1501,
                 "batch_size": 32,
                 "target_period": 50,
                 "replay_capacity": 2000,
@@ -212,5 +213,5 @@ if __name__ == "__main__":
     start_t = time.time()
     main(train_config)
     stop_t = time.time()
-    print("Done with {} episodes after {:.2f} seconds".format(train_config["train_episodes"],
+    print("Done with {} steps after {:.2f} seconds".format(train_config["total_env_transitions"],
                                                               stop_t - start_t))
