@@ -30,14 +30,19 @@ def step(rng_input, params, state, action):
                                          minval=-params["torque_noise_max"], maxval=params["torque_noise_max"])
 
     # Augment state with force action so it can be passed to ds/dt
-    s_augmented = jnp.append(state, torque)
+    s_augmented = jnp.append(state[:4], torque)
     ns = rk4(s_augmented, params)
     joint_angle1 = wrap(ns[0], -jnp.pi, jnp.pi)
     joint_angle2 = wrap(ns[1], -jnp.pi, jnp.pi)
     vel1 = jnp.clip(ns[2], -params["max_vel_1"], params["max_vel_1"])
     vel2 = jnp.clip(ns[3], -params["max_vel_2"], params["max_vel_2"])
-    state = jnp.array([joint_angle1, joint_angle2, vel1, vel2])
-    done = (-jnp.cos(state[0]) - jnp.cos(state[1] + state[0]) > 1.)
+    timestep = state[4]
+    state = jnp.array([joint_angle1, joint_angle2, vel1, vel2,
+                       timestep + 1])
+    done1 = (-jnp.cos(state[0]) - jnp.cos(state[1] + state[0]) > 1.)
+    # Check number of steps in episode termination condition
+    done_steps = (timestep + 1 > params["max_steps_in_episode"])
+    done = jnp.logical_or(done1, done_steps)
     reward = -1. * (1-done)
     return get_obs(state), state, reward, done, {}
 
@@ -45,6 +50,8 @@ def step(rng_input, params, state, action):
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
     state = jax.random.uniform(rng_input, shape=(4,), minval=-0.1, maxval=0.1)
+    timestep = 0
+    state = jnp.hstack([state, timestep])
     return get_obs(state), state
 
 

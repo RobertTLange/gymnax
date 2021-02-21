@@ -22,7 +22,7 @@ class TestMountainCar(unittest.TestCase):
             # Loop over test episode steps
             for s in range(TestMountainCar.num_steps):
                 action = env.action_space.sample()
-                state_gym = jnp.hstack([obs_gym, done_gym])
+                state_gym = jnp.hstack([obs_gym, done_gym, 0])
                 obs_gym, reward_gym, done_gym, _ = env.step(action)
                 rng, rng_input = jax.random.split(rng)
                 obs_jax, state_jax, reward_jax, done_jax, _ = step(rng_input,

@@ -17,7 +17,7 @@ params_pendulum = {"max_speed": 8,
 
 def step(rng_input, params, state, u):
     """ Integrate pendulum ODE and return transition. """
-    th, thdot = state
+    th, thdot, timestep = state
     u = jnp.clip(u, -params["max_torque"], params["max_torque"])
     costs = angle_normalize(th) ** 2 + .1 * thdot ** 2 + .001 * (u ** 2)
 
@@ -26,9 +26,10 @@ def step(rng_input, params, state, u):
                         (params["m"] * params["l"] ** 2) * u) * params["dt"]
     newth = th + newthdot * params["dt"]
     newthdot = jnp.clip(newthdot, -params["max_speed"], params["max_speed"])
-
-    state = jnp.array([newth, newthdot])
-    return get_obs(state), state.squeeze(), -costs[0].squeeze(), False, {}
+    # Check number of steps in episode termination condition
+    done_steps = (timestep + 1 > params["max_steps_in_episode"])
+    state = jnp.hstack([newth, newthdot, timestep+1])
+    return get_obs(state), state.squeeze(), -costs[0].squeeze(), done_steps, {}
 
 
 def reset(rng_input, params):
@@ -36,6 +37,8 @@ def reset(rng_input, params):
     high = jnp.array([jnp.pi, 1])
     state = jax.random.uniform(rng_input, shape=(2,),
                                minval=-high, maxval=high)
+    timestep = 0
+    state = jnp.hstack([state, timestep])
     return get_obs(state), state
 
 

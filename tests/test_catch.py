@@ -28,7 +28,7 @@ class TestCatch(unittest.TestCase):
                 timestep = env.step(action)
                 obs_suite = timestep.observation
                 reward_suite = timestep.reward
-                done_suite = 1 - (timestep.discount is None)
+                done_suite = timestep.discount is None
 
                 rng, rng_input = jax.random.split(rng)
                 obs_jax, state_jax, reward_jax, done_jax, _ = step(rng_input,

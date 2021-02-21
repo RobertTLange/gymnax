@@ -21,7 +21,7 @@ params_cartpole = {"gravity": 9.8,
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
-    x, x_dot, theta, theta_dot, just_done = state
+    x, x_dot, theta, theta_dot, just_done, timestep = state
     force = params["force_mag"] * action -params["force_mag"]*(1-action)
     costheta = jnp.cos(theta)
     sintheta = jnp.sin(theta)
@@ -45,8 +45,10 @@ def step(rng_input, params, state, action):
                            x > params["x_threshold"])
     done2 = jnp.logical_or(theta < -params["theta_threshold_radians"],
                            theta > params["theta_threshold_radians"])
-    done = jnp.logical_or(done1, done2)
-    state = jnp.hstack([x, x_dot, theta, theta_dot, done])
+    # Check number of steps in episode termination condition
+    done_steps = (timestep + 1 > params["max_steps_in_episode"])
+    done = jnp.logical_or(jnp.logical_or(done1, done2), done_steps)
+    state = jnp.hstack([x, x_dot, theta, theta_dot, done, timestep + 1])
     reward = 1.0 - just_done
     return get_obs(state), state, reward, done, {}
 
@@ -59,19 +61,10 @@ def get_obs(state):
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
     state = jax.random.uniform(rng_input, minval=-0.05, maxval=0.05, shape=(4,))
-    state = jnp.hstack([state, 0])
+    timestep = 0
+    state = jnp.hstack([state, 0, timestep])
     return get_obs(state), state
 
 
 reset_cartpole = jit(reset)
 step_cartpole = jit(step)
-
-
-# Angle limit set to 2 * theta_threshold_radians so failing observation
-# is still within bounds.
-#high = np.array([self.x_threshold * 2,
-#                 np.finfo(np.float32).max,
-#                 self.theta_threshold_radians * 2,
-#                 np.finfo(np.float32).max],
-#                dtype=np.float32)
-#self.observation_space = spaces.Box(-high, high, dtype=np.float32)

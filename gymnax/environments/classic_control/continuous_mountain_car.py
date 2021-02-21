@@ -20,7 +20,7 @@ params_continuous_mountain_car = {"min_action": -1.0,
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
-    position, velocity, done = state
+    position, velocity, done, timestep = state
     force = jnp.clip(action, params["min_action"], params["max_action"])
     velocity = (velocity + force * params["power"]
                 - jnp.cos(3 * position) * params["gravity"])
@@ -29,10 +29,13 @@ def step(rng_input, params, state, action):
     position = jnp.clip(position, params["min_position"], params["max_position"])
     velocity = velocity * (1 - (position >= params["goal_position"])
                            * (velocity < 0))
-    done = ((position >= params["goal_position"])
-            * (velocity >= params["goal_velocity"]))
-    reward = -0.1*action[0]**2 + 100*done
-    state = jnp.array([position, velocity, done])
+    done1 = ((position >= params["goal_position"])
+             * (velocity >= params["goal_velocity"]))
+    # Check number of steps in episode termination condition
+    done_steps = (timestep + 1 > params["max_steps_in_episode"])
+    done = jnp.logical_or(done1, done_steps)
+    reward = -0.1*action[0]**2 + 100*done1
+    state = jnp.hstack([position, velocity, done, timestep+1])
     return get_obs(state), state, reward, done, {}
 
 
@@ -40,7 +43,8 @@ def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
     state = jax.random.uniform(rng_input, shape=(1,),
                                minval=-0.6, maxval=-0.4)
-    state = jnp.hstack([state, 0, 0])
+    timestep = 0
+    state = jnp.hstack([state, 0, 0, timestep])
     return get_obs(state), state
 
 

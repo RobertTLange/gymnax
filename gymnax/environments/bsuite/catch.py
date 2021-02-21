@@ -28,14 +28,17 @@ def step(rng_input, params, state, action):
     paddle_y = state[3] * (1-prev_done)  + paddle_y * prev_done
 
     # Rewrite reward as boolean multiplication
-    done = (ball_y == paddle_y)
+    done1 = (ball_y == paddle_y)
     catched = (paddle_x == ball_x)
-    reward = done*(1*catched + -1*(1-catched))
+    reward = done1*(1*catched + -1*(1-catched))
+
+    # Check number of steps in episode termination condition
+    time = state[4] + 1
+    done_steps = (time > params["max_steps_in_episode"])
 
     info = {}
-    time = state[4] + 1
-    state = jnp.array([ball_x, ball_y, paddle_x, paddle_y, time, done])
-    return get_obs(state, params), state, reward, done, info
+    state = jnp.array([ball_x, ball_y, paddle_x, paddle_y, time, done1])
+    return get_obs(state, params), state, reward, done_steps, info
 
 
 def sample_init_state(rng_input, params):

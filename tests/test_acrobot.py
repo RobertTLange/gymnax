@@ -24,9 +24,11 @@ class TestAcrobot(unittest.TestCase):
                 obs_gym, reward_gym, done_gym, _ = env.step(action)
 
                 rng, rng_input = jax.random.split(rng)
+                state_gym_to_jax = np.hstack([env.state[:], 0])
                 obs_jax, state_jax, reward_jax, done_jax, _ = step(rng_input,
-                                                                   env_params, state_gym,
-                                                                   action)
+                                                                env_params,
+                                                                state_gym_to_jax,
+                                                                action)
 
                 # Check for correctness of transitions
                 assert math.isclose(reward_gym, reward_jax,

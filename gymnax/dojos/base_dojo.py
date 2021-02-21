@@ -56,7 +56,7 @@ class BaseDojo(object):
         # 0. Unpack carry, split rng key for action selection + transition
         rng, obs, state, env_params = carry_input[0:4]
         agent_params, actor_state, learner_state = carry_input[4:7]
-        rng, key_act, key_step, key_learn = jax.random.split(rng, 4)
+        rng, key_act, key_step, key_learn, key_reset = jax.random.split(rng, 5)
 
         # 1. Perform action selection using actor NN
         action, actor_state = self.action_selection(key_act, obs,
@@ -80,7 +80,12 @@ class BaseDojo(object):
                                                           agent_params,
                                                           learner_state)
 
-        # 6. Collect all relevant data for next actor-learner-step
+        # 6. Auto-reset environment and use obs/state if episode terminated
+        obs_reset, state_reset = self.reset(key_reset, env_params)
+        next_obs = done * obs_reset + (1 - done) * next_obs
+        next_state = done * state_reset + (1 - done) * next_state
+
+        # 7. Collect all relevant data for next actor-learner-step
         carry, y = ([rng, next_obs.squeeze(), next_state.squeeze(),
                      env_params, agent_params, actor_state, learner_state],
                     [reward])
@@ -90,7 +95,9 @@ class BaseDojo(object):
     def lax_rollout(self, key_input, env_params, num_steps,
                     agent_params, actor_state, learner_state):
         """ Rollout a gymnax episode with lax.scan. """
+        # Reset the environment once at beginning of step rollout
         obs, state = self.reset(key_input, env_params)
+        # Rollout the steps in the environment (w. potential resets)
         scan_out1, scan_out2 = lax.scan(
                             self.actor_learner_step,
                             [key_input, obs, state, env_params,
