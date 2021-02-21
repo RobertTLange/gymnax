@@ -43,7 +43,7 @@ def step(rng_input, params, state, action):
     # Check number of steps in episode termination condition
     done_steps = (timestep + 1 > params["max_steps_in_episode"])
     done = jnp.logical_or(done1, done_steps)
-    reward = -1. * (1-done)
+    reward = -1. * (1-done1)
     return get_obs(state), state, reward, done, {}
 
 

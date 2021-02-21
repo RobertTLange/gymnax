@@ -39,6 +39,12 @@
 
 ## 21/02/21 - Check if DQN is actually learning II
 
+- Add auto termination and reset to wrappers
+- Add timestep counter to the environments - done if timestep > env_steps
+- Figure out what is wrong with acrobot - wrong state definition
+- Check whether JAX DQN agent is learning - does not appear to!
+- Very hard to debug!!!
+
 ## 11/02/21 - Check if DQN is actually learning I
 - Put agent/loop into .py script.
 - Need to make a decision about the discount settings and what/how to store

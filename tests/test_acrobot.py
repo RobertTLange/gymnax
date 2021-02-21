@@ -20,11 +20,10 @@ class TestAcrobot(unittest.TestCase):
             # Loop over test episode steps
             for s in range(TestAcrobot.num_steps):
                 action = env.action_space.sample()
-                state_gym = env.state[:]
+                state_gym_to_jax = np.hstack([env.state[:], 0])
                 obs_gym, reward_gym, done_gym, _ = env.step(action)
 
                 rng, rng_input = jax.random.split(rng)
-                state_gym_to_jax = np.hstack([env.state[:], 0])
                 obs_jax, state_jax, reward_jax, done_jax, _ = step(rng_input,
                                                                 env_params,
                                                                 state_gym_to_jax,

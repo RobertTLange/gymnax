@@ -35,4 +35,4 @@ class EvaluationDojo(BaseDojo):
 
     def init_actor_state(self):
         """ Initialize the state of the actor (e.g. exploration). """
-        return self.agent.init_actor_state()
+        return self.agent.init_actor_state(evaluate=True)

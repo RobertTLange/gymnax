@@ -106,11 +106,11 @@ class DQN:
 def run_loop(agent, environment, accumulator, seed,
              batch_size, total_env_transitions, evaluate_every, eval_episodes):
     """A simple run loop for examples of reinforcement learning with rlax."""
-
     # Init agent.
     rng = hk.PRNGSequence(jax.random.PRNGKey(seed))
     params = agent.initial_params(next(rng))
     learner_state = agent.initial_learner_state(params)
+    actor_state = agent.initial_actor_state()
     step_counter = 0
     print(f"Training agent for {total_env_transitions} transitions")
     while step_counter < total_env_transitions:
@@ -118,8 +118,6 @@ def run_loop(agent, environment, accumulator, seed,
         timestep = environment.reset()
         accumulator.push(timestep, None)
         # Resets exploration always at beginning of episode?!
-        actor_state = agent.initial_actor_state()
-
         while not timestep.last():
             # Acting.
             actor_output, actor_state = agent.actor_step(
@@ -203,11 +201,11 @@ train_config = {"seed": 42,
                 "hidden_units": 50,
                 "epsilon_begin": 1.,
                 "epsilon_end": 0.01,
-                "epsilon_steps": 1000,
+                "epsilon_steps": 5000,
                 "discount_factor": 0.99,
                 "learning_rate": 0.005,
                 "eval_episodes": 100,
-                "evaluate_every": 50}
+                "evaluate_every": 300}
 
 if __name__ == "__main__":
     start_t = time.time()
