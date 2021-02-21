@@ -94,12 +94,13 @@ def main(train_config):
     collector = InterleavedDojo(agent, buffer, push_buffer, sample_buffer,
                                 step, reset, env_params)
     collector.init_dojo(agent_params)
-    for i in range(train_config["train_episodes"]):
-        trace, reward = collector.episode_rollout(rng_episode)
+    for i in range(train_config["train_step_rollouts"]):
+        trace, reward = collector.steps_rollout(rng_episode,
+                                            env_params["max_steps_in_episode"])
 
 if __name__ == "__main__":
     train_config = {"seed": 42,
-                    "train_episodes": 301,
+                    "train_step_rollouts": 301,
                     "batch_size": 32,
                     "target_period": 50,
                     "replay_capacity": 2000,
@@ -117,4 +118,4 @@ if __name__ == "__main__":
     main(train_config)
     stop_t = time.time()
     print("Done with {} episodes after {:.2f}\
-          seconds".format(train_config["train_episodes"], stop_t - start_t))
+          seconds".format(train_config["train_step_rollouts"], stop_t - start_t))

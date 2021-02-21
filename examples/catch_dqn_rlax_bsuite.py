@@ -214,4 +214,4 @@ if __name__ == "__main__":
     main(train_config)
     stop_t = time.time()
     print("Done with {} steps after {:.2f} seconds".format(train_config["total_env_transitions"],
-                                                              stop_t - start_t))
+                                                           stop_t - start_t))

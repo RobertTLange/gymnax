@@ -10,7 +10,6 @@ class BaseDojo(object):
         self.step = step
         self.reset = reset
         self.env_params = env_params
-        self.max_steps_in_episode = env_params["max_steps_in_episode"]
 
     def action_selection(self, key, obs, agent_params, actor_state):
         """ Compute action to be executed in environment. """
@@ -88,7 +87,7 @@ class BaseDojo(object):
         return carry, y
 
     @partial(jit, static_argnums=(0, 3))
-    def lax_rollout(self, key_input, env_params, max_steps_in_episode,
+    def lax_rollout(self, key_input, env_params, num_steps,
                     agent_params, actor_state, learner_state):
         """ Rollout a gymnax episode with lax.scan. """
         obs, state = self.reset(key_input, env_params)
@@ -96,37 +95,36 @@ class BaseDojo(object):
                             self.actor_learner_step,
                             [key_input, obs, state, env_params,
                              agent_params, actor_state, learner_state],
-                            [jnp.zeros(max_steps_in_episode)])
+                            [jnp.zeros(num_steps)])
         return scan_out1, jnp.array(scan_out2).squeeze()
 
     @partial(jit, static_argnums=(0, 3))
-    def vmap_rollout(self, key_input, env_params, max_steps_in_episode,
+    def vmap_rollout(self, key_input, env_params, num_steps,
                      agent_params, actor_state, learner_state):
         """ Jit + vmap wrapper around scanned episode rollout. """
         rollout_map = vmap(self.lax_rollout,
                            in_axes=(0, None, None, None, None, None),
                            out_axes=0)
         traces, rewards = rollout_map(key_input, env_params,
-                                      max_steps_in_episode,
-                                      agent_params,
+                                      num_steps, agent_params,
                                       actor_state, learner_state)
         return traces, rewards
 
-    def episode_rollout(self, key_rollout, agent_params=None):
+    def steps_rollout(self, key_rollout, num_steps, agent_params=None):
         """ Jitted episode rollout for single episode. """
         try:
             # Different cases: agent_params explicitly supplied/when not
             if agent_params is None:
                 trace, reward = self.lax_rollout(key_rollout,
                                                  self.env_params,
-                                                 self.max_steps_in_episode,
+                                                 num_steps,
                                                  self.agent_params,
                                                  self.actor_state,
                                                  self.learner_state)
             else:
                 trace, reward = self.lax_rollout(key_rollout,
                                                  self.env_params,
-                                                 self.max_steps_in_episode,
+                                                 num_steps,
                                                  agent_params,
                                                  self.actor_state,
                                                  self.learner_state)
@@ -136,25 +134,25 @@ class BaseDojo(object):
                                   "of the actor and learner.")
         return trace, reward
 
-    def batch_rollout(self, key_rollout, agent_params=None):
+    def batch_rollout(self, key_rollout, num_steps, agent_params=None):
         """ Vmapped episode rollout for set of episodes. """
         try:
             # Different cases: agent_params explicitly supplied/when not
             if agent_params is None:
                 traces, rewards = self.vmap_rollout(key_rollout,
                                                     self.env_params,
-                                                    self.max_steps_in_episode,
+                                                    num_steps,
                                                     self.agent_params,
                                                     self.actor_state,
                                                     self.learner_state)
             else:
                 traces, rewards = self.vmap_rollout(key_rollout,
                                                     self.env_params,
-                                                    self.max_steps_in_episode,
+                                                    num_steps,
                                                     agent_params,
                                                     self.actor_state,
                                                     self.learner_state)
         except AttributeError as err:
             raise AttributeError(f"{err}. Please initialize the "
-                                  "agent params and actor/learner states.")
+                                  "agent params and/or actor/learner states.")
         return traces, rewards
