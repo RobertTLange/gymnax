@@ -37,6 +37,11 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+## 06/03/21 - Start adding minatar environments
+
+- Start with asterix, install minatar and setup shell, imports, testing, running the environment on numpy
+
+
 ## 21/02/21 - Check if DQN is actually learning II
 
 - Add auto termination and reset to wrappers

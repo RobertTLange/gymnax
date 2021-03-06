@@ -139,6 +139,8 @@ class BaseDojo(object):
             raise AttributeError(f"{err}. Please initialize the "
                                   "agent's parameters and the states "
                                   "of the actor and learner.")
+        # Update the agent params after the rollout
+        self.agent_params = trace[4]
         return trace, reward
 
     def batch_rollout(self, key_rollout, num_steps, agent_params=None):

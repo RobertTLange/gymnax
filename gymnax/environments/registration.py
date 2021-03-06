@@ -18,6 +18,10 @@ from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
 from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
 
 # =============================================================================
+from gymnax.environments.minatar import (reset_asterix, step_asterix,
+                                         params_asterix)
+
+# =============================================================================
 from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
 
 
@@ -38,6 +42,8 @@ def make(env_id: str, seed_id: int = 0):
         reset, step, env_params = reset_acrobot, step_acrobot, params_acrobot
     elif env_id == "Catch-bsuite":
         reset, step, env_params = reset_catch, step_catch, params_catch
+    elif env_id == "Asterix-MinAtar":
+        reset, step, env_params = reset_asterix, step_asterix, params_asterix
     elif env_id == "Bandit-misc":
         reset, step, env_params = reset_bandit, step_bandit, params_bandit
     else:

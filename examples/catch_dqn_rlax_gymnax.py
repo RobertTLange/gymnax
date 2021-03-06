@@ -110,14 +110,14 @@ def main(train_config):
 
 if __name__ == "__main__":
     train_config = {"seed": 42,
-                    "train_step_rollouts": 100,
+                    "train_step_rollouts": 10,
                     "batch_size": 32,
                     "target_period": 50,
                     "replay_capacity": 2000,
                     "hidden_units": 50,
                     "epsilon_begin": 1.,
                     "epsilon_end": 0.01,
-                    "epsilon_steps": 10000,
+                    "epsilon_steps": 5000,
                     "discount_factor": 0.99,
                     "learning_rate": 0.005,
                     "eval_episodes": 100,
