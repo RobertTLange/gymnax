@@ -41,6 +41,7 @@ def step(rng_input, params, state, action):
                             + (state["spawn_timer"] > 0) * state["spawn_timer"])
 
     # Resolve player action via implicit conditional updates of coordinates
+    # TODO: Add no-op!
     player_x = (jnp.maximum(0, state["player_x"] - 1) * (action == 0)  # l
                 + jnp.minimum(9, state["player_x"] + 1) * (action == 2)  # r
                 + state["player_x"] * jnp.logical_and(action != 0,
@@ -81,6 +82,7 @@ def step(rng_input, params, state, action):
     state["spawn_speed"] -= spawn_speed_cond
     # 4. Update ramp_index
     state["ramp_index"] += jnp.logical_and(ramp_cond, 1 - timer_cond)
+    # TODO: Add terminal again to state dictionary
     return get_obs(state), state, reward, done, {}
 
 
