@@ -13,6 +13,7 @@ params_asterix = {
                   "init_move_interval": 5,
                   "shot_cool_down": 5,
                  }
+
 """
 - Player moves freely along 4 cardinal dirs.
 - Enemies and treasure spawn from the sides.
@@ -53,7 +54,7 @@ def step(rng_input, params, state, action):
     state["player_y"] = player_y
 
     # Update entities, get reward and figure out termination
-    state, reward, done = state, 0, 0 # update_entities(state)
+    state, reward, done = update_entities(state)
 
     # Update various timers
     state["spawn_timer"] -= 1
@@ -82,39 +83,6 @@ def step(rng_input, params, state, action):
     return get_obs(state), state, reward, done, {}
 
 
-def update_entities(state):
-    """ Update positions of the entities and return reward, done. """
-    done = False
-    reward = 0
-    entities = []
-    # Update entities
-    for i in range(len(state["entities"])):
-        x = state["entities"]
-        if x is not None:
-            if x[0:2] == [state["player_x"], state["player_y"]]:
-                if state["entities"][i][3]:
-                    state["entities"][i] = None
-                    reward += 1
-                else:
-                    done = True
-
-    if state["move_timer"] ==0:
-        state["move_timer"] = state["move_speed"]
-        for i in range(len(state["entities"])):
-            x = state["entities"]
-            if(x is not None):
-                x[0] += 1 if x[2] else -1
-                if x[0] < 0 or x[0] > 9:
-                    state["entities"] = None
-                if x[0:2] == [state["player_x"], state["palyer_y"]]:
-                    if state["entities"]:
-                        state["entities"] = None
-                        reward += 1
-                    else:
-                        done = True
-    return state, reward, done
-
-
 def reset(rng_input, params):
     """ Reset environment state by reseting state to fixed position. """
     state = {
@@ -127,7 +95,6 @@ def reset(rng_input, params):
         "move_timer": params["init_move_interval"],
         "ramp_timer": params["ramp_interval"],
         "ramp_index": 0,
-        "terminal": 0,
         "entities": jnp.zeros((8, 5), dtype=int)
     }
     return get_obs(state), state
@@ -199,6 +166,59 @@ def while_sample_slots(rng_input, state_entities):
     id_and_free = jax.lax.while_loop(condition_to_check, update, init_val)
     # Return slot id and whether it is free
     return id_and_free[0], id_and_free[1]
+
+
+def update_entities(state):
+    """ Update positions of the entities and return reward, done. """
+    done, reward = False, 0
+    # Loop over entities and check for collisions - either gold or enemy
+    for i in range(8):
+        x = state["entities"][i]
+        slot_filled = (x[4] != 0)
+        collision = jnp.logical_and(
+                        x[0:2] == [state["player_x"], state["player_y"]],
+                        slot_filled)
+        # If collision with gold: empty gold and give positive reward
+        collision_gold = jnp.logical_and(collision, x[3])
+        reward += collision_gold
+        state["entities"] = jax.ops.index_update(state["entities"], i,
+                                                 x * (1 - collision_gold))
+        # If collision with enemy: terminate the episode
+        collision_enemy = jnp.logical_and(collision, 1 - x[3])
+        done = collision_enemy
+
+    # Loop over entities and move them in direction
+    time_to_move = (state["move_timer"] == 0)
+    state["move_timer"] = (time_to_move * state["move_speed"]
+                           + (1 - time_to_move) * state["move_speed"])
+    for i in range(8):
+        x = state["entities"][i]
+        slot_filled = (x[4] != 0)
+        lr = x[2]
+        # Update position left and right move
+        x = jax.ops.index_update(x, 0,
+                                 (slot_filled * (x[0] + 1 * lr - 1 * (1 - lr))
+                                 + (1 - slot_filled) * x[0]))
+
+        # Update if entity moves out of the frame - reset everything to zeros
+        outside_of_frame = jnp.logical_or(x[0] < 0, x[0] > 9)
+        state["entities"] = jax.ops.index_update(state["entities"], i,
+                                                 x * slot_filled
+                                                 * (1 - outside_of_frame))
+
+        # Update if entity moves into the player after its state is updated
+        collision = jnp.logical_and(
+                        x[0:2] == [state["player_x"], state["player_y"]],
+                        slot_filled)
+        # If collision with gold: empty gold and give positive reward
+        collision_gold = jnp.logical_and(collision, x[3])
+        reward += collision_gold
+        state["entities"] = jax.ops.index_update(state["entities"], i,
+                                                 x * (1 - collision_gold))
+        # If collision with enemy: terminate the episode
+        collision_enemy = jnp.logical_and(collision, 1 - x[3])
+        done = collision_enemy
+    return state, reward, done
 
 
 reset_asterix = jit(reset)
