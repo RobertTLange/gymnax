@@ -31,6 +31,7 @@ params_asterix = {
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
     # Spawn enemy if timer is up - sample at each step and mask
+    # TODO: Add conditional for case when there is no free slot
     entity, slot = spawn_entity(rng_input, state)
     state["entities"] = ((state["spawn_timer"] == 0) *
                           jax.ops.index_update(state["entities"],
@@ -95,6 +96,7 @@ def reset(rng_input, params):
         "move_timer": params["init_move_interval"],
         "ramp_timer": params["ramp_interval"],
         "ramp_index": 0,
+        "terminal": 0,
         "entities": jnp.zeros((8, 5), dtype=int)
     }
     return get_obs(state), state

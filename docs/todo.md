@@ -37,6 +37,16 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+## 17/03/21 - asterix jitted step transition
+
+- Added a step transition through which we can jit for asterix. Main problem was the sampling from open slots for coins/enemies
+- Currently I am circumventing the concetrization problem of sampling from an `jnp.where` array of free slots. I permute the list of all ids and run a while loop until we find a slot that is free.
+- Next:
+    - Add conditional statement workaround for when no slot is free
+    - Add tests for individual pieces - harder for full loop of transitions due to random sampling
+    - Add visual check that things look correct
+- Design question: Keep same action range of 6 for all environments?
+
 ## 06/03/21 - Start adding minatar environments
 
 - Start with asterix, install minatar and setup shell, imports, testing, running the environment on numpy
