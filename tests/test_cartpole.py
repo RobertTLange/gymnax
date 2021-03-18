@@ -7,7 +7,7 @@ import numpy as np
 
 
 class TestCartPole(unittest.TestCase):
-    num_episodes, num_steps = 10, 150
+    num_episodes, num_steps = 100, 150
     tolerance = 1e-04
 
     def test_cartpole_step(self):

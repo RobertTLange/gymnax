@@ -15,6 +15,7 @@ params_asterix = {
                  }
 
 """
+ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
 - Player moves freely along 4 cardinal dirs.
 - Enemies and treasure spawn from the sides.
 - A reward of +1 is given for picking up treasure.

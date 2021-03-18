@@ -37,6 +37,12 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+## 18/03/21 - breakout jitted step transition
+
+- Start working on deterministic breakout minatar environment
+- Add reset and step - also running with jit!
+- Add test for reset and step. Atm there is something wrong with step transition - maybe reflection?!
+
 ## 17/03/21 - asterix jitted step transition
 
 - Added a step transition through which we can jit for asterix. Main problem was the sampling from open slots for coins/enemies

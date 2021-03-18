@@ -7,6 +7,7 @@ from jax import jit
 
 
 """
+ENVIRONMENT DESCRIPTION - 'Breakout-MinAtar'
 - Player controls paddle on bottom of screen.
 - Must bounce ball to break 3 rows if bricks along top of screen.
 - A reward of +1 is given for each broken brick.
