@@ -38,10 +38,13 @@
     - Implement catch environment from bsuite
 
 
-## 22/03/21 - Fix bug that causes breakout test fail
+## 22/03/21 - Fix bug that causes breakout test fail + Start freeway
 
 - Be careful: By default minatar has a sticky_action_prob of 0.1
 - Fix elif conditional with spawn_bricks. I really need to work more test driven!
+- Respawning has to be checked! Bit afraid that I missed something with strikes, etc.
+- reward in breakout is off!
+- Start working on freeway placeholder - start with tests!
 
 ## 18/03/21 - breakout jitted step transition
 

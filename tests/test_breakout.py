@@ -7,7 +7,7 @@ from minatar import Environment
 
 
 class TestBreakout(unittest.TestCase):
-    num_episodes, num_steps = 10, 2
+    num_episodes, num_steps = 10, 100
     tolerance = 1e-04
     env_name = 'Breakout-MinAtar'
     action_space = [0, 1, 3]
@@ -51,7 +51,7 @@ class TestBreakout(unittest.TestCase):
                     break
 
     def test_breakout_reset(self):
-        """ Test reset obs/state is in space of OpenAI version. """
+        """ Test reset obs/state is in space of MinAtar NumPy version. """
         env = Environment('breakout', sticky_action_prob=0.0)
         rng, reset, step, env_params = gymnax.make(TestBreakout.env_name)
         obs_shape = (10, 10, 4)
@@ -72,5 +72,6 @@ class TestBreakout(unittest.TestCase):
                                atol=TestBreakout.tolerance)
             assert np.allclose(obs_gym[:, :, 3], obs_jax[:, :, 3],
                                atol=TestBreakout.tolerance)
+            # Last action encoded in separate channel - initially same
             assert np.allclose(obs_jax[:, :, 1], obs_jax[:, :, 2],
                                atol=TestBreakout.tolerance)

@@ -153,4 +153,4 @@ def get_obs(state):
 
 
 reset_breakout = jit(reset)
-step_breakout = step
+step_breakout = jit(step)
