@@ -14,7 +14,7 @@ class TestBreakout(unittest.TestCase):
 
     def test_breakout_step(self):
         """ Test a step transition for the env. """
-        env = Environment('breakout')
+        env = Environment('breakout', sticky_action_prob=0.0)
         rng, reset, step, env_params = gymnax.make(TestBreakout.env_name)
 
         # Loop over test episodes
@@ -23,7 +23,7 @@ class TestBreakout(unittest.TestCase):
             # Loop over test episode steps
             for s in range(TestBreakout.num_steps):
                 action = np.random.choice(TestBreakout.action_space)
-                state_gym = state = {'ball_dir': env.env.ball_dir,
+                state_jax = state = {'ball_dir': env.env.ball_dir,
                                      'ball_x': env.env.ball_x,
                                      'ball_y': env.env.ball_y,
                                      'brick_map': env.env.brick_map,
@@ -37,7 +37,7 @@ class TestBreakout(unittest.TestCase):
 
                 rng, rng_input = jax.random.split(rng)
                 obs_jax, state_jax, reward_jax, done_jax, _ = step(rng_input,
-                                                                   env_params, state_gym,
+                                                                   env_params, state_jax,
                                                                    action)
 
                 # Check for correctness of transitions
@@ -46,9 +46,13 @@ class TestBreakout(unittest.TestCase):
                 self.assertEqual(done_gym, done_jax)
                 assert (obs_gym == obs_jax).all()
 
+                # Start a new episode if the previous one has terminated
+                if done_gym:
+                    break
+
     def test_breakout_reset(self):
         """ Test reset obs/state is in space of OpenAI version. """
-        env = Environment('breakout')
+        env = Environment('breakout', sticky_action_prob=0.0)
         rng, reset, step, env_params = gymnax.make(TestBreakout.env_name)
         obs_shape = (10, 10, 4)
         state_keys = ['ball_dir', 'ball_x', 'ball_y',

@@ -31,7 +31,6 @@ def step(rng_input, params, state, action):
     reward = 0
     done = False
     info = {}
-
     state["pos"] = (jnp.maximum(0, state["pos"] - 1) * (action == 1)
                     + jnp.minimum(9, state["pos"] + 1) * (action == 3)
                     + state["pos"] * jnp.logical_and(action != 1,
@@ -78,6 +77,7 @@ def step(rng_input, params, state, action):
                                                new_y, new_x, 0)
                           + (1 - strike_bool) * state["brick_map"])
     new_y = (strike_bool * state["last_y"] + (1 - strike_bool) * new_y)
+
     state["ball_dir"] = (strike_bool * jnp.array([3,2,1,0])[state["ball_dir"]]
                          + (1 - strike_bool) * state["ball_dir"])
 
@@ -89,6 +89,7 @@ def step(rng_input, params, state, action):
                           jax.ops.index_update(state["brick_map"],
                                                jax.ops.index[1:4, :], 1)
                           + (1 - spawn_bricks) * state["brick_map"])
+
     redirect_ball1 = jnp.logical_and(new_bricks,
                                      state["ball_x"] == state["pos"])
     state["ball_dir"] = (redirect_ball1 *
@@ -96,12 +97,12 @@ def step(rng_input, params, state, action):
                          + (1 - redirect_ball1) * state["ball_dir"])
     new_y = redirect_ball1 * state["last_y"] + (1 - redirect_ball1) * new_y
 
-    redirect_ball2 = jnp.logical_and(1 - redirect_ball1, new_x == state["pos"])
+    redirect_ball2a = jnp.logical_and(new_bricks, 1 - redirect_ball1)
+    redirect_ball2 = jnp.logical_and(redirect_ball2a, new_x == state["pos"])
     state["ball_dir"] = (redirect_ball2 *
                          jnp.array([2, 3, 0, 1])[state["ball_dir"]]
                          + (1 - redirect_ball2) * state["ball_dir"])
     new_y = redirect_ball2 * state["last_y"] + (1 - redirect_ball2) * new_y
-
     redirect_cond = jnp.logical_and(1 - redirect_ball1, 1 - redirect_ball2)
     terminal_cond = jnp.logical_and(new_bricks, redirect_cond)
     state["terminal"] = terminal_cond
@@ -110,7 +111,6 @@ def step(rng_input, params, state, action):
                        state["strike"] * strike_toggle)
     state["ball_x"] = new_x
     state["ball_y"] = new_y
-
     return get_obs(state), state, reward, done, info
 
 
@@ -137,7 +137,7 @@ def reset(rng_input, params):
 
 def get_obs(state):
     """ Return observation from raw state trafo. """
-    obs = jnp.zeros((10, 10, 4),dtype=bool)
+    obs = jnp.zeros((10, 10, 4), dtype=bool)
     # Set the position of the ball, paddle, trail and the brick map
     obs = jax.ops.index_update(obs, jax.ops.index[state["ball_y"],
                                                   state["ball_x"],
@@ -153,4 +153,4 @@ def get_obs(state):
 
 
 reset_breakout = jit(reset)
-step_breakout = jit(step)
+step_breakout = step

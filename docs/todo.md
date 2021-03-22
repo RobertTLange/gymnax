@@ -37,6 +37,12 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+
+## 22/03/21 - Fix bug that causes breakout test fail
+
+- Be careful: By default minatar has a sticky_action_prob of 0.1
+- Fix elif conditional with spawn_bricks. I really need to work more test driven!
+
 ## 18/03/21 - breakout jitted step transition
 
 - Start working on deterministic breakout minatar environment
