@@ -24,7 +24,8 @@ ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
 """
 
 # Default environment parameters
-params_freeway = {}
+params_freeway = {"player_speed": 3,
+                  "time_limit": 2500}
 
 
 def step(rng_input, params, state, action):
@@ -37,8 +38,12 @@ def step(rng_input, params, state, action):
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = {"pos":,
-             "cars": }
+    state = {"pos": 9,
+             "cars": randomize_cars(rng_input,
+                                    jnp.zeros((8, 4), dtype=int), True),
+             "move_timer": params["player_speed"],
+             "terminate_timer": params["time_limit"],
+             "terminal": False}
     return get_obs(state), state
 
 
@@ -74,7 +79,7 @@ def randomize_cars(rng_input, old_cars, initialize=False):
     speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
     directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
     speeds *= directions
-    new_cars = jnp.zeros((8, 4))
+    new_cars = jnp.zeros((8, 4), dtype=int)
 
     # Loop over all 8 cars and set their data
     for i in range(8):
