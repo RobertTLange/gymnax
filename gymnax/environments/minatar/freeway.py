@@ -68,5 +68,27 @@ def get_obs(state):
     return obs
 
 
+def randomize_cars(rng_input, old_cars, initialize=False):
+    """ Randomize car speeds & directions. Reset position if initialize. """
+    rng_speed, rng_dirs = jax.random.split(rng_input)
+    speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
+    directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
+    speeds *= directions
+    new_cars = jnp.zeros((8, 4))
+
+    # Loop over all 8 cars and set their data
+    for i in range(8):
+        # Reset both speeds, directions and positions
+        new_cars = jax.ops.index_update(new_cars, jax.ops.index[i, :],
+                                    [0, i+1, jnp.abs(speeds[i]), speeds[i]])
+        # Reset only speeds and directions
+        old_cars = jax.ops.index_update(old_cars, jax.ops.index[i, 2:4],
+                                        [jnp.abs(speeds[i]), speeds[i]])
+
+    # Mask the car array manipulation according to initialize
+    cars = initialize * new_cars + (1 - initialize) * old_cars
+    return cars
+
+
 reset_freeway = jit(reset)
 step_freeway = jit(step)
