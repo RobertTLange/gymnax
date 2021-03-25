@@ -4,7 +4,7 @@ import gymnax
 import unittest, math
 import numpy as np
 from minatar import Environment
-from gymnax.environments.minatar.freeway import get_obs
+from gymnax.environments.minatar.freeway import get_obs, randomize_cars
 
 class TestFreeway(unittest.TestCase):
     num_episodes, num_steps = 10, 100
@@ -42,25 +42,25 @@ class TestFreeway(unittest.TestCase):
     #             if done_gym:
     #                 break
 
-    # def test_freeway_reset(self):
-    #     """ Test reset obs/state is in space of OpenAI version. """
-    #     env = Environment('breakout', sticky_action_prob=0.0)
-    #     rng, reset, step, env_params = gymnax.make(TestFreeway.env_name)
-    #     obs_shape = (10, 10, 6)
-    #     state_keys = []
-    #     for ep in range(TestFreeway.num_episodes):
-    #         rng, rng_input = jax.random.split(rng)
-    #         obs_jax, state = reset(rng_input, env_params)
-    #         # Check existence of state keys
-    #         for k in state_keys:
-    #             assert k in state.keys()
-    #         env.reset()
-    #         obs_gym = env.state()
-    #         # Check observation space
-    #         for i in range(3):
-    #             self.assertTrue(obs_shape[i] == obs_jax.shape[i])
-    #         assert np.allclose(obs_gym, obs_jax,
-    #                            atol=TestFreeway.tolerance)
+    def test_freeway_reset(self):
+        """ Test reset obs/state is in space of OpenAI version. """
+        env = Environment('freeway', sticky_action_prob=0.0)
+        rng, reset, step, env_params = gymnax.make(TestFreeway.env_name)
+        obs_shape = (10, 10, 7)
+        state_keys = []
+        for ep in range(TestFreeway.num_episodes):
+            rng, rng_input = jax.random.split(rng)
+            obs_jax, state = reset(rng_input, env_params)
+            # Check existence of state keys
+            for k in state_keys:
+                assert k in state.keys()
+            env.reset()
+            obs_gym = env.state()
+            # Check observation space
+            for i in range(3):
+                self.assertTrue(obs_shape[i] == obs_jax.shape[i])
+            # Can't check exact obervation due to randomness in cars
+            # This is checked independently!
 
     def test_freeway_get_obs(self):
         env = Environment('freeway', sticky_action_prob=0.0)
@@ -84,15 +84,41 @@ class TestFreeway(unittest.TestCase):
                 if done_gym:
                     break
 
+    def test_freeway_randomize_cars(self):
+        # Test initialization version of `randomize_cars`
+        for i in range(100):
+            speeds = np.random.randint(1, 6, 8)
+            directions = np.random.choice([-1, 1], 8)
+            cars_gym = det_randomize_cars_numpy(speeds, directions,
+                                                np.zeros((8, 4)), 1)
+            cars_jax = randomize_cars(speeds, directions,
+                                      np.zeros((8, 4)), 1)
+            assert (np.array(cars_gym) == cars_jax).all()
+
+        # Test no initialization version of `randomize_cars`
+        for i in range(100):
+            speeds = np.random.randint(1, 6, 8)
+            directions = np.random.choice([-1, 1], 8)
+            cars_gym = det_randomize_cars_numpy(speeds, directions,
+                                                np.zeros((8, 4)), 1)
+            cars_jax = randomize_cars(speeds, directions,
+                                      np.zeros((8, 4)), 1)
+            assert (np.array(cars_gym) == cars_jax).all()
+        return
+
+
 def get_jax_state_from_numpy(env):
+    """ A helper for summarizing numpy env info into JAX state. """
     state_jax = {"pos": env.env.pos,
                  "cars": env.env.cars,
                  "move_timer": env.env.move_timer,
                  "terminate_timer": env.env.terminate_timer,
                  "terminal": env.env.terminal}
-    return
+    return state_jax
+
 
 def get_obs_numpy(env):
+    """ A helper state(self) function from the numpy env. """
     obs = np.zeros((10, 10, len(env.env.channels)), dtype=bool)
     obs[env.env.pos, 4, env.env.channels['chicken']] = 1
     for car in env.env.cars:
@@ -114,3 +140,18 @@ def get_obs_numpy(env):
             trail = env.env.channels['speed5']
         obs[car[1],back_x, trail] = 1
     return obs
+
+
+def det_randomize_cars_numpy(speeds, directions, old_cars, initialize):
+    """ Helper _randomize_cars(self, initialize) function from numpy."""
+    # We have extracted all randomness for testing purposes
+    speeds_new = directions * speeds
+    if(initialize):
+        cars = []
+        for i in range(8):
+            cars += [[0, i+1, abs(speeds_new[i]), speeds_new[i]]]
+        return cars
+    else:
+        for i in range(8):
+            old_cars[i][2:4] = [abs(speeds_new[i]), speeds_new[i]]
+        return np.array(old_cars)

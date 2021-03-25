@@ -33,13 +33,54 @@ def step(rng_input, params, state, action):
     reward = 0
     done = False
     info = {}
+
+    if(a=='u' and self.move_timer==0):
+        self.move_timer = player_speed
+        self.pos = max(0, self.pos-1)
+    elif(a=='d' and self.move_timer==0):
+        self.move_timer = player_speed
+        self.pos = min(9, self.pos+1)
+
+    # Win condition
+    if(self.pos==0):
+        r+=1
+        self._randomize_cars(initialize=False)
+        self.pos = 9
+
+    # Update cars
+    for car in self.cars:
+        if(car[0:2]==[4,self.pos]):
+            self.pos = 9
+        if(car[2]==0):
+            car[2]=abs(car[3])
+            car[0]+=1 if car[3]>0 else -1
+            if(car[0]<0):
+                car[0]=9
+            elif(car[0]>9):
+                car[0]=0
+            if(car[0:2]==[4,self.pos]):
+                self.pos = 9
+        else:
+            car[2]-=1
+
+    # Update various timers
+    self.move_timer-=self.move_timer>0
+    self.terminate_timer-=1
+    if(self.terminate_timer<0):
+        self.terminal = True
+    return r, self.terminal
     return get_obs(state), state, reward, done, info
 
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
+    # Sample the initial speeds and directions of the cars
+    rng_speed, rng_dirs = jax.random.split(rng_input)
+    speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
+    directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
+
     state = {"pos": 9,
-             "cars": randomize_cars(rng_input,
+             "cars": randomize_cars(speeds, directions,
                                     jnp.zeros((8, 4), dtype=int), True),
              "move_timer": params["player_speed"],
              "terminate_timer": params["time_limit"],
@@ -73,26 +114,26 @@ def get_obs(state):
     return obs
 
 
-def randomize_cars(rng_input, old_cars, initialize=False):
+def randomize_cars(speeds, directions, old_cars,
+                   initialize=0):
     """ Randomize car speeds & directions. Reset position if initialize. """
-    rng_speed, rng_dirs = jax.random.split(rng_input)
-    speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
-    directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
-    speeds *= directions
+    speeds_new = directions * speeds
     new_cars = jnp.zeros((8, 4), dtype=int)
 
     # Loop over all 8 cars and set their data
     for i in range(8):
         # Reset both speeds, directions and positions
         new_cars = jax.ops.index_update(new_cars, jax.ops.index[i, :],
-                                    [0, i+1, jnp.abs(speeds[i]), speeds[i]])
+                                        [0, i+1, jnp.abs(speeds_new[i]),
+                                         speeds_new[i]])
         # Reset only speeds and directions
         old_cars = jax.ops.index_update(old_cars, jax.ops.index[i, 2:4],
-                                        [jnp.abs(speeds[i]), speeds[i]])
+                                        [jnp.abs(speeds_new[i]),
+                                         speeds_new[i]])
 
     # Mask the car array manipulation according to initialize
     cars = initialize * new_cars + (1 - initialize) * old_cars
-    return cars
+    return jnp.array(cars, dtype=int)
 
 
 reset_freeway = jit(reset)
