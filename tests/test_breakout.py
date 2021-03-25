@@ -23,15 +23,15 @@ class TestBreakout(unittest.TestCase):
             # Loop over test episode steps
             for s in range(TestBreakout.num_steps):
                 action = np.random.choice(TestBreakout.action_space)
-                state_jax = state = {'ball_dir': env.env.ball_dir,
-                                     'ball_x': env.env.ball_x,
-                                     'ball_y': env.env.ball_y,
-                                     'brick_map': env.env.brick_map,
-                                     'last_x': env.env.last_x,
-                                     'last_y': env.env.last_y,
-                                     'pos': env.env.pos,
-                                     'strike': env.env.strike,
-                                     'terminal': env.env.terminal}
+                state_jax = {'ball_dir': env.env.ball_dir,
+                             'ball_x': env.env.ball_x,
+                             'ball_y': env.env.ball_y,
+                             'brick_map': env.env.brick_map,
+                             'last_x': env.env.last_x,
+                             'last_y': env.env.last_y,
+                             'pos': env.env.pos,
+                             'strike': env.env.strike,
+                             'terminal': env.env.terminal}
                 reward_gym, done_gym = env.act(action)
                 obs_gym = env.state()
 
