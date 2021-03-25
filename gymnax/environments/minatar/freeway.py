@@ -30,45 +30,44 @@ params_freeway = {"player_speed": 3,
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
-    reward = 0
-    done = False
-    info = {}
-
-    if(a=='u' and self.move_timer==0):
-        self.move_timer = player_speed
-        self.pos = max(0, self.pos-1)
-    elif(a=='d' and self.move_timer==0):
-        self.move_timer = player_speed
-        self.pos = min(9, self.pos+1)
+    reward, done, info = 0, False, {}
+    # TODO: Replace all if clauses
+    # Up action
+    if (action == 2 and state["move_timer"] == 0):
+        state["move_timer"] = params["player_speed"]
+        state["pos"] = max(0, state["pos"] - 1)
+    elif (action == 4 and state["move_timer"] == 0):
+        state["move_timer"] = params["player_speed"]
+        state["pos"] = min(9, state["pos"] + 1)
 
     # Win condition
-    if(self.pos==0):
-        r+=1
-        self._randomize_cars(initialize=False)
-        self.pos = 9
+    if state["pos"] == 0:
+        reward += 1
+        cars = randomize_cars(initialize=False)
+        state["pos"] = 9
 
     # Update cars
-    for car in self.cars:
-        if(car[0:2]==[4,self.pos]):
-            self.pos = 9
-        if(car[2]==0):
-            car[2]=abs(car[3])
-            car[0]+=1 if car[3]>0 else -1
-            if(car[0]<0):
-                car[0]=9
-            elif(car[0]>9):
+    for car in cars:
+        if car[0:2] == [4, state["pos"]]:
+            state["pos"] = 9
+        if car[2] == 0:
+            car[2] = abs(car[3])
+            car[0] += 1 if car[3] > 0 else -1
+            if car[0] < 0:
+                car[0] = 9
+            elif car[0] > 9:
                 car[0]=0
-            if(car[0:2]==[4,self.pos]):
-                self.pos = 9
+            if car[0:2] == [4, state["pos"]]:
+                state["pos"]
         else:
-            car[2]-=1
+            car[2] -= 1
+    # TODO: Figure out how to update the car state
+    state["cars"] = cars
 
     # Update various timers
-    self.move_timer-=self.move_timer>0
-    self.terminate_timer-=1
-    if(self.terminate_timer<0):
-        self.terminal = True
-    return r, self.terminal
+    state["move_timer"] -= (state["move_timer"] > 0)
+    state["terminate_timer"] -= 1
+    state["terminal"] = (state["terminate_timer"] < 0)
     return get_obs(state), state, reward, done, info
 
 
