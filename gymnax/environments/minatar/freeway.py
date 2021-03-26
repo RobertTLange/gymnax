@@ -28,10 +28,8 @@ params_freeway = {"player_speed": 3,
                   "time_limit": 2500}
 
 
-def step(rng_input, params, state, action):
-    """ Perform single timestep state transition. """
-    reward, done, info = 0, False, {}
-    # Update position of agent only if timer condition is met!
+def step_agent(action, state, params):
+    """ Perform 1st part of step transition for agent. """
     cond_up = jnp.logical_and(action == 2, state["move_timer"] == 0)
     cond_down = jnp.logical_and(action == 4, state["move_timer"] == 0)
     any_cond = jnp.logical_or(cond_up, cond_down)
@@ -42,22 +40,15 @@ def step(rng_input, params, state, action):
                     + cond_down * state_down)
     state["move_timer"] = ((1 - any_cond) * state["move_timer"]
                            + any_cond * params["player_speed"])
-
     # Check win cond. - increase reward, randomize cars, reset agent position
     win_cond = (state["pos"] == 0)
-    reward += 1 * win_cond
-    # Note: At each step we are sampling speed and dir to avoid if cond
-    rng_speed, rng_dirs = jax.random.split(rng_input)
-    speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
-    directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
-    win_cars = randomize_cars(speeds, directions, state["cars"], False)
-    state["cars"] = jax.ops.index_update(state["cars"],
-                                         jax.ops.index[:, :],
-                                         win_cars * win_cond +
-                                         state["cars"] * (1 - win_cond))
-
+    reward = 1 * win_cond
     state["pos"] = 9 * win_cond + state["pos"] * (1 - win_cond)
+    return state, reward, win_cond
 
+
+def step_cars(state):
+    """ Perform 3rd part of step transition for car. """
     # Update cars and check for collisions! - respawn agent at bottom
     for car_id in range(8):
         # Check for agent collision with car and if so reset agent
@@ -97,12 +88,34 @@ def step(rng_input, params, state, action):
         state["cars"] = jax.ops.index_update(state["cars"],
                                              jax.ops.index[car_id, 2],
                                              alt_upd_2)
+    return state
 
-    # Update various timers
+
+def step(rng_input, params, state, action):
+    """ Perform single timestep state transition. Decompose for testing. """
+    # 1. Update position of agent only if timer condition is met!
+    state, reward, win_cond = step_agent(action, state, params)
+
+    # 2. Sample a new configuration for the cars if agent 'won'
+    # Note: At each step we are sampling speed and dir to avoid if cond
+    # by masking - this is still faster after compilation than numpy version!
+    rng_speed, rng_dirs = jax.random.split(rng_input)
+    speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
+    directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
+    win_cars = randomize_cars(speeds, directions, state["cars"], False)
+    state["cars"] = jax.ops.index_update(state["cars"],
+                                         jax.ops.index[:, :],
+                                         win_cars * win_cond +
+                                         state["cars"] * (1 - win_cond))
+
+    # 3. Update cars and check for collisions! - respawn agent at bottom
+    state = step_cars(state)
+
+    # 4. Update various timers
     state["move_timer"] -= (state["move_timer"] > 0)
     state["terminate_timer"] -= 1
     state["terminal"] = (state["terminate_timer"] < 0)
-    return get_obs(state), state, reward, done, info
+    return get_obs(state), state, reward, state["terminal"], {}
 
 
 def reset(rng_input, params):
