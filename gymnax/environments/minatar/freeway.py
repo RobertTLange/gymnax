@@ -31,38 +31,72 @@ params_freeway = {"player_speed": 3,
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
     reward, done, info = 0, False, {}
-    # TODO: Replace all if clauses
-    # Up action
-    if (action == 2 and state["move_timer"] == 0):
-        state["move_timer"] = params["player_speed"]
-        state["pos"] = max(0, state["pos"] - 1)
-    elif (action == 4 and state["move_timer"] == 0):
-        state["move_timer"] = params["player_speed"]
-        state["pos"] = min(9, state["pos"] + 1)
+    # Update position of agent only if timer condition is met!
+    cond_up = jnp.logical_and(action == 2, state["move_timer"] == 0)
+    cond_down = jnp.logical_and(action == 4, state["move_timer"] == 0)
+    any_cond = jnp.logical_or(cond_up, cond_down)
+    state_up = jnp.maximum(0, state["pos"] - 1)
+    state_down = jnp.minimum(9, state["pos"] + 1)
+    state["pos"] = ((1 - any_cond) * state["pos"]
+                    + cond_up * state_up
+                    + cond_down * state_down)
+    state["move_timer"] = ((1 - any_cond) * state["move_timer"]
+                           + any_cond * params["player_speed"])
 
-    # Win condition
-    if state["pos"] == 0:
-        reward += 1
-        cars = randomize_cars(initialize=False)
-        state["pos"] = 9
+    # Check win cond. - increase reward, randomize cars, reset agent position
+    win_cond = (state["pos"] == 0)
+    reward += 1 * win_cond
+    # Note: At each step we are sampling speed and dir to avoid if cond
+    rng_speed, rng_dirs = jax.random.split(rng_input)
+    speeds = jax.random.randint(rng_speed, shape=(8,), minval=1, maxval=6)
+    directions = jax.random.choice(rng_dirs, jnp.array([-1, 1]), shape=(8,))
+    win_cars = randomize_cars(speeds, directions, state["cars"], False)
+    state["cars"] = jax.ops.index_update(state["cars"],
+                                         jax.ops.index[:, :],
+                                         win_cars * win_cond +
+                                         state["cars"] * (1 - win_cond))
 
-    # Update cars
-    for car in cars:
-        if car[0:2] == [4, state["pos"]]:
-            state["pos"] = 9
-        if car[2] == 0:
-            car[2] = abs(car[3])
-            car[0] += 1 if car[3] > 0 else -1
-            if car[0] < 0:
-                car[0] = 9
-            elif car[0] > 9:
-                car[0]=0
-            if car[0:2] == [4, state["pos"]]:
-                state["pos"]
-        else:
-            car[2] -= 1
-    # TODO: Figure out how to update the car state
-    state["cars"] = cars
+    state["pos"] = 9 * win_cond + state["pos"] * (1 - win_cond)
+
+    # Update cars and check for collisions! - respawn agent at bottom
+    for car_id in range(8):
+        # Check for agent collision with car and if so reset agent
+        collision_cond = (state["cars"][car_id][0:2] == [4, state["pos"]])
+        state["pos"] = 9 * collision_cond + state["pos"] * (1-collision_cond)
+
+        # Check for exiting frame, reset car and then check collision again
+        car_cond = (state["cars"][car_id][2] == 0)
+        upd_2 = (car_cond * jnp.abs(state["cars"][car_id][3])
+                 + (1-car_cond) * state["cars"][car_id][2])
+        state["cars"] = jax.ops.index_update(state["cars"],
+                                             jax.ops.index[car_id, 2], upd_2)
+        upd_0 = (car_cond * (state["cars"][car_id][0]
+                             + 1 * (state["cars"][car_id][3] > 0)
+                             - 1 * (1 - (state["cars"][car_id][3] > 0)))
+                 + (1-car_cond) * state["cars"][car_id][0])
+        state["cars"] = jax.ops.index_update(state["cars"],
+                                             jax.ops.index[car_id, 0], upd_0)
+
+        cond_sm_0 = jnp.logical_and(car_cond, state["cars"][car_id][0] < 0)
+        upd_0_sm = cond_sm_0 * 9 + (1-cond_sm_0) * state["cars"][car_id][0]
+        state["cars"] = jax.ops.index_update(state["cars"],
+                                             jax.ops.index[car_id, 0],
+                                             upd_0_sm)
+        cond_gr_9 = jnp.logical_and(car_cond, state["cars"][car_id][0] > 9)
+        upd_0_gr = cond_gr_9 * 0 + (1-cond_gr_9) * state["cars"][car_id][0]
+        state["cars"] = jax.ops.index_update(state["cars"],
+                                             jax.ops.index[car_id, 0],
+                                             upd_0_gr)
+        # Check collision after car position update - respawn agent
+        cond_pos = jnp.logical_and(car_cond,
+                               state["cars"][car_id][0:2] == [4, state["pos"]])
+        state["pos"] = cond_pos * 9 + (1 - cond_pos) * state["pos"]
+        # Move car if no previous car_cond update
+        alt_upd_2 = (car_cond * state["cars"][car_id][2]
+                    + (1-car_cond) * (state["cars"][car_id][2]-1))
+        state["cars"] = jax.ops.index_update(state["cars"],
+                                             jax.ops.index[car_id, 2],
+                                             alt_upd_2)
 
     # Update various timers
     state["move_timer"] -= (state["move_timer"] > 0)

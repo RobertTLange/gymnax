@@ -1,13 +1,14 @@
 import jax
-import gym
+import jax.numpy as jnp
 import gymnax
 import unittest, math
 import numpy as np
 from minatar import Environment
 from gymnax.environments.minatar.freeway import get_obs, randomize_cars
 
+
 class TestFreeway(unittest.TestCase):
-    num_episodes, num_steps = 10, 100
+    num_episodes, num_steps = 10, 10
     tolerance = 1e-04
     env_name = 'Freeway-MinAtar'
     action_space = [0, 2, 4]
@@ -110,7 +111,7 @@ class TestFreeway(unittest.TestCase):
 def get_jax_state_from_numpy(env):
     """ A helper for summarizing numpy env info into JAX state. """
     state_jax = {"pos": env.env.pos,
-                 "cars": env.env.cars,
+                 "cars": jnp.array(env.env.cars),
                  "move_timer": env.env.move_timer,
                  "terminate_timer": env.env.terminate_timer,
                  "terminal": env.env.terminal}
