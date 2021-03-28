@@ -22,7 +22,7 @@ ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
 - 'alien_right':3, 'friendly_bullet':4, 'enemy_bullet':5
 - Observation has dimensionality (10, 10, 6)
 - Actions are encoded as follows: ['n','l','u','r','d','f']
-- Only actions 2, 4 and 5 ('u' and 'd', 'f') lead to a change!
+- Only actions 1, 3 and 5 ('l' and 'r', 'f') lead to a change!
 """
 
 # Default environment parameters
