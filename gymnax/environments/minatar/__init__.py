@@ -9,3 +9,7 @@ from gymnax.environments.minatar.breakout import (reset_breakout,
 from gymnax.environments.minatar.freeway import (reset_freeway,
                                                  step_freeway,
                                                  params_freeway)
+
+from gymnax.environments.minatar.seaquest import (reset_seaquest,
+                                                  step_seaquest,
+                                                  params_seaquest)

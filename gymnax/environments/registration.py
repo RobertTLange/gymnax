@@ -24,6 +24,8 @@ from gymnax.environments.minatar import (reset_breakout, step_breakout,
                                          params_breakout)
 from gymnax.environments.minatar import (reset_freeway, step_freeway,
                                          params_freeway)
+from gymnax.environments.minatar import (reset_seaquest, step_seaquest,
+                                         params_seaquest)
 
 # =============================================================================
 from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
@@ -45,9 +47,11 @@ def make(env_id: str, seed_id: int = 0):
                                    params_continuous_mountain_car)
     elif env_id == "Acrobot-v1":
         reset, step, env_params = reset_acrobot, step_acrobot, params_acrobot
+
     # 2. DeepMind's bsuite environments
     elif env_id == "Catch-bsuite":
         reset, step, env_params = reset_catch, step_catch, params_catch
+
     # 3. MinAtar Environments
     elif env_id == "Asterix-MinAtar":
         reset, step, env_params = reset_asterix, step_asterix, params_asterix
@@ -55,6 +59,9 @@ def make(env_id: str, seed_id: int = 0):
         reset, step, env_params = reset_breakout, step_breakout, params_breakout
     elif env_id == "Freeway-MinAtar":
         reset, step, env_params = reset_freeway, step_freeway, params_freeway
+    elif env_id == "Seaquest-MinAtar":
+        reset, step, env_params = reset_seaquest, step_seaquest, params_seaquest
+
     # 4. Other standard/popular environments
     elif env_id == "Bandit-misc":
         reset, step, env_params = reset_bandit, step_bandit, params_bandit

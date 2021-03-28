@@ -37,6 +37,11 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+## 28/03/21 - Start Seaquest - placeholder and reset
+
+- Problem with loops and dynamic slices. How can we overcome this problem?
+- Some form of max and masked updates?
+
 
 ## 22/03/21 - Fix bug that causes breakout test fail + Start freeway
 
@@ -45,6 +50,7 @@
 - Respawning has to be checked! Bit afraid that I missed something with strikes, etc.
 - reward in breakout is off!
 - Start working on freeway placeholder - start with tests!
+- Implement tests for all deterministic parts and rewrite step, reset such that this is possible!
 
 ## 18/03/21 - breakout jitted step transition
 
