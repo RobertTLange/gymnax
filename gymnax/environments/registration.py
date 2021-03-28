@@ -26,6 +26,9 @@ from gymnax.environments.minatar import (reset_freeway, step_freeway,
                                          params_freeway)
 from gymnax.environments.minatar import (reset_seaquest, step_seaquest,
                                          params_seaquest)
+from gymnax.environments.minatar import (reset_space_invaders,
+                                         step_space_invaders,
+                                         params_space_invaders)
 
 # =============================================================================
 from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
@@ -56,11 +59,17 @@ def make(env_id: str, seed_id: int = 0):
     elif env_id == "Asterix-MinAtar":
         reset, step, env_params = reset_asterix, step_asterix, params_asterix
     elif env_id == "Breakout-MinAtar":
-        reset, step, env_params = reset_breakout, step_breakout, params_breakout
+        reset, step, env_params = (reset_breakout, step_breakout,
+                                   params_breakout)
     elif env_id == "Freeway-MinAtar":
         reset, step, env_params = reset_freeway, step_freeway, params_freeway
     elif env_id == "Seaquest-MinAtar":
-        reset, step, env_params = reset_seaquest, step_seaquest, params_seaquest
+        reset, step, env_params = (reset_seaquest, step_seaquest,
+                                   params_seaquest)
+    elif env_id == "SpaceInvaders-MinAtar":
+        reset, step, env_params = (reset_space_invaders,
+                                   step_space_invaders,
+                                   params_space_invaders)
 
     # 4. Other standard/popular environments
     elif env_id == "Bandit-misc":
