@@ -8,7 +8,7 @@ from gymnax.environments.minatar.space_invaders import get_obs
 
 
 class TestSpaceInvaders(unittest.TestCase):
-    num_episodes, num_steps = 2, 5
+    num_episodes, num_steps = 2, 100
     tolerance = 1e-04
     env_name = 'SpaceInvaders-MinAtar'
     action_space = [0, 1, 3, 5]
@@ -53,13 +53,17 @@ class TestSpaceInvaders(unittest.TestCase):
         env = Environment('space_invaders', sticky_action_prob=0.0)
         rng, reset, step, env_params = gymnax.make(TestSpaceInvaders.env_name)
         obs_shape = (10, 10, 6)
-        state_keys = []
         for ep in range(TestSpaceInvaders.num_episodes):
             rng, rng_input = jax.random.split(rng)
-            obs_jax, state = reset(rng_input, env_params)
-            # Check existence of state keys
-            for k in state_keys:
-                assert k in state.keys()
+            obs_jax, state_jax = reset(rng_input, env_params)
+            state_gym = get_jax_state_from_numpy(env)
+
+            # Check existence and correctness of state keys
+            for k in state_gym.keys():
+                if type(state_gym[k]) == np.ndarray:
+                    assert (state_gym[k] == state_gym[k]).all()
+                else:
+                    assert state_gym[k] == state_gym[k]
             env.reset()
             obs_gym = env.state()
             # Check observation space
@@ -79,11 +83,11 @@ class TestSpaceInvaders(unittest.TestCase):
             for s in range(TestSpaceInvaders.num_steps):
                 action = np.random.choice(TestSpaceInvaders.action_space)
                 reward_gym, done_gym = env.act(action)
-                state_jax = get_jax_state_from_numpy(env)
+                state_gym = get_jax_state_from_numpy(env)
 
                 # Check for correctness of observations
                 obs_gym = get_obs_numpy(env)
-                obs_jax = get_obs(state_jax)
+                obs_jax = get_obs(state_gym)
                 assert (obs_gym == obs_jax).all()
 
                 # Start a new episode if the previous one has terminated
@@ -97,11 +101,12 @@ def get_jax_state_from_numpy(env):
                  "f_bullet_map": env.env.f_bullet_map,
                  "e_bullet_map": env.env.e_bullet_map,
                  "alien_map": env.env.alien_map,
+                 "alien_dir": env.env.alien_dir,
                  "enemy_move_interval": env.env.enemy_move_interval,
                  "alien_move_timer": env.env.alien_move_timer,
                  "alien_shot_timer": env.env.alien_shot_timer,
-                 "ramp_index": 0,
-                 "shot_timer": 0,
+                 "ramp_index": env.env.ramp_index,
+                 "shot_timer": env.env.shot_timer,
                  "terminal": env.env.terminal}
     return state_jax
 
