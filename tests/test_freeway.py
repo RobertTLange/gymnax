@@ -49,6 +49,11 @@ class TestFreeway(unittest.TestCase):
                 assert math.isclose(reward_gym, reward_jax,
                                     rel_tol=TestFreeway.tolerance)
 
+                # Start a new episode if the previous one has terminated
+                done_gym = env.env.terminal
+                if done_gym:
+                    break
+
     def test_freeway_reset(self):
         """ Test reset obs/state is in space of OpenAI version. """
         env = Environment('freeway', sticky_action_prob=0.0)

@@ -37,6 +37,10 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+## 29/03/21 - Start SpaceInvaders - placeholder and reset
+
+- Stopped at `get_nearest_alien` in step transition
+
 ## 28/03/21 - Start Seaquest - placeholder and reset
 
 - Problem with loops and dynamic slices. How can we overcome this problem?

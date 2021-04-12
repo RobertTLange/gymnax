@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from functools import partial
 
 # JAX Compatible version of Freeway MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py
@@ -31,13 +32,9 @@ params_space_invaders = {"shot_cool_down": 5,
                          "enemy_shot_interval": 10}
 
 
-def step(rng_input, params, state, action):
-    """ Perform single timestep state transition. """
-    reward = 0
-    done = False
-    info = {}
-
-    # Resolve player action - fire, left, right
+@jax.jit
+def step_agent(action, state, params):
+    """ Resolve player action - fire, left, right. """
     fire_cond = jnp.logical_and(action == 5, state["shot_timer"] == 0)
     left_cond, right_cond = (action == 1), (action == 3)
     state["f_bullet_map"] = (fire_cond *
@@ -60,8 +57,12 @@ def step(rng_input, params, state, action):
     state["e_bullet_map"] = jax.ops.index_update(state["e_bullet_map"],
                                                  jax.ops.index[0, :], 0)
     bullet_terminal = state["e_bullet_map"][9, state["pos"]]
+    return state, bullet_terminal
 
-    # Update aliens - border and collision check
+
+@jax.jit
+def step_aliens(state):
+    """ Update aliens - border and collision check. """
     alien_terminal_1 = state["alien_map"][9, state["pos"]]
     alien_move_cond = (state["alien_move_timer"] == 0)
 
@@ -90,30 +91,52 @@ def step(rng_input, params, state, action):
     alien_terminal_3 = jnp.logical_and(alien_move_cond,
                                        state["alien_map"][9, state["pos"]])
 
-    # Update aliens - shooting check
+    # Jointly evaluate the 3 alien terminal conditions
+    alien_terminal = (alien_terminal_1 + alien_terminal_2 + alien_terminal_3)>0
+    return state, alien_terminal
+
+
+@jax.jit
+def step_shoot(state, params):
+    """ Update aliens - shooting check and calculate rewards. """
+    reward = 0
     alien_shot_cond = (state["alien_shot_timer"] == 0)
-    state["alien_shot_timer"] = (alien_shot_cond * enemy_shot_interval
-                                 + (1-alien_shot_cond) * enemy_shot_interval)
+    state["alien_shot_timer"] = (alien_shot_cond *
+                                 params["enemy_shot_interval"]
+                                 + (1-alien_shot_cond) *
+                                 state["alien_shot_timer"])
+    # nearest_alien has 3 outputs used to update map: [alien_exists, loc, id]
+    alien_exists, loc, id = get_nearest_alien(state["pos"], state["alien_map"])
+    update_aliens_cond = jnp.logical_and(alien_shot_cond, alien_exists)
+    state["e_bullet_map"] = (update_aliens_cond *
+                             jax.ops.index_update(state["e_bullet_map"],
+                                    jax.ops.index[loc, id], 1)
+                             + (1-update_aliens_cond) *
+                             state["e_bullet_map"])
 
-    # ========================================================================
-    # TODO: Stopped here - continue with get_nearest_alien
-    # if(self.alien_shot_timer==0):
-        # self.alien_shot_timer = enemy_shot_interval
-        nearest_alien = self._nearest_alien(self.pos)
-        self.e_bullet_map[nearest_alien[0], nearest_alien[1]] = 1
+    kill_locations = jnp.logical_and(state["alien_map"],
+                                     state["alien_map"]
+                                     == state["f_bullet_map"])
 
-    nearest_alien = get_nearest_alien(state["pos"], state["alien_map"])
-    state["e_bullet_map"][nearest_alien[0], nearest_alien[1]] = 1
+    # Compute reward based on killed aliens
+    reward += jnp.sum(kill_locations)
+    # Delete aliens/bullets based on kill_locations elementwise multiplication
+    state["alien_map"]= state["alien_map"] * (1 - kill_locations)
+    state["f_bullet_map"]= state["f_bullet_map"] * (1 - kill_locations)
+    return state, reward
 
-    kill_locations = np.logical_and(self.alien_map,
-                                    self.alien_map==self.f_bullet_map)
 
-    r += np.sum(kill_locations)
-    self.alien_map[kill_locations] = self.f_bullet_map[kill_locations] = 0
-    # ========================================================================
+def step(rng_input, params, state, action):
+    """ Perform single timestep state transition. """
+    # Resolve player action - fire, left, right.
+    state, bullet_terminal = step_agent(action, state, params)
+    # Update aliens - border and collision check.
+    state, alien_terminal = step_aliens(state)
+    # Update aliens - shooting check and calculate rewards.
+    state, reward = step_shoot(state, params)
 
-    # Update various timers
-    state["shot_timer"] -= (state["shot_timer"] > 0)
+    # Update various timers & evaluate all terminal conditions
+    state["shot_timer"] = state["shot_timer"] - (state["shot_timer"] > 0)
     state["alien_move_timer"] -= 1
     state["alien_shot_timer"] -= 1
 
@@ -122,23 +145,38 @@ def step(rng_input, params, state, action):
     ramping_cond = jnp.logical_and(state["enemy_move_interval"] > 6,
                                    state["ramping"])
     reset_ramp_cond = jnp.logical_and(reset_map_cond, ramping_cond)
-    state["enemy_move_interval"] -= reset_ramp_cond
-    state["ramp_index"] += reset_ramp_cond
+    state["enemy_move_interval"] = state["enemy_move_interval"] - reset_ramp_cond
+    state["ramp_index"] = state["ramp_index"] + reset_ramp_cond
     state["alien_map"] = (reset_map_cond *
                           jax.ops.index_update(state["alien_map"],
                                                jax.ops.index[0:4, 2:8], 1)
                           + (1-reset_map_cond) * state["alien_map"])
-    return get_obs(state), state, reward, done, info
+
+    # Combine different termination conditions
+    state["terminal"] = (bullet_terminal + alien_terminal) > 0
+    return get_obs(state), state, reward, state["terminal"], {}
 
 
 def get_nearest_alien(pos, alien_map):
     """ Find alien closest to player in manhattan distance -> shot target."""
-    search_order = [i for i in range(10)]
-    search_order.sort(key=lambda x: abs(x-pos))
+    ids = jnp.array([jnp.abs(jnp.array([i for i in range(10)]) - pos)])
+    search_order = jnp.argsort(ids).squeeze()
+    results_temp = jnp.zeros((10, 3))
+    aliens_exist = jnp.sum(alien_map, axis=0) > 0
+
+    # Work around for np.where via element-wise multiplication with ids
+    # The output has 3 dims: [alien_exists, location, id]
+    counter = 0
     for i in search_order:
-        if(jnp.sum(alien_map[:, i])>0):
-            return [jnp.max(jnp.where(alien_map[:,i]==1)), i]
-    return None
+        locations = alien_map[:, i] * jnp.arange(alien_map[:, i].shape[0])
+        aliens_loc = jnp.max(locations)
+        results_temp = jax.ops.index_update(results_temp,
+                                            jax.ops.index[counter],
+                                            jnp.array([aliens_exist[i],
+                                                       aliens_loc, i]))
+        counter += 1
+    results_temp = jnp.array(results_temp, dtype=int)
+    return results_temp[0][0], results_temp[0][1], results_temp[0][2]
 
 
 def reset(rng_input, params):
