@@ -1,19 +1,20 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible  version of MountainCar-v0 OpenAI gym environment. Source:
 # github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
 
 # Default environment parameters
-params_mountain_car = {"min_position": -1.2,
-                       "max_position": 0.6,
-                       "max_speed": 0.07,
-                       "goal_position": 0.5,
-                       "goal_velocity": 0.0,
-                       "force": 0.001,
-                       "gravity": 0.0025,
-                       "max_steps_in_episode": 200}
+params_mountain_car = FrozenDict({"min_position": -1.2,
+                                  "max_position": 0.6,
+                                  "max_speed": 0.07,
+                                  "goal_position": 0.5,
+                                  "goal_velocity": 0.0,
+                                  "force": 0.001,
+                                  "gravity": 0.0025,
+                                  "max_steps_in_episode": 200})
 
 
 def step(rng_input, params, state, action):
@@ -50,5 +51,5 @@ def get_obs(state):
     return jnp.array([state[0], state[1]])
 
 
-reset_mountain_car = jit(reset)
-step_mountain_car = jit(step)
+reset_mountain_car = jit(reset, static_argnums=(1,))
+step_mountain_car = jit(step, static_argnums=(1,))

@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Breakout MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py
@@ -35,15 +36,15 @@ ENVIRONMENT DESCRIPTION - 'Seaquest-MinAtar'
 """
 
 # Default environment parameters
-params_seaquest = {"ramp_interval": 100,
-                   "max_oxygen": 200,
-                   "init_spawn_speed": 20,
-                   "diver_spawn_speed": 30,
-                   "init_move_interval": 5,
-                   "shot_cool_down": 5,
-                   "enemy_shot_interval": 10,
-                   "enemy_move_interval": 5,
-                   "diver_move_interval": 5}
+params_seaquest = FrozenDict({"ramp_interval": 100,
+                              "max_oxygen": 200,
+                              "init_spawn_speed": 20,
+                              "diver_spawn_speed": 30,
+                              "init_move_interval": 5,
+                              "shot_cool_down": 5,
+                              "enemy_shot_interval": 10,
+                              "enemy_move_interval": 5,
+                              "diver_move_interval": 5})
 
 
 def step(rng_input, params, state, action):
@@ -127,5 +128,5 @@ def get_obs(state, params):
     return obs
 
 
-reset_seaquest = reset #jit(reset)
-step_seaquest = jit(step)
+reset_seaquest = jit(reset, static_argnums=(1,))
+step_seaquest = jit(step, static_argnums=(1,))

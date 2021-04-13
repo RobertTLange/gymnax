@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Freeway MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py
@@ -24,8 +25,8 @@ ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
 """
 
 # Default environment parameters
-params_freeway = {"player_speed": 3,
-                  "time_limit": 2500}
+params_freeway = FrozenDict({"player_speed": 3,
+                             "time_limit": 2500})
 
 
 def step_agent(action, state, params):
@@ -182,5 +183,5 @@ def randomize_cars(speeds, directions, old_cars,
     return jnp.array(cars, dtype=int)
 
 
-reset_freeway = jit(reset)
-step_freeway = jit(step)
+reset_freeway = jit(reset, static_argnums=(1,))
+step_freeway = jit(step, static_argnums=(1,))

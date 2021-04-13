@@ -1,18 +1,17 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Asterix MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py
 
 # Default environment parameters of Asterix game
-params_asterix = {
-                  "ramping": 1,
-                  "ramp_interval": 100,
-                  "init_spawn_speed": 10,
-                  "init_move_interval": 5,
-                  "shot_cool_down": 5,
-                 }
+params_asterix = FrozenDict({"ramping": 1,
+                             "ramp_interval": 100,
+                             "init_spawn_speed": 10,
+                             "init_move_interval": 5,
+                             "shot_cool_down": 5})
 
 """
 ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
@@ -226,5 +225,5 @@ def update_entities(state):
     return state, reward, done
 
 
-reset_asterix = jit(reset)
-step_asterix = jit(step)
+reset_asterix = jit(reset, static_argnums=(1,))
+step_asterix = jit(step, static_argnums=(1,))

@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Breakout MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py
@@ -23,7 +24,7 @@ ENVIRONMENT DESCRIPTION - 'Breakout-MinAtar'
 """
 
 # Default environment parameters
-params_breakout = {}
+params_breakout = FrozenDict({})
 
 
 def step(rng_input, params, state, action):
@@ -152,5 +153,5 @@ def get_obs(state):
     return obs
 
 
-reset_breakout = jit(reset)
-step_breakout = jit(step)
+reset_breakout = jit(reset, static_argnums=(1,))
+step_breakout = jit(step, static_argnums=(1,))

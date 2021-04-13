@@ -18,16 +18,25 @@ params_deep_sea = FrozenDict({"size": 8,
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
-    reward = 0.
-    done = False
-    action_right = (action == action_mapping[state["row"], state["column"]])
-
     # Pull out randomness for easier testing
     rng_reward, rng_trans = jax.random.split(rng_input)
     rand_reward = jax.random.normal(rng_reward, shape=(1,))
     rand_trans_cond = (jax.random.uniform(rng_trans, shape=(1,), minval=0,
                                           maxval=1) > 1/params["size"])
 
+    action_right = (action == action_mapping[state["row"], state["column"]])
+    right_rand_cond = jnp.logical_or(rand_trans_cond, params["deterministic"])
+    right_cond = jnp.logical_and(action_right, right_rand_cond)
+
+    reward, state = step_reward(state, action_right, right_cond)
+    state = step_transition(state, action_right, right_cond)
+    done, state = step_terminal(state)
+    return get_obs(state, params), state, reward, done, {}
+
+
+def step_reward(state, action_right, right_cond):
+    """ Get the reward for the selected action. """
+    reward = 0.
     # Reward calculation.
     rew_cond = jnp.logical_and(state["column"] == params["size"] - 1,
                                action_right)
@@ -41,16 +50,16 @@ def step(rng_input, params, state, action):
                                 col_at_edge)
     det_chain_end = jnp.logical_and(chain_end, params["deterministic"])
     reward += rand_reward * det_chain_end
+    reward -= right_cond * params["unscaled_move_cost"] / params["size"]
+    return reward, state, right_cond
 
-    # Transition dynamics
-    right_rand_cond = jnp.logical_or(rand_trans_cond, params["deterministic"])
-    right_cond = jnp.logical_and(action_right, right_rand_cond)
 
+def step_transition(state, action_right, right_cond):
+    """ Get the state transition for the selected action. """
     # Standard right path transition
     state["column"] = ((1 - right_cond) * state["column"] +
                        right_cond *
                        jnp.clip(state["column"] + 1, 0, params["size"] - 1))
-    reward -= right_cond * params["unscaled_move_cost"] / params["size"]
 
     # You were on the right path and went wrong
     right_wrong_cond = jnp.logical_and(1 - action_right,
@@ -61,11 +70,15 @@ def step(rng_input, params, state, action):
                        * jnp.clip(state["column"] - 1, 0, params["size"] - 1)
                        + action_right * state["column"])
     state["row"] = state["row"] + 1
+    return state
 
+
+def step_terminal(state):
+    """ Check termination condition of state. """
     done = (state["row"] == params["size"])
     state["total_bad_episodes"] += done * state["bad_episode"]
     state["terminal"] = done
-    return get_obs(state, params), state, reward, done, {}
+    return done, state
 
 
 def reset(rng_input, params):

@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
-from functools import partial
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Freeway MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py
@@ -27,9 +27,9 @@ ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
 """
 
 # Default environment parameters
-params_space_invaders = {"shot_cool_down": 5,
-                         "enemy_move_interval": 12,
-                         "enemy_shot_interval": 10}
+params_space_invaders = FrozenDict({"shot_cool_down": 5,
+                                    "enemy_move_interval": 12,
+                                    "enemy_shot_interval": 10})
 
 
 @jax.jit
@@ -217,5 +217,5 @@ def get_obs(state):
     return obs
 
 
-reset_space_invaders = jit(reset)
-step_space_invaders = jit(step)
+reset_space_invaders = jit(reset, static_argnums=(1,))
+step_space_invaders = jit(step, static_argnums=(1,))
