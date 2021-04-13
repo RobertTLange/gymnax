@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
-from flax.core import FrozenDict
+from ...utils.frozen_dict import FrozenDict
 
 
 # JAX Compatible version of Catch bsuite environment. Source:
