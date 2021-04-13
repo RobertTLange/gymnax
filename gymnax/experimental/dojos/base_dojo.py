@@ -54,8 +54,8 @@ class BaseDojo(object):
             On-Policy methods and update at end of episode.
         """
         # 0. Unpack carry, split rng key for action selection + transition
-        rng, obs, state, env_params = carry_input[0:4]
-        agent_params, actor_state, learner_state = carry_input[4:7]
+        rng, obs, state = carry_input[:3]
+        agent_params, actor_state, learner_state = carry_input[3:]
         rng, key_act, key_step, key_learn, key_reset = jax.random.split(rng, 5)
 
         # 1. Perform action selection using actor NN
@@ -65,7 +65,7 @@ class BaseDojo(object):
 
         # 2. Perform step transition in the environment & format env output
         next_obs, next_state, reward, done, _ = self.perform_transition(
-                                    key_step, env_params, state, action)
+                                    key_step, self.env_params, state, action)
         env_output = (state, next_state, obs, next_obs,
                       action, reward, done)
 
@@ -81,39 +81,39 @@ class BaseDojo(object):
                                                           learner_state)
 
         # 6. Auto-reset environment and use obs/state if episode terminated
-        obs_reset, state_reset = self.reset(key_reset, env_params)
+        obs_reset, state_reset = self.reset(key_reset, self.env_params)
         next_obs = done * obs_reset + (1 - done) * next_obs
-        next_state = done * state_reset + (1 - done) * next_state
+        next_state = jax.tree_multimap(lambda a, b: done*a + (1-done)*b,
+                                       state_reset, next_state)
 
         # 7. Collect all relevant data for next actor-learner-step
-        carry, y = ([rng, next_obs.squeeze(), next_state.squeeze(),
-                     env_params, agent_params, actor_state, learner_state],
+        carry, y = ([rng, next_obs.squeeze(), next_state,
+                     agent_params, actor_state, learner_state],
                     [reward])
         return carry, y
 
-    @partial(jit, static_argnums=(0, 3))
-    def lax_rollout(self, key_input, env_params, num_steps,
+    @partial(jit, static_argnums=(0, 2,))
+    def lax_rollout(self, key_input, num_steps,
                     agent_params, actor_state, learner_state):
         """ Rollout a gymnax episode with lax.scan. """
         # Reset the environment once at beginning of step rollout
-        obs, state = self.reset(key_input, env_params)
+        obs, state = self.reset(key_input, self.env_params)
         # Rollout the steps in the environment (w. potential resets)
         scan_out1, scan_out2 = lax.scan(
                             self.actor_learner_step,
-                            [key_input, obs, state, env_params,
+                            [key_input, obs, state,
                              agent_params, actor_state, learner_state],
                             [jnp.zeros(num_steps)])
         return scan_out1, jnp.array(scan_out2).squeeze()
 
-    @partial(jit, static_argnums=(0, 3))
-    def vmap_rollout(self, key_input, env_params, num_steps,
+    @partial(jit, static_argnums=(0, 2,))
+    def vmap_rollout(self, key_input, num_steps,
                      agent_params, actor_state, learner_state):
         """ Jit + vmap wrapper around scanned episode rollout. """
         rollout_map = vmap(self.lax_rollout,
-                           in_axes=(0, None, None, None, None, None),
+                           in_axes=(0, None, None, None, None),
                            out_axes=0)
-        traces, rewards = rollout_map(key_input, env_params,
-                                      num_steps, agent_params,
+        traces, rewards = rollout_map(key_input, num_steps, agent_params,
                                       actor_state, learner_state)
         return traces, rewards
 
@@ -123,14 +123,12 @@ class BaseDojo(object):
             # Different cases: agent_params explicitly supplied/when not
             if agent_params is None:
                 trace, reward = self.lax_rollout(key_rollout,
-                                                 self.env_params,
                                                  num_steps,
                                                  self.agent_params,
                                                  self.actor_state,
                                                  self.learner_state)
             else:
                 trace, reward = self.lax_rollout(key_rollout,
-                                                 self.env_params,
                                                  num_steps,
                                                  agent_params,
                                                  self.actor_state,
@@ -140,7 +138,7 @@ class BaseDojo(object):
                                   "agent's parameters and the states "
                                   "of the actor and learner.")
         # Update the agent params after the rollout
-        self.agent_params = trace[4]
+        self.agent_params = trace[3]
         return trace, reward
 
     def batch_rollout(self, key_rollout, num_steps, agent_params=None):
@@ -149,14 +147,12 @@ class BaseDojo(object):
             # Different cases: agent_params explicitly supplied/when not
             if agent_params is None:
                 traces, rewards = self.vmap_rollout(key_rollout,
-                                                    self.env_params,
                                                     num_steps,
                                                     self.agent_params,
                                                     self.actor_state,
                                                     self.learner_state)
             else:
                 traces, rewards = self.vmap_rollout(key_rollout,
-                                                    self.env_params,
                                                     num_steps,
                                                     agent_params,
                                                     self.actor_state,

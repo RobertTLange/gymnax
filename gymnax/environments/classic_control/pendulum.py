@@ -29,7 +29,7 @@ def step(rng_input, params, state, u):
     newth = state["theta"] + newthdot * params["dt"]
     newthdot = jnp.clip(newthdot, -params["max_speed"], params["max_speed"])
     # Check number of steps in episode termination condition
-    done_steps = (state["time"] + 1 > params["max_steps_in_episode"])
+    done_steps = 1*(state["time"] + 1 > params["max_steps_in_episode"])
     state = {"theta": newth.squeeze(),
              "theta_dot": newthdot.squeeze(),
              "time": state["time"] + 1,

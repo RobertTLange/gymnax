@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import lax, jit, vmap
 from functools import partial
-from gymnax.dojos.base_dojo import BaseDojo
+from .base_dojo import BaseDojo
 
 
 class InterleavedDojo(BaseDojo):
