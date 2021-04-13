@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
-from flax.core import FrozenDict
+from ...utils.frozen_dict import FrozenDict
 
 
 params_bandit = FrozenDict({"sample_probs": jnp.array([0.1, 0.9]),
@@ -24,7 +24,7 @@ def reset(rng_input, params):
     p1 = jax.random.choice(rng_input, params["sample_probs"],
                            shape=(1,)).squeeze()
     # State representation: Mean reward a1, Mean reward a2, t
-    state = jnp.stack([p1, 1-p1, 0])
+    state = jnp.stack([p1, 1 - p1, 0])
     return get_obs(0, 0, 0, params), state
 
 
@@ -34,5 +34,5 @@ def get_obs(reward, action, time, params):
     return jnp.hstack([reward, action_one_hot, time])
 
 
-reset_bandit = jit(reset)
-step_bandit = jit(step)
+reset_bandit = jit(reset, static_argnums=(1,))
+step_bandit = jit(step, static_argnums=(1,))

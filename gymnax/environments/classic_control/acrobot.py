@@ -1,25 +1,26 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Acrobot-v1 OpenAI gym environment. Source:
 # github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py
 # NOTES: We only implement the default 'book' version
 
 # Default environment parameters
-params_acrobot = {"dt": 0.2,
-                  "link_length_1": 1.0,
-                  "link_length_2": 1.0,
-                  "link_mass_1": 1.0,
-                  "link_mass_2": 1.0,
-                  "link_com_pos_1": 0.5,
-                  "link_com_pos_2": 0.5,
-                  "link_moi": 1.0,
-                  "max_vel_1": 4*jnp.pi,
-                  "max_vel_2": 9*jnp.pi,
-                  "available_torque": jnp.array([-1., 0., +1]),
-                  "torque_noise_max": 0.0,
-                  "max_steps_in_episode": 500}
+params_acrobot = FrozenDict({"dt": 0.2,
+                             "link_length_1": 1.0,
+                             "link_length_2": 1.0,
+                             "link_mass_1": 1.0,
+                             "link_mass_2": 1.0,
+                             "link_com_pos_1": 0.5,
+                             "link_com_pos_2": 0.5,
+                             "link_moi": 1.0,
+                             "max_vel_1": 4*jnp.pi,
+                             "max_vel_2": 9*jnp.pi,
+                             "available_torque": jnp.array([-1., 0., +1.]),
+                             "torque_noise_max": 0.0,
+                             "max_steps_in_episode": 500})
 
 
 def step(rng_input, params, state, action):
@@ -49,7 +50,8 @@ def step(rng_input, params, state, action):
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = jax.random.uniform(rng_input, shape=(4,), minval=-0.1, maxval=0.1)
+    state = jax.random.uniform(rng_input, shape=(4,),
+                               minval=-0.1, maxval=0.1)
     timestep = 0
     state = jnp.hstack([state, timestep])
     return get_obs(state), state
@@ -63,8 +65,8 @@ def get_obs(state):
     return obs
 
 
-reset_acrobot = jit(reset)
-step_acrobot = jit(step)
+reset_acrobot = jit(reset, static_argnums=(1,))
+step_acrobot = jit(step, static_argnums=(1,))
 
 
 def dsdt(s_augmented, t, params):

@@ -1,18 +1,19 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Pendulum-v0 OpenAI gym environment. Source:
 # github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
 
 # Default environment parameters for Pendulum-v0
-params_pendulum = {"max_speed": 8,
-                   "max_torque": 2.,
-                   "dt": 0.05,
-                   "g": 10.0,
-                   "m": 1.,
-                   "l": 1.,
-                   "max_steps_in_episode": 200}
+params_pendulum = FrozenDict({"max_speed": 8,
+                              "max_torque": 2.,
+                              "dt": 0.05,
+                              "g": 10.0,
+                              "m": 1.,
+                              "l": 1.,
+                              "max_steps_in_episode": 200})
 
 
 def step(rng_input, params, state, u):
@@ -53,5 +54,5 @@ def angle_normalize(x):
     return (((x+jnp.pi) % (2*jnp.pi)) - jnp.pi)
 
 
-reset_pendulum = jit(reset)
-step_pendulum = jit(step)
+reset_pendulum = jit(reset, static_argnums=(1,))
+step_pendulum = jit(step, static_argnums=(1,))

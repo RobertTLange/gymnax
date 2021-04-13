@@ -1,22 +1,23 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of CartPole-v0 OpenAI gym environment. Source:
 # github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
 
 # Default environment parameters for CartPole-v0
-params_cartpole = {"gravity": 9.8,
-                   "masscart": 1.0,
-                   "masspole": 0.1,
-                   "total_mass": 1.0 + 0.1,  # (masscart + masspole)
-                   "length": 0.5,
-                   "polemass_length": 0.05,  # (masspole * length)
-                   "force_mag": 10.0,
-                   "tau": 0.02,
-                   "theta_threshold_radians": 12*2*jnp.pi/360,
-                   "x_threshold": 2.4,
-                   "max_steps_in_episode": 200}
+params_cartpole = FrozenDict({"gravity": 9.8,
+                              "masscart": 1.0,
+                              "masspole": 0.1,
+                              "total_mass": 1.0 + 0.1,  # (masscart + masspole)
+                              "length": 0.5,
+                              "polemass_length": 0.05,  # (masspole * length)
+                              "force_mag": 10.0,
+                              "tau": 0.02,
+                              "theta_threshold_radians": 12*2*jnp.pi/360,
+                              "x_threshold": 2.4,
+                              "max_steps_in_episode": 200})
 
 
 def step(rng_input, params, state, action):
@@ -60,11 +61,12 @@ def get_obs(state):
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = jax.random.uniform(rng_input, minval=-0.05, maxval=0.05, shape=(4,))
+    state = jax.random.uniform(rng_input, minval=-0.05,
+                               maxval=0.05, shape=(4,))
     timestep = 0
     state = jnp.hstack([state, 0, timestep])
     return get_obs(state), state
 
 
-reset_cartpole = jit(reset)
-step_cartpole = jit(step)
+reset_cartpole = jit(reset, static_argnums=(1,))
+step_cartpole = jit(step, static_argnums=(1,))

@@ -37,6 +37,41 @@
         - Recurrent policy rollout wrapper
     - Implement catch environment from bsuite
 
+## 29/03/21 - Start SpaceInvaders - placeholder and reset
+
+- Stopped at `get_nearest_alien` in step transition
+
+## 28/03/21 - Start Seaquest - placeholder and reset
+
+- Problem with loops and dynamic slices. How can we overcome this problem?
+- Some form of max and masked updates?
+
+
+## 22/03/21 - Fix bug that causes breakout test fail + Start freeway
+
+- Be careful: By default minatar has a sticky_action_prob of 0.1
+- Fix elif conditional with spawn_bricks. I really need to work more test driven!
+- Respawning has to be checked! Bit afraid that I missed something with strikes, etc.
+- reward in breakout is off!
+- Start working on freeway placeholder - start with tests!
+- Implement tests for all deterministic parts and rewrite step, reset such that this is possible!
+
+## 18/03/21 - breakout jitted step transition
+
+- Start working on deterministic breakout minatar environment
+- Add reset and step - also running with jit!
+- Add test for reset and step. Atm there is something wrong with step transition - maybe reflection?!
+
+## 17/03/21 - asterix jitted step transition
+
+- Added a step transition through which we can jit for asterix. Main problem was the sampling from open slots for coins/enemies
+- Currently I am circumventing the concetrization problem of sampling from an `jnp.where` array of free slots. I permute the list of all ids and run a while loop until we find a slot that is free.
+- Next:
+    - Add conditional statement workaround for when no slot is free
+    - Add tests for individual pieces - harder for full loop of transitions due to random sampling
+    - Add visual check that things look correct
+- Design question: Keep same action range of 6 for all environments?
+
 ## 06/03/21 - Start adding minatar environments
 
 - Start with asterix, install minatar and setup shell, imports, testing, running the environment on numpy

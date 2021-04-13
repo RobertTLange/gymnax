@@ -16,10 +16,21 @@ from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
 
 # =============================================================================
 from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
+from gymnax.environments.bsuite import (reset_deep_sea, step_deep_sea,
+                                        params_deep_sea)
 
 # =============================================================================
 from gymnax.environments.minatar import (reset_asterix, step_asterix,
                                          params_asterix)
+from gymnax.environments.minatar import (reset_breakout, step_breakout,
+                                         params_breakout)
+from gymnax.environments.minatar import (reset_freeway, step_freeway,
+                                         params_freeway)
+from gymnax.environments.minatar import (reset_seaquest, step_seaquest,
+                                         params_seaquest)
+from gymnax.environments.minatar import (reset_space_invaders,
+                                         step_space_invaders,
+                                         params_space_invaders)
 
 # =============================================================================
 from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
@@ -27,6 +38,7 @@ from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
 
 def make(env_id: str, seed_id: int = 0):
     """ A JAX-version of of OpenAI's infamous env.make(env_name)"""
+    # 1. Classic OpenAI Control Tasks
     if env_id == "Pendulum-v0":
         reset, step, env_params = reset_pendulum, step_pendulum, params_pendulum
     elif env_id == "CartPole-v0":
@@ -40,10 +52,31 @@ def make(env_id: str, seed_id: int = 0):
                                    params_continuous_mountain_car)
     elif env_id == "Acrobot-v1":
         reset, step, env_params = reset_acrobot, step_acrobot, params_acrobot
+
+    # 2. DeepMind's bsuite environments
     elif env_id == "Catch-bsuite":
         reset, step, env_params = reset_catch, step_catch, params_catch
+    elif env_id == "DeepSea-bsuite":
+        reset, step, env_params = (reset_deep_sea, step_deep_sea,
+                                   params_deep_sea)
+
+    # 3. MinAtar Environments
     elif env_id == "Asterix-MinAtar":
         reset, step, env_params = reset_asterix, step_asterix, params_asterix
+    elif env_id == "Breakout-MinAtar":
+        reset, step, env_params = (reset_breakout, step_breakout,
+                                   params_breakout)
+    elif env_id == "Freeway-MinAtar":
+        reset, step, env_params = reset_freeway, step_freeway, params_freeway
+    elif env_id == "Seaquest-MinAtar":
+        reset, step, env_params = (reset_seaquest, step_seaquest,
+                                   params_seaquest)
+    elif env_id == "SpaceInvaders-MinAtar":
+        reset, step, env_params = (reset_space_invaders,
+                                   step_space_invaders,
+                                   params_space_invaders)
+
+    # 4. Other standard/popular environments
     elif env_id == "Bandit-misc":
         reset, step, env_params = reset_bandit, step_bandit, params_bandit
     else:

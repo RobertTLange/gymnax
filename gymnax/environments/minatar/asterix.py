@@ -1,20 +1,20 @@
 import jax
 import jax.numpy as jnp
 from jax import jit
+from ...utils.frozen_dict import FrozenDict
 
 # JAX Compatible version of Asterix MinAtar environment. Source:
 # github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py
 
 # Default environment parameters of Asterix game
-params_asterix = {
-                  "ramping": 1,
-                  "ramp_interval": 100,
-                  "init_spawn_speed": 10,
-                  "init_move_interval": 5,
-                  "shot_cool_down": 5,
-                 }
+params_asterix = FrozenDict({"ramping": 1,
+                             "ramp_interval": 100,
+                             "init_spawn_speed": 10,
+                             "init_move_interval": 5,
+                             "shot_cool_down": 5})
 
 """
+ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
 - Player moves freely along 4 cardinal dirs.
 - Enemies and treasure spawn from the sides.
 - A reward of +1 is given for picking up treasure.
@@ -31,6 +31,7 @@ params_asterix = {
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
     # Spawn enemy if timer is up - sample at each step and mask
+    # TODO: Add conditional for case when there is no free slot
     entity, slot = spawn_entity(rng_input, state)
     state["entities"] = ((state["spawn_timer"] == 0) *
                           jax.ops.index_update(state["entities"],
@@ -40,6 +41,7 @@ def step(rng_input, params, state, action):
                             + (state["spawn_timer"] > 0) * state["spawn_timer"])
 
     # Resolve player action via implicit conditional updates of coordinates
+    # TODO: Add no-op!
     player_x = (jnp.maximum(0, state["player_x"] - 1) * (action == 0)  # l
                 + jnp.minimum(9, state["player_x"] + 1) * (action == 2)  # r
                 + state["player_x"] * jnp.logical_and(action != 0,
@@ -80,6 +82,7 @@ def step(rng_input, params, state, action):
     state["spawn_speed"] -= spawn_speed_cond
     # 4. Update ramp_index
     state["ramp_index"] += jnp.logical_and(ramp_cond, 1 - timer_cond)
+    # TODO: Add terminal again to state dictionary
     return get_obs(state), state, reward, done, {}
 
 
@@ -95,6 +98,7 @@ def reset(rng_input, params):
         "move_timer": params["init_move_interval"],
         "ramp_timer": params["ramp_interval"],
         "ramp_index": 0,
+        "terminal": 0,
         "entities": jnp.zeros((8, 5), dtype=int)
     }
     return get_obs(state), state
@@ -221,5 +225,5 @@ def update_entities(state):
     return state, reward, done
 
 
-reset_asterix = jit(reset)
-step_asterix = jit(step)
+reset_asterix = jit(reset, static_argnums=(1,))
+step_asterix = jit(step, static_argnums=(1,))

@@ -12,8 +12,6 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 requires = [
             'jax',
             'jaxlib',
-            'flax',
-            'gym'
             ]
 
 setup(

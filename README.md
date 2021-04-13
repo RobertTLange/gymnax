@@ -82,7 +82,20 @@ You can find more details in the [JAX documentation](https://github.com/google/j
 ## Examples, Notebooks & Colabs
 * :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout the API and accelerated control tasks.
 
+## Citing `gymnax`
 
-## Contributing and Development
+To cite this repository:
+
+```
+@software{gymnax2021github,
+  author = {Robert Tjarko Lange},
+  title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
+  url = {http://github.com/google/jax},
+  version = {0.0.1},
+  year = {2021},
+}
+```
+
+## Contributing & Development
 
 You can find a template and instructions for how to add a new environment [here](templates/env_template). Feel free to ping me ([@RobertTLange](https://twitter.com/RobertTLange)), open an issue or start contributing yourself.
