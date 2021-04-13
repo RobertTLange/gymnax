@@ -10,20 +10,23 @@ from ...utils.frozen_dict import FrozenDict
 # Default environment parameters
 params_deep_sea = FrozenDict({"size": 8,
                               "deterministic": True,
+                              "sample_action_map": False,
                               "unscaled_move_cost": 0.01,
-                              "randomize_actions": True})
-
-#action_mapping = self._mapping_rng.binomial(1, 0.5, [size, size])
-action_mapping = jnp.ones([params_deep_sea["size"],
-                           params_deep_sea["size"]])
+                              "randomize_actions": True,
+                              "action_mapping": jnp.ones([8, 8])})
 
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
     reward = 0.
     done = False
-
     action_right = (action == action_mapping[state["row"], state["column"]])
+
+    # Pull out randomness for easier testing
+    rng_reward, rng_trans = jax.random.split(rng_input)
+    rand_reward = jax.random.normal(rng_reward, shape=(1,))
+    rand_trans_cond = (jax.random.uniform(rng_trans, shape=(1,), minval=0,
+                                          maxval=1) > 1/params["size"])
 
     # Reward calculation.
     rew_cond = jnp.logical_and(state["column"] == params["size"] - 1,
@@ -31,19 +34,16 @@ def step(rng_input, params, state, action):
     reward += rew_cond
     state["denoised_return"] += rew_cond
 
-    rng_reward, rng_trans = jax.random.split(rng_input)
     # Noisy rewards on the 'end' of chain.
     col_at_edge = jnp.logical_or(state["column"] == 0,
                                  state["column"] == params["size"] - 1)
     chain_end = jnp.logical_and(state["row"] == params["size"] - 1,
                                 col_at_edge)
     det_chain_end = jnp.logical_and(chain_end, params["deterministic"])
-    reward += jax.random.normal(rng_reward, shape=(1,)) * det_chain_end
+    reward += rand_reward * det_chain_end
 
     # Transition dynamics
-    right_rand_cond = jnp.logical_or(jax.random.uniform(rng_trans, shape=(1,),
-                                                        minval=0, maxval=1)
-                                > 1/params["size"], params["deterministic"])
+    right_rand_cond = jnp.logical_or(rand_trans_cond, params["deterministic"])
     right_cond = jnp.logical_and(action_right, right_rand_cond)
 
     # Standard right path transition
@@ -74,6 +74,19 @@ def reset(rng_input, params):
                         * (1 - 1 / params["size"]) ** (params["size"] - 1)
                         + params["deterministic"] * 1.)
     optimal_return = optimal_no_cost - params["unscaled_move_cost"]
+
+    a_map_rand = jax.random.bernoulli(rng_input, 0.5,
+                                      (params["size"], params["size"]))
+    a_map_determ = jnp.ones([params["size"], params["size"]])
+
+    new_a_map_cond = jnp.logical_and(1-params["deterministic"],
+                                     params["sample_action_map"])
+    old_a_map_cond = jnp.logical_and(1-params["deterministic"],
+                                     1-params["sample_action_map"])
+    action_mapping = (params["deterministic"] * a_map_determ
+                      + new_a_map_cond * a_map_rand
+                      + old_a_map_cond * params["action_mapping"])
+
     state = {"row": 0,
              "column": 0,
              "bad_episode": False,
@@ -81,7 +94,8 @@ def reset(rng_input, params):
              "denoised_return": 0,
              "optimal_no_cost": optimal_no_cost,
              "optimal_return": optimal_return,
-             "terminal": False}
+             "terminal": False,
+             "action_mapping": action_mapping}
     return get_obs(state, params), state
 
 
@@ -89,7 +103,7 @@ def get_obs(state, params):
     """ Return observation from raw state trafo. """
     obs_end = jnp.zeros(shape=(params["size"], params["size"]),
                         dtype=jnp.float32)
-    end_cond = state["row"] >= params["size"]
+    end_cond = (state["row"] >= params["size"])
     obs_upd = jax.ops.index_update(obs_end, jax.ops.index[state["row"],
                                                           state["column"]], 1.)
     return (1 - end_cond) * obs_end + end_cond * obs_upd

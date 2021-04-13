@@ -11,7 +11,7 @@ class TestDeepSea(unittest.TestCase):
     tolerance = 1e-04
     env_name = "DeepSea-bsuite"
 
-    def test_catch_step(self):
+    def test_deepsea_step(self):
         """ Test a step transition for the env. """
         env = deep_sea.DeepSea()
         rng, reset, step, env_params = gymnax.make(TestDeepSea.env_name)
@@ -42,7 +42,7 @@ class TestDeepSea(unittest.TestCase):
                 assert np.allclose(obs_suite, obs_jax,
                                    atol=TestDeepSea.tolerance)
 
-    def test_catch_reset(self):
+    def test_deepsea_reset(self):
         """ Test reset obs/state is in space of OpenAI version. """
         env = catch.Catch()
         observation_space = env.observation_spec()
