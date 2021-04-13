@@ -111,7 +111,7 @@ def step_shoot(state, params):
     state["e_bullet_map"] = (update_aliens_cond *
                              jax.ops.index_update(state["e_bullet_map"],
                                     jax.ops.index[loc, id], 1)
-                             + (1-update_aliens_cond) *
+                             + (1 - update_aliens_cond) *
                              state["e_bullet_map"])
 
     kill_locations = jnp.logical_and(state["alien_map"],

@@ -16,6 +16,8 @@ from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
 
 # =============================================================================
 from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
+from gymnax.environments.bsuite import (reset_deep_sea, step_deep_sea,
+                                        params_deep_sea)
 
 # =============================================================================
 from gymnax.environments.minatar import (reset_asterix, step_asterix,
@@ -54,6 +56,9 @@ def make(env_id: str, seed_id: int = 0):
     # 2. DeepMind's bsuite environments
     elif env_id == "Catch-bsuite":
         reset, step, env_params = reset_catch, step_catch, params_catch
+    elif env_id == "DeepSea-bsuite":
+        reset, step, env_params = (reset_deep_sea, step_deep_sea,
+                                   params_deep_sea)
 
     # 3. MinAtar Environments
     elif env_id == "Asterix-MinAtar":

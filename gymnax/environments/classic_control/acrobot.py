@@ -49,7 +49,8 @@ def step(rng_input, params, state, action):
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = jax.random.uniform(rng_input, shape=(4,), minval=-0.1, maxval=0.1)
+    state = jax.random.uniform(rng_input, shape=(4,),
+                               minval=-0.1, maxval=0.1)
     timestep = 0
     state = jnp.hstack([state, timestep])
     return get_obs(state), state

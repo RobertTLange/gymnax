@@ -60,7 +60,8 @@ def get_obs(state):
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = jax.random.uniform(rng_input, minval=-0.05, maxval=0.05, shape=(4,))
+    state = jax.random.uniform(rng_input, minval=-0.05,
+                               maxval=0.05, shape=(4,))
     timestep = 0
     state = jnp.hstack([state, 0, timestep])
     return get_obs(state), state
