@@ -18,35 +18,43 @@ params_pendulum = FrozenDict({"max_speed": 8,
 
 def step(rng_input, params, state, u):
     """ Integrate pendulum ODE and return transition. """
-    th, thdot, timestep = state
     u = jnp.clip(u, -params["max_torque"], params["max_torque"])
-    costs = angle_normalize(th) ** 2 + .1 * thdot ** 2 + .001 * (u ** 2)
+    costs = (angle_normalize(state["theta"]) ** 2
+             + .1 * state["theta_dot"] ** 2 + .001 * (u ** 2))
 
-    newthdot = thdot + (-3 * params["g"] /
-                        (2 * params["l"]) * jnp.sin(th + jnp.pi) + 3. /
+    newthdot = state["theta_dot"] + (-3 * params["g"] /
+                        (2 * params["l"]) * jnp.sin(state["theta"]
+                         + jnp.pi) + 3. /
                         (params["m"] * params["l"] ** 2) * u) * params["dt"]
-    newth = th + newthdot * params["dt"]
+    newth = state["theta"] + newthdot * params["dt"]
     newthdot = jnp.clip(newthdot, -params["max_speed"], params["max_speed"])
     # Check number of steps in episode termination condition
-    done_steps = (timestep + 1 > params["max_steps_in_episode"])
-    state = jnp.hstack([newth, newthdot, timestep+1])
-    return get_obs(state), state.squeeze(), -costs[0].squeeze(), done_steps, {}
+    done_steps = (state["time"] + 1 > params["max_steps_in_episode"])
+    state = {"theta": newth.squeeze(),
+             "theta_dot": newthdot.squeeze(),
+             "time": state["time"] + 1,
+             "terminal": done_steps}
+    return get_obs(state), state, -costs[0].squeeze(), done_steps, {}
 
 
 def reset(rng_input, params):
-    """ Reset environment state by sampling theta, thetadot. """
+    """ Reset environment state by sampling theta, theta_dot. """
     high = jnp.array([jnp.pi, 1])
     state = jax.random.uniform(rng_input, shape=(2,),
                                minval=-high, maxval=high)
     timestep = 0
-    state = jnp.hstack([state, timestep])
+    state = {"theta": state[0],
+             "theta_dot": state[1],
+             "time": timestep,
+             "terminal": 0}
     return get_obs(state), state
 
 
 def get_obs(state):
     """ Return angle in polar coordinates and change. """
-    th, thdot = state[0], state[1]
-    return jnp.array([jnp.cos(th), jnp.sin(th), thdot]).squeeze()
+    return jnp.array([jnp.cos(state["theta"]),
+                      jnp.sin(state["theta"]),
+                      state["theta_dot"]]).squeeze()
 
 
 def angle_normalize(x):

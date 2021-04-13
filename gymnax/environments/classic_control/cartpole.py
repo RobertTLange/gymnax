@@ -22,12 +22,11 @@ params_cartpole = FrozenDict({"gravity": 9.8,
 
 def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
-    x, x_dot, theta, theta_dot, just_done, timestep = state
     force = params["force_mag"] * action -params["force_mag"]*(1-action)
-    costheta = jnp.cos(theta)
-    sintheta = jnp.sin(theta)
+    costheta = jnp.cos(state["theta"])
+    sintheta = jnp.sin(state["theta"])
 
-    temp = (force + params["polemass_length"] * theta_dot ** 2
+    temp = (force + params["polemass_length"] * state["theta_dot"] ** 2
             * sintheta) / params["total_mass"]
     thetaacc = ((params["gravity"] * sintheta - costheta * temp) /
                 (params["length"] * (4.0 / 3.0 - params["masspole"]
@@ -36,35 +35,49 @@ def step(rng_input, params, state, action):
             / params["total_mass"])
 
     # Only default Euler integration option available here!
-    x = x + params["tau"] * x_dot
-    x_dot = x_dot + params["tau"] * xacc
-    theta = theta + params["tau"] * theta_dot
-    theta_dot = theta_dot + params["tau"] * thetaacc
+    x = state["x"] + params["tau"] * state["x_dot"]
+    x_dot = state["x_dot"] + params["tau"] * xacc
+    theta = state["theta"] + params["tau"] * state["theta_dot"]
+    theta_dot = state["theta_dot"] + params["tau"] * thetaacc
 
     # Check termination criteria
     done1 = jnp.logical_or(x < -params["x_threshold"],
                            x > params["x_threshold"])
     done2 = jnp.logical_or(theta < -params["theta_threshold_radians"],
                            theta > params["theta_threshold_radians"])
+
+    # Important: Reward is based on termination is previous step transition
+    reward = 1.0 - state["terminal"]
+
     # Check number of steps in episode termination condition
-    done_steps = (timestep + 1 > params["max_steps_in_episode"])
+    done_steps = (state["time"] + 1 > params["max_steps_in_episode"])
     done = jnp.logical_or(jnp.logical_or(done1, done2), done_steps)
-    state = jnp.hstack([x, x_dot, theta, theta_dot, done, timestep + 1])
-    reward = 1.0 - just_done
+    state = {"x": x,
+             "x_dot": x_dot,
+             "theta": theta,
+             "theta_dot": theta_dot,
+             "time": state["time"] + 1,
+             "terminal": done}
     return get_obs(state), state, reward, done, {}
 
 
 def get_obs(state):
     """ Return observation from raw state trafo. """
-    return jnp.array([state[0], state[1], state[2], state[3]])
+    return jnp.array([state["x"], state["x_dot"],
+                      state["theta"], state["theta_dot"]])
 
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = jax.random.uniform(rng_input, minval=-0.05,
-                               maxval=0.05, shape=(4,))
+    init_state = jax.random.uniform(rng_input, minval=-0.05,
+                                    maxval=0.05, shape=(4,))
     timestep = 0
-    state = jnp.hstack([state, 0, timestep])
+    state = {"x": init_state[0],
+             "x_dot": init_state[1],
+             "theta": init_state[2],
+             "theta_dot": init_state[3],
+             "time": 0,
+             "terminal": 0}
     return get_obs(state), state
 
 

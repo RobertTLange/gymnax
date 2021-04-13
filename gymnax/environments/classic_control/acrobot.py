@@ -27,46 +27,65 @@ def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
     torque = params["available_torque"][action]
     # Add noise to force action - always sample - conditionals in JAX
-    torque = torque + jax.random.uniform(rng_input, shape=(1,),
-                                         minval=-params["torque_noise_max"], maxval=params["torque_noise_max"])
+    torque = torque + jax.random.uniform(rng_input, shape=(),
+                                         minval=-params["torque_noise_max"],
+                                         maxval=params["torque_noise_max"])
 
     # Augment state with force action so it can be passed to ds/dt
-    s_augmented = jnp.append(state[:4], torque)
+    s_augmented = jnp.array([state["joint_angle1"],
+                             state["joint_angle2"],
+                             state["velocity_1"],
+                             state["velocity_2"],
+                             torque])
     ns = rk4(s_augmented, params)
     joint_angle1 = wrap(ns[0], -jnp.pi, jnp.pi)
     joint_angle2 = wrap(ns[1], -jnp.pi, jnp.pi)
-    vel1 = jnp.clip(ns[2], -params["max_vel_1"], params["max_vel_1"])
-    vel2 = jnp.clip(ns[3], -params["max_vel_2"], params["max_vel_2"])
-    timestep = state[4]
-    state = jnp.array([joint_angle1, joint_angle2, vel1, vel2,
-                       timestep + 1])
-    done1 = (-jnp.cos(state[0]) - jnp.cos(state[1] + state[0]) > 1.)
+    velocity_1 = jnp.clip(ns[2], -params["max_vel_1"], params["max_vel_1"])
+    velocity_2 = jnp.clip(ns[3], -params["max_vel_2"], params["max_vel_2"])
+
+    # Check termination and construct updated state
+    done1 = (-jnp.cos(joint_angle1) - jnp.cos(joint_angle2 +
+                                              joint_angle1) > 1.)
     # Check number of steps in episode termination condition
-    done_steps = (timestep + 1 > params["max_steps_in_episode"])
+    done_steps = (state["time"] + 1 > params["max_steps_in_episode"])
     done = jnp.logical_or(done1, done_steps)
     reward = -1. * (1-done1)
+
+    state = {"joint_angle1": joint_angle1,
+             "joint_angle2": joint_angle2,
+             "velocity_1": velocity_1,
+             "velocity_2": velocity_2,
+             "time": state["time"] + 1,
+             "terminal": done}
     return get_obs(state), state, reward, done, {}
 
 
 def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
-    state = jax.random.uniform(rng_input, shape=(4,),
-                               minval=-0.1, maxval=0.1)
-    timestep = 0
-    state = jnp.hstack([state, timestep])
+    init_state = jax.random.uniform(rng_input, shape=(4,),
+                                    minval=-0.1, maxval=0.1)
+    state = {"joint_angle1": init_state[0],
+             "joint_angle2": init_state[1],
+             "velocity_1": init_state[2],
+             "velocity_2": init_state[3],
+             "time": 0,
+             "terminal": 0}
     return get_obs(state), state
 
 
 def get_obs(state):
     """ Return observation from raw state trafo. """
-    obs = jnp.array([jnp.cos(state[0]), jnp.sin(state[0]),
-                     jnp.cos(state[1]), jnp.sin(state[1]),
-                     state[2], state[3]])
+    obs = jnp.array([jnp.cos(state["joint_angle1"]),
+                     jnp.sin(state["joint_angle1"]),
+                     jnp.cos(state["joint_angle2"]),
+                     jnp.sin(state["joint_angle2"]),
+                     state["velocity_1"],
+                     state["velocity_2"]])
     return obs
 
 
-reset_acrobot = jit(reset, static_argnums=(1,))
-step_acrobot = jit(step, static_argnums=(1,))
+reset_acrobot = jit(reset)
+step_acrobot = jit(step)
 
 
 def dsdt(s_augmented, t, params):

@@ -17,26 +17,25 @@ def step(rng_input, params, state, action):
     """ Perform single timestep state transition. """
     # Sample new init state at each step and use only if there was a reset!
     ball_x, ball_y, paddle_x, paddle_y = sample_init_state(rng_input, params)
-    prev_done = state[5]
+    prev_done = state["prev_done"]
 
     # Move the paddle + drop the ball.
     dx = action - 1  # [-1, 0, 1] = Left, no-op, right.
-    paddle_x = (jnp.clip(state[2] + dx, 0, params["columns"] - 1)
-                * (1-prev_done) + paddle_x * prev_done)
-    ball_y = (state[1] + 1) * (1-prev_done) + ball_y * prev_done
-    ball_x = state[0] * (1-prev_done) + ball_x * prev_done
-    paddle_y = state[3] * (1-prev_done)  + paddle_y * prev_done
+    state["paddle_x"] = (jnp.clip(state["paddle_x"] + dx, 0,
+                                  params["columns"] - 1)
+                         * (1-prev_done) + paddle_x * prev_done)
+    state["ball_y"] = (state["ball_y"] + 1) * (1-prev_done) + ball_y * prev_done
+    state["ball_x"] = state["ball_x"] * (1-prev_done) + ball_x * prev_done
+    state["paddle_y"] = state["paddle_y"] * (1-prev_done) + paddle_y * prev_done
 
     # Rewrite reward as boolean multiplication
-    done1 = (ball_y == paddle_y)
+    state["prev_done"] = (ball_y == paddle_y)
     catched = (paddle_x == ball_x)
-    reward = done1*(1*catched + -1*(1-catched))
+    reward = state["prev_done"] * (1 * catched + -1 * (1 - catched))
 
     # Check number of steps in episode termination condition
-    time = state[4] + 1
-    done_steps = (time > params["max_steps_in_episode"])
-
-    state = jnp.array([ball_x, ball_y, paddle_x, paddle_y, time, done1])
+    state["time"] += 1
+    done_steps = (state["time"] > params["max_steps_in_episode"])
     return get_obs(state, params), state, reward, done_steps, {}
 
 
@@ -55,15 +54,22 @@ def reset(rng_input, params):
     """ Reset environment state by sampling initial position. """
     ball_x, ball_y, paddle_x, paddle_y = sample_init_state(rng_input, params)
     # Last two state vector correspond to timestep and done
-    state = jnp.array([ball_x, ball_y, paddle_x, paddle_y, 0, 0])
+    state = {"ball_x": ball_x,
+             "ball_y": ball_y,
+             "paddle_x": paddle_x,
+             "paddle_y": paddle_y,
+             "time": 0,
+             "prev_done": 0}
     return get_obs(state, params), state
 
 
 def get_obs(state, params):
     """ Return observation from raw state trafo. """
     board = jnp.zeros((params["rows"], params["columns"]))
-    board = jax.ops.index_update(board, jax.ops.index[state[1], state[0]], 1.)
-    board = jax.ops.index_update(board, jax.ops.index[state[3], state[2]], 1.)
+    board = jax.ops.index_update(board, jax.ops.index[state["ball_y"],
+                                                      state["ball_x"]], 1.)
+    board = jax.ops.index_update(board, jax.ops.index[state["paddle_y"],
+                                                      state["paddle_x"]], 1.)
     return board
 
 
