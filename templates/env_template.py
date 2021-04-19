@@ -1,6 +1,12 @@
 import jax
 import jax.numpy as jnp
+from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
+
+from typing import Union, Tuple
+import chex
+Array = chex.Array
+PRNGKey = chex.PRNGKey
 
 """
 Template for JAX Compatible Environments.
@@ -22,7 +28,7 @@ class YourCoolEnv(environment.Environment):
     def __init__(self):
         super().__init__()
         # Default environment parameters
-        self.env_params = {}
+        self.env_params = FrozenDict({})
 
     def step(self, key: PRNGKey, state: dict, action: int
              ) -> Tuple[Array, dict, float, bool, dict]:
@@ -31,7 +37,7 @@ class YourCoolEnv(environment.Environment):
         reward = 0
         done = False
         info = {}
-        return get_obs(state), state, reward, done, info
+        return self.get_obs(state), state, reward, done, info
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Reset environment state by sampling initial position. """
@@ -39,11 +45,11 @@ class YourCoolEnv(environment.Environment):
         state = {}
         state["var"] = jax.random.uniform(key, shape=(2,),
                                           minval=-high, maxval=high)
-        return get_obs(state), state
+        return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:
         """ Return observation from raw state trafo. """
-        return state
+        return obs
 
     @property
     def name(self) -> str:

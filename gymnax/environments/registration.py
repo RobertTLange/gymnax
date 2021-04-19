@@ -1,16 +1,11 @@
 import jax
 
 # =============================================================================
-from gymnax.environments.classic_control import Pendulum
-from gymnax.environments.classic_control import CartPole
-from gymnax.environments.classic_control import (reset_mountain_car,
-                                                 step_mountain_car,
-                                                 params_mountain_car)
-from gymnax.environments.classic_control import (reset_continuous_mountain_car,
-                                                 step_continuous_mountain_car,
-                                                 params_continuous_mountain_car)
-from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
-                                                 params_acrobot)
+from gymnax.environments.classic_control import (Pendulum,
+                                                 CartPole,
+                                                 MountainCar,
+                                                 ContinuousMountainCar,
+                                                 Acrobot)
 
 # # =============================================================================
 # from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
@@ -35,21 +30,18 @@ from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
 
 
 def make(env_id: str, seed_id: int = 0):
-    """ A JAX-version of of OpenAI's infamous env.make(env_name)"""
+    """ A JAX-version of OpenAI's infamous env.make(env_name)"""
     # 1. Classic OpenAI Control Tasks
     if env_id == "Pendulum-v0":
-        reset, step, env_params = reset_pendulum, step_pendulum, params_pendulum
+        env = Pendulum()
     elif env_id == "CartPole-v0":
         env = CartPole()
     elif env_id == "MountainCar-v0":
-        reset, step, env_params = (reset_mountain_car, step_mountain_car,
-                                   params_mountain_car)
+        env = MountainCar()
     elif env_id == "MountainCarContinuous-v0":
-        reset, step, env_params = (reset_continuous_mountain_car,
-                                   step_continuous_mountain_car,
-                                   params_continuous_mountain_car)
+        env = ContinuousMountainCar()
     elif env_id == "Acrobot-v1":
-        reset, step, env_params = reset_acrobot, step_acrobot, params_acrobot
+        env = Acrobot()
 
     # # 2. DeepMind's bsuite environments
     # elif env_id == "Catch-bsuite":

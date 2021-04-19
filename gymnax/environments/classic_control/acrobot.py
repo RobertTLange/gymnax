@@ -1,91 +1,122 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
-from ...utils.frozen_dict import FrozenDict
+from gymnax.utils.frozen_dict import FrozenDict
+from gymnax.environments import environment, spaces
 
-# JAX Compatible version of Acrobot-v1 OpenAI gym environment. Source:
-# github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py
-# NOTES: We only implement the default 'book' version
-
-# Default environment parameters
-params_acrobot = FrozenDict({"dt": 0.2,
-                             "link_length_1": 1.0,
-                             "link_length_2": 1.0,
-                             "link_mass_1": 1.0,
-                             "link_mass_2": 1.0,
-                             "link_com_pos_1": 0.5,
-                             "link_com_pos_2": 0.5,
-                             "link_moi": 1.0,
-                             "max_vel_1": 4*jnp.pi,
-                             "max_vel_2": 9*jnp.pi,
-                             "available_torque": jnp.array([-1., 0., +1.]),
-                             "torque_noise_max": 0.0,
-                             "max_steps_in_episode": 500})
+from typing import Union, Tuple
+import chex
+Array = chex.Array
+PRNGKey = chex.PRNGKey
 
 
-def step(rng_input, params, state, action):
-    """ Perform single timestep state transition. """
-    torque = params["available_torque"][action]
-    # Add noise to force action - always sample - conditionals in JAX
-    torque = torque + jax.random.uniform(rng_input, shape=(),
-                                         minval=-params["torque_noise_max"],
-                                         maxval=params["torque_noise_max"])
+class Acrobot(environment.Environment):
+    """
+    JAX Compatible version of Acrobot-v1 OpenAI gym environment. Source:
+    github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py
+    Note that we only implement the default 'book' version.
+    """
+    def __init__(self):
+        super().__init__()
+        # Default environment parameters
+        self.env_params = FrozenDict({"dt": 0.2,
+                                      "link_length_1": 1.0,
+                                      "link_length_2": 1.0,
+                                      "link_mass_1": 1.0,
+                                      "link_mass_2": 1.0,
+                                      "link_com_pos_1": 0.5,
+                                      "link_com_pos_2": 0.5,
+                                      "link_moi": 1.0,
+                                      "max_vel_1": 4*jnp.pi,
+                                      "max_vel_2": 9*jnp.pi,
+                                      "available_torque": jnp.array(
+                                                            [-1., 0., +1.]),
+                                      "torque_noise_max": 0.0,
+                                      "max_steps_in_episode": 500})
 
-    # Augment state with force action so it can be passed to ds/dt
-    s_augmented = jnp.array([state["joint_angle1"],
-                             state["joint_angle2"],
-                             state["velocity_1"],
-                             state["velocity_2"],
-                             torque])
-    ns = rk4(s_augmented, params)
-    joint_angle1 = wrap(ns[0], -jnp.pi, jnp.pi)
-    joint_angle2 = wrap(ns[1], -jnp.pi, jnp.pi)
-    velocity_1 = jnp.clip(ns[2], -params["max_vel_1"], params["max_vel_1"])
-    velocity_2 = jnp.clip(ns[3], -params["max_vel_2"], params["max_vel_2"])
+    def step(self, key: PRNGKey, state: dict, action: int
+             ) -> Tuple[Array, dict, float, bool, dict]:
+        """ Perform single timestep state transition. """
+        torque = self.env_params["available_torque"][action]
+        # Add noise to force action - always sample - conditionals in JAX
+        torque = torque + jax.random.uniform(
+                                key, shape=(),
+                                minval=-self.env_params["torque_noise_max"],
+                                maxval=self.env_params["torque_noise_max"])
 
-    # Check termination and construct updated state
-    done1 = (-jnp.cos(joint_angle1) - jnp.cos(joint_angle2 +
-                                              joint_angle1) > 1.)
-    # Check number of steps in episode termination condition
-    done_steps = (state["time"] + 1 > params["max_steps_in_episode"])
-    done = jnp.logical_or(done1, done_steps)
-    reward = -1. * (1-done1)
+        # Augment state with force action so it can be passed to ds/dt
+        s_augmented = jnp.array([state["joint_angle1"],
+                                 state["joint_angle2"],
+                                 state["velocity_1"],
+                                 state["velocity_2"],
+                                 torque])
+        ns = rk4(s_augmented, self.env_params)
+        joint_angle1 = wrap(ns[0], -jnp.pi, jnp.pi)
+        joint_angle2 = wrap(ns[1], -jnp.pi, jnp.pi)
+        velocity_1 = jnp.clip(ns[2], -self.env_params["max_vel_1"],
+                              self.env_params["max_vel_1"])
+        velocity_2 = jnp.clip(ns[3], -self.env_params["max_vel_2"],
+                              self.env_params["max_vel_2"])
 
-    state = {"joint_angle1": joint_angle1,
-             "joint_angle2": joint_angle2,
-             "velocity_1": velocity_1,
-             "velocity_2": velocity_2,
-             "time": state["time"] + 1,
-             "terminal": done}
-    return get_obs(state), state, reward, done, {}
+        # Check termination and construct updated state
+        done1 = (-jnp.cos(joint_angle1) - jnp.cos(joint_angle2 +
+                                                  joint_angle1) > 1.)
+        # Check number of steps in episode termination condition
+        done_steps = (state["time"] + 1 >
+                      self.env_params["max_steps_in_episode"])
+        done = jnp.logical_or(done1, done_steps)
+        reward = -1. * (1-done1)
 
+        state = {"joint_angle1": joint_angle1,
+                 "joint_angle2": joint_angle2,
+                 "velocity_1": velocity_1,
+                 "velocity_2": velocity_2,
+                 "time": state["time"] + 1,
+                 "terminal": done}
+        return self.get_obs(state), state, reward, done, {}
 
-def reset(rng_input, params):
-    """ Reset environment state by sampling initial position. """
-    init_state = jax.random.uniform(rng_input, shape=(4,),
-                                    minval=-0.1, maxval=0.1)
-    state = {"joint_angle1": init_state[0],
-             "joint_angle2": init_state[1],
-             "velocity_1": init_state[2],
-             "velocity_2": init_state[3],
-             "time": 0,
-             "terminal": 0}
-    return get_obs(state), state
+    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+        """ Reset environment state by sampling initial position. """
+        init_state = jax.random.uniform(key, shape=(4,),
+                                        minval=-0.1, maxval=0.1)
+        state = {"joint_angle1": init_state[0],
+                 "joint_angle2": init_state[1],
+                 "velocity_1": init_state[2],
+                 "velocity_2": init_state[3],
+                 "time": 0,
+                 "terminal": 0}
+        return self.get_obs(state), state
 
+    def get_obs(self, state: dict) -> Array:
+        """ Return observation from raw state trafo. """
+        return jnp.array([jnp.cos(state["joint_angle1"]),
+                          jnp.sin(state["joint_angle1"]),
+                          jnp.cos(state["joint_angle2"]),
+                          jnp.sin(state["joint_angle2"]),
+                          state["velocity_1"],
+                          state["velocity_2"]])
 
-def get_obs(state):
-    """ Return observation from raw state trafo. """
-    obs = jnp.array([jnp.cos(state["joint_angle1"]),
-                     jnp.sin(state["joint_angle1"]),
-                     jnp.cos(state["joint_angle2"]),
-                     jnp.sin(state["joint_angle2"]),
-                     state["velocity_1"],
-                     state["velocity_2"]])
-    return obs
+    @property
+    def name(self) -> str:
+        """ Environment name. """
+        return "Acrobot-v0"
 
+    @property
+    def action_space(self):
+        """ Action space of the environment. """
+        return spaces.Discrete(3)
 
-reset_acrobot = jit(reset)
-step_acrobot = jit(step)
+    @property
+    def observation_space(self):
+        """ Observation space of the environment. """
+        high = jnp.array([1.0, 1.0, 1.0, 1.0,
+                          self.env_params["max_vel_1"],
+                          self.env_params["max_vel_2"]], dtype=jnp.float32)
+        return spaces.Box(-high, high, (6,))
+
+    @property
+    def state_space(self):
+        """ State space of the environment. """
+        return spaces.Dict(["var"])
 
 
 def dsdt(s_augmented, t, params):
@@ -105,8 +136,9 @@ def dsdt(s_augmented, t, params):
     phi1 = - m2 * l1 * lc2 * dtheta2 ** 2 * jnp.sin(theta2) \
            - 2 * m2 * l1 * lc2 * dtheta2 * dtheta1 * jnp.sin(theta2)  \
         + (m1 * lc1 + m2 * l1) * g * jnp.cos(theta1 - jnp.pi / 2) + phi2
-    ddtheta2 = (a + d2 / d1 * phi1 - m2 * l1 * lc2 * dtheta1 ** 2 * jnp.sin(theta2) - phi2) \
-        / (m2 * lc2 ** 2 + I2 - d2 ** 2 / d1)
+    ddtheta2 = (a + d2 / d1 * phi1 - m2 * l1 * lc2 * dtheta1 ** 2
+                * jnp.sin(theta2) - phi2) \
+                / (m2 * lc2 ** 2 + I2 - d2 ** 2 / d1)
     ddtheta1 = -(d2 * ddtheta2 + phi1) / d1
     return jnp.array([dtheta1, dtheta2, ddtheta1, ddtheta2, 0.])
 

@@ -1,62 +1,99 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
-from ...utils.frozen_dict import FrozenDict
+from gymnax.utils.frozen_dict import FrozenDict
+from gymnax.environments import environment, spaces
 
-# JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment. Source:
-# github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py
-
-# Default environment parameters
-params_continuous_mountain_car = FrozenDict({"min_action": -1.0,
-                                             "max_action": 1,
-                                             "min_position": -1.2,
-                                             "max_position": 0.6,
-                                             "max_speed": 0.07,
-                                             "goal_position": 0.45,
-                                             "goal_velocity": 0.0,
-                                             "power": 0.0015,
-                                             "gravity": 0.0025,
-                                             "max_steps_in_episode": 999})
+from typing import Union, Tuple
+import chex
+Array = chex.Array
+PRNGKey = chex.PRNGKey
 
 
-def step(rng_input, params, state, action):
-    """ Perform single timestep state transition. """
-    force = jnp.clip(action, params["min_action"], params["max_action"])
-    velocity = (state["velocity"] + force * params["power"]
-                - jnp.cos(3 * state["position"]) * params["gravity"])
-    velocity = jnp.clip(velocity, -params["max_speed"], params["max_speed"])
-    position = state["position"] + velocity
-    position = jnp.clip(position, params["min_position"], params["max_position"])
-    velocity = velocity * (1 - (position >= params["goal_position"])
-                           * (velocity < 0))
-    done1 = ((position >= params["goal_position"])
-             * (velocity >= params["goal_velocity"]))
-    # Check number of steps in episode termination condition
-    done_steps = (state["time"] + 1 > params["max_steps_in_episode"])
-    done = jnp.logical_or(done1, done_steps)
-    reward = -0.1*action[0]**2 + 100*done1
-    state = {"position": position,
-             "velocity": velocity,
-             "time": state["time"] + 1,
-             "terminal": done}
-    return get_obs(state), state, reward, done, {}
+class ContinuousMountainCar(environment.Environment):
+    """
+    JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment. Source:
+    github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py
+    """
+    def __init__(self):
+        super().__init__()
+        # Default environment parameters
+        self.env_params = FrozenDict({"min_action": -1.0,
+                                      "max_action": 1,
+                                      "min_position": -1.2,
+                                      "max_position": 0.6,
+                                      "max_speed": 0.07,
+                                      "goal_position": 0.45,
+                                      "goal_velocity": 0.0,
+                                      "power": 0.0015,
+                                      "gravity": 0.0025,
+                                      "max_steps_in_episode": 999})
 
+    def step(self, key: PRNGKey, state: dict, action: int
+             ) -> Tuple[Array, dict, float, bool, dict]:
+        """ Perform single timestep state transition. """
+        force = jnp.clip(action, self.env_params["min_action"], self.env_params["max_action"])
+        velocity = (state["velocity"] + force * self.env_params["power"]
+                    - jnp.cos(3 * state["position"]) *
+                    self.env_params["gravity"])
+        velocity = jnp.clip(velocity, -self.env_params["max_speed"],
+                            self.env_params["max_speed"])
+        position = state["position"] + velocity
+        position = jnp.clip(position, self.env_params["min_position"],
+                            self.env_params["max_position"])
+        velocity = velocity * (1 - (position >=
+                                    self.env_params["goal_position"])
+                               * (velocity < 0))
+        done1 = ((position >= self.env_params["goal_position"])
+                 * (velocity >= self.env_params["goal_velocity"]))
+        # Check number of steps in episode termination condition
+        done_steps = (state["time"] + 1 >
+                      self.env_params["max_steps_in_episode"])
+        done = jnp.logical_or(done1, done_steps)
+        reward = -0.1*action**2 + 100*done1
+        state = {"position": position,
+                 "velocity": velocity,
+                 "time": state["time"] + 1,
+                 "terminal": done}
+        return self.get_obs(state), state, reward, done, {}
 
-def reset(rng_input, params):
-    """ Reset environment state by sampling initial position. """
-    init_state = jax.random.uniform(rng_input, shape=(),
-                                    minval=-0.6, maxval=-0.4)
-    state = {"position": init_state,
-             "velocity": 0,
-             "time": 0,
-             "terminal": 0}
-    return get_obs(state), state
+    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+        """ Reset environment state by sampling initial position. """
+        init_state = jax.random.uniform(key, shape=(),
+                                        minval=-0.6, maxval=-0.4)
+        state = {"position": init_state,
+                 "velocity": 0,
+                 "time": 0,
+                 "terminal": 0}
+        return self.get_obs(state), state
 
+    def get_obs(self, state: dict) -> Array:
+        """ Return observation from raw state trafo. """
+        return jnp.array([state["position"],
+                          state["velocity"]])
 
-def get_obs(state):
-    """ Return observation from raw state trafo. """
-    return jnp.array([state["position"], state["velocity"]])
+    @property
+    def name(self) -> str:
+        """ Environment name. """
+        return "ContinuousMountainCar-v0"
 
+    @property
+    def action_space(self):
+        """ Action space of the environment. """
+        return spaces.Continuous(minval=self.env_params["min_action"],
+                                 maxval=self.env_params["max_action"])
 
-reset_continuous_mountain_car = jit(reset, static_argnums=(1,))
-step_continuous_mountain_car = jit(step, static_argnums=(1,))
+    @property
+    def observation_space(self):
+        """ Observation space of the environment. """
+        low = jnp.array([self.env_params["min_position"],
+                         -self.env_params["max_speed"]],
+                        dtype=jnp.float32)
+        high = jnp.array([self.env_params["max_position"],
+                          self.env_params["max_speed"]],
+                         dtype=jnp.float32)
+        return spaces.Box(low, high, (2,))
+
+    @property
+    def state_space(self):
+        """ State space of the environment. """
+        return spaces.Dict(["position", "velocity", "time", "terminal"])
