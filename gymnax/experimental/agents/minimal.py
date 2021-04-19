@@ -13,7 +13,7 @@ class MinimalEvaluationAgent():
         action = self.policy(key, agent_params, obs)
         return action, actor_state
 
-    def init_actor_state(self):
+    def init_actor_state(self, evaluate=False):
         return None
 
 
@@ -39,5 +39,5 @@ class MinimalInterleavedAgent():
     def init_learner_state(self, agent_params):
         return None
 
-    def init_actor_state(self):
+    def init_actor_state(self, evaluate=False):
         return None

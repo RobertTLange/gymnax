@@ -2,9 +2,7 @@ from gymnax.environments.classic_control.pendulum import (reset_pendulum,
                                                           step_pendulum,
                                                           params_pendulum)
 
-from gymnax.environments.classic_control.cartpole import (reset_cartpole,
-                                                          step_cartpole,
-                                                          params_cartpole)
+from gymnax.environments.classic_control.cartpole import CartPole
 
 from gymnax.environments.classic_control.mountain_car import (reset_mountain_car,
                                                               step_mountain_car,
