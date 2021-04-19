@@ -39,6 +39,11 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
         return type(self).__name__
 
     @property
+    def params(self):
+        """ Returns environment params."""
+        return self.env_params
+
+    @property
     @abc.abstractmethod
     def action_space(self):
         """ Action space of the environment."""
@@ -46,9 +51,9 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def observation_space(self):
-        """ Action space of the environment."""
+        """ Observation space of the environment."""
 
     @property
     @abc.abstractmethod
     def state_space(self):
-        """ Action space of the environment."""
+        """ State space of the environment."""
