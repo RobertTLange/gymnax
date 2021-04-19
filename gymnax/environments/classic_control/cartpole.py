@@ -2,18 +2,18 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 from ...utils.frozen_dict import FrozenDict
-from gymnax.environments import environment
+from gymnax.environments import environment, spaces
 from typing import Union, Tuple
 import chex
 Array = chex.Array
 PRNGKey = chex.PRNGKey
 
-# JAX Compatible version of CartPole-v0 OpenAI gym environment. Source:
-# github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
-
-
 
 class CartPole(environment.Environment):
+    """
+    JAX Compatible version of CartPole-v0 OpenAI gym environment. Source:
+    github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
+    """
     def __init__(self):
         super().__init__()
         # Default environment parameters for CartPole-v0
@@ -31,7 +31,7 @@ class CartPole(environment.Environment):
 
     def step(self, key: PRNGKey, state: dict, action: int
              ) -> Tuple[Array, dict,float, bool, dict]:
-        """ Performs step transitions in the environment."""
+        """ Performs step transitions in the environment. """
         force = (self.env_params["force_mag"] * action
                  - self.env_params["force_mag"]*(1-action))
         costheta = jnp.cos(state["theta"])
@@ -74,7 +74,7 @@ class CartPole(environment.Environment):
         return self.get_obs(state), state, reward, done, {}
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
-        """ Performs resetting of environment."""
+        """ Performs resetting of environment. """
         init_state = jax.random.uniform(key, minval=-0.05,
                                         maxval=0.05, shape=(4,))
         timestep = 0
@@ -87,23 +87,31 @@ class CartPole(environment.Environment):
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:
-        """ Applies observation function to state."""
+        """ Applies observation function to state. """
         return jnp.array([state["x"], state["x_dot"],
                           state["theta"], state["theta_dot"]])
 
     @property
     def name(self) -> str:
-        """Distribution name."""
+        """ Environment name. """
         return "CartPole-v0"
 
     @property
     def action_space(self):
-        """ Action space of the environment."""
+        """ Action space of the environment. """
+        return spaces.Discrete(2)
 
     @property
     def observation_space(self):
-        """ Action space of the environment."""
+        """ Observation space of the environment. """
+        high = jnp.array([self.env_params["x_threshold"] * 2,
+                          jnp.finfo(jnp.float32).max,
+                          self.env_params["theta_threshold_radians"] * 2,
+                          jnp.finfo(jnp.float32).max])
+        return spaces.Box(-high, high, (4,))
 
     @property
     def state_space(self):
-        """ Action space of the environment."""
+        """ State space of the environment. """
+        return spaces.Dict(["x", "x_dot", "theta", "theta_dot",
+                            "time", "terminal"])

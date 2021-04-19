@@ -11,7 +11,7 @@ PRNGKey = chex.PRNGKey
 
 
 class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
-    """Jittable abstract base class for all gymnax Environments."""
+    """ Jittable abstract base class for all gymnax Environments. """
 
     @abc.abstractmethod
     def step(self, key: PRNGKey, state: dict, action: Union[int, float]
