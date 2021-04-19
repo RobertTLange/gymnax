@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
+from gymnax.environments import environment, spaces
 
 """
 Template for JAX Compatible Environments.
@@ -17,36 +17,50 @@ Steps for adding your own environments/contributing to the repository:
 8. Open a pull request.
 """
 
-# Default environment parameters
-params_env_name = {"max_speed": 8,
-                   "max_steps_in_episode": 100}
 
+class YourCoolEnv(environment.Environment):
+    def __init__(self):
+        super().__init__()
+        # Default environment parameters
+        self.env_params = {}
 
-def step(rng_input, params, state, action):
-    """ Perform single timestep state transition. """
-    action = jnp.clip(action,
-                      -params["max_speed"],
-                      params["max_speed"])
-    state = 0
-    reward = 0
-    done = False
-    info = {}
-    return get_obs(state), state, reward, done, info
+    def step(self, key: PRNGKey, state: dict, action: int
+             ) -> Tuple[Array, dict, float, bool, dict]:
+        """ Perform single timestep state transition. """
+        action = jnp.clip(action, -1, 1)
+        reward = 0
+        done = False
+        info = {}
+        return get_obs(state), state, reward, done, info
 
+    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+        """ Reset environment state by sampling initial position. """
+        high = jnp.array([jnp.pi, 1])
+        state = {}
+        state["var"] = jax.random.uniform(key, shape=(2,),
+                                          minval=-high, maxval=high)
+        return get_obs(state), state
 
-def reset(rng_input, params):
-    """ Reset environment state by sampling initial position. """
-    high = jnp.array([jnp.pi, 1])
-    state = jax.random.uniform(rng_input, shape=(2,),
-                               minval=-high, maxval=high)
-    return get_obs(state), state
+    def get_obs(self, state: dict) -> Array:
+        """ Return observation from raw state trafo. """
+        return state
 
+    @property
+    def name(self) -> str:
+        """ Environment name. """
+        return "YourCoolEnv-v0"
 
-def get_obs(state):
-    """ Return observation from raw state trafo. """
-    obs = 2*state
-    return obs
+    @property
+    def action_space(self):
+        """ Action space of the environment. """
+        return spaces.Discrete(2)
 
+    @property
+    def observation_space(self):
+        """ Observation space of the environment. """
+        return spaces.Box(-1, 1, (1,))
 
-reset_env_name = jit(reset)
-step_env_name = jit(step)
+    @property
+    def state_space(self):
+        """ State space of the environment. """
+        return spaces.Dict(["var"])

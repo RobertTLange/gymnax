@@ -1,8 +1,7 @@
 import jax
 
 # =============================================================================
-from gymnax.environments.classic_control import (reset_pendulum, step_pendulum,
-                                                 params_pendulum)
+from gymnax.environments.classic_control import Pendulum
 from gymnax.environments.classic_control import CartPole
 from gymnax.environments.classic_control import (reset_mountain_car,
                                                  step_mountain_car,
@@ -13,26 +12,26 @@ from gymnax.environments.classic_control import (reset_continuous_mountain_car,
 from gymnax.environments.classic_control import (reset_acrobot, step_acrobot,
                                                  params_acrobot)
 
-# =============================================================================
-from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
-from gymnax.environments.bsuite import (reset_deep_sea, step_deep_sea,
-                                        params_deep_sea)
-
-# =============================================================================
-from gymnax.environments.minatar import (reset_asterix, step_asterix,
-                                         params_asterix)
-from gymnax.environments.minatar import (reset_breakout, step_breakout,
-                                         params_breakout)
-from gymnax.environments.minatar import (reset_freeway, step_freeway,
-                                         params_freeway)
-from gymnax.environments.minatar import (reset_seaquest, step_seaquest,
-                                         params_seaquest)
-from gymnax.environments.minatar import (reset_space_invaders,
-                                         step_space_invaders,
-                                         params_space_invaders)
-
-# =============================================================================
-from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
+# # =============================================================================
+# from gymnax.environments.bsuite import reset_catch, step_catch, params_catch
+# from gymnax.environments.bsuite import (reset_deep_sea, step_deep_sea,
+#                                         params_deep_sea)
+#
+# # =============================================================================
+# from gymnax.environments.minatar import (reset_asterix, step_asterix,
+#                                          params_asterix)
+# from gymnax.environments.minatar import (reset_breakout, step_breakout,
+#                                          params_breakout)
+# from gymnax.environments.minatar import (reset_freeway, step_freeway,
+#                                          params_freeway)
+# from gymnax.environments.minatar import (reset_seaquest, step_seaquest,
+#                                          params_seaquest)
+# from gymnax.environments.minatar import (reset_space_invaders,
+#                                          step_space_invaders,
+#                                          params_space_invaders)
+#
+# # =============================================================================
+# from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
 
 
 def make(env_id: str, seed_id: int = 0):

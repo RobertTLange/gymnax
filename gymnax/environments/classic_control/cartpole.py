@@ -30,7 +30,7 @@ class CartPole(environment.Environment):
                                       "max_steps_in_episode": 200})
 
     def step(self, key: PRNGKey, state: dict, action: int
-             ) -> Tuple[Array, dict,float, bool, dict]:
+             ) -> Tuple[Array, dict, float, bool, dict]:
         """ Performs step transitions in the environment. """
         force = (self.env_params["force_mag"] * action
                  - self.env_params["force_mag"]*(1-action))

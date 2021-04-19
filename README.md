@@ -7,13 +7,12 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 ```python
 import jax, gymnax
 
-rng, reset, step, env_params = gymnax.make("Pendulum-v0")
+rng, env = gymnax.make("Pendulum-v0")
 rng, key_reset, key_step = jax.random.split(rng, 3)
 
-obs, state = reset(key_reset, env_params)
+obs, state = env.reset(key_reset)
 action = your_jax_policy(policy_params, obs)
-next_obs, next_state, reward, done, _ = step(key_step, env_params,
-                                             state, action)
+n_obs, n_state, reward, done, _ = env.step(key_step, state, action)
 ```
 
 <details><summary>
@@ -79,10 +78,10 @@ You can find more details in the [JAX documentation](https://github.com/google/j
 
 ![](docs/classic_runtime_benchmark.png)
 
-## Examples, Notebooks & Colabs
+## Getting started
 * :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout the API and accelerated control tasks.
 
-## Citing `gymnax`
+### Citing `gymnax` & Acknowledgements
 
 To cite this repository:
 
@@ -96,6 +95,10 @@ To cite this repository:
 }
 ```
 
-## Contributing & Development
+Much of the design of `gymnax` has been inspired by the classic OpenAI gym RL environment API. Furthermore, it relies on bits and pieces from DeepMind JAX eco-system. I am grateful to the JAX team and Matteo Hessel for their support and motivating words.
 
-You can find a template and instructions for how to add a new environment [here](templates/env_template). Feel free to ping me ([@RobertTLange](https://twitter.com/RobertTLange)), open an issue or start contributing yourself.
+## Notes, Development & Questions
+
+- If you find a bug or want a new feature, feel free to contact me [@RobertTLange](https://twitter.com/RobertTLange) or create an issue :hugs:
+- You can check out the history of release modifications in [`CHANGELOG.md`](CHANGELOG.md) (*added, changed, fixed*).
+- You can find a set of open milestones in [`CONTRIBUTING.md`](CONTRIBUTING.md).
