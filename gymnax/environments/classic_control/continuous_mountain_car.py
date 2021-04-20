@@ -69,7 +69,7 @@ class ContinuousMountainCar(environment.Environment):
     def get_obs(self, state: dict) -> Array:
         """ Return observation from raw state trafo. """
         return jnp.array([state["position"],
-                          state["velocity"]])
+                          state["velocity"]]).squeeze()
 
     @property
     def name(self) -> str:
