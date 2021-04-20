@@ -1,3 +1,4 @@
+
 def np_state_to_jax(env, env_name: str="Pendulum-v0"):
     """ Helper that collects env state into dict for JAX `step`. """
     if env_name in ["Pendulum-v0", "CartPole-v0",
@@ -42,14 +43,3 @@ def control_np_to_jax(env, env_name: str="Pendulum-v0"):
                             "time": 0,
                             "terminal": 0}
     return state_gym_to_jax
-
-
-def assert_state_correct(env_gym, env_name: str, state_jax: dict):
-    """ Check that numpy-based env state is same as JAX dict. """
-    state_gym = np_state_to_jax(env, env_name)
-    # Loop over keys and assert that individual entries are same/close
-    raise NotImplementedError
-
-
-def assert_transition_correct():
-    raise NotImplementedError
