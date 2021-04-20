@@ -76,4 +76,4 @@ class YourCoolEnv(environment.Environment):
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict(["var"])
+        return spaces.Dict(["state_var"])

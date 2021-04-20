@@ -1,50 +1,70 @@
 import jax
+import jax.numpy as jnp
 import gym
-import gymnax
 import unittest, math
 import numpy as np
 
+import gymnax
+from gymnax.utils import (np_state_to_jax,
+                          assert_correct_transit,
+                          assert_correct_state)
 
-class TestEnv(unittest.TestCase):
-    num_episodes, num_steps = 1000, 150
-    tolerance = 1e-04
-    env_name = 'env-v0'
 
-    def test_env_step(self):
-        """ Test a step transition for the env. """
-        env = gym.make(TestEnv.env_name)
-        rng, reset, step, env_params = gymnax.make(TestEnv.env_name)
+num_episodes, num_steps = 10, 150
+tolerance = 1e-04
 
-        # Loop over test episodes
-        for ep in range(TestEnv.num_episodes):
-            obs = env.reset()
-            # Loop over test episode steps
-            for s in range(TestEnv.num_steps):
-                action = env.action_space.sample()
-                state_gym = env.state[:]
-                obs_gym, reward_gym, done_gym, _ = env.step(action)
 
-                rng, rng_input = jax.random.split(rng)
-                obs_jax, state_jax, reward_jax, done_jax, _ = step(rng_input,
-                                                                   env_params, state_gym,
-                                                                   action)
+def test_step(env_name):
+    """ Test a step transition for the env. """
+    env_gym = gym.make(env_name)
+    rng, env_jax = gymnax.make(env_name)
+    # Create jitted version of step transition function
+    jit_step = jax.jit(env_jax.step)
 
-                # Check for correctness of transitions
-                assert math.isclose(reward_gym, reward_jax,
-                                    rel_tol=TestEnv.tolerance)
-                self.assertEqual(done_gym, done_jax)
-                assert np.allclose(obs_gym, obs_jax,
-                                   atol=TestEnv.tolerance)
+    # Loop over test episodes
+    for ep in range(num_episodes):
+        obs = env_gym.reset()
+        # Loop over test episode steps
+        for s in range(num_steps):
+            action = env_gym.action_space.sample()
+            state = np_state_to_jax(env_gym, env_name)
+            obs_gym, reward_gym, done_gym, _ = env_gym.step(action)
 
-    def test_env_reset(self):
-        """ Test reset obs/state is in space of OpenAI version. """
-        env = gym.make(TestEnv.env_name)
-        rng, reset, step, env_params = gymnax.make(TestEnv.env_name)
-        for ep in range(TestEnv.num_episodes):
             rng, rng_input = jax.random.split(rng)
-            obs, state = reset(rng_input, env_params)
-            # Check observation space
-            for i in range(6):
-                self.assertTrue(env.observation_space.low[i]
-                                <= obs[i]
-                                <= env.observation_space.high[i])
+            obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
+                                                                rng_input,
+                                                                state,
+                                                                action)
+            obs_jit, state_jit, reward_jit, done_jit, _ = jit_step(
+                                                                rng_input,
+                                                                state,
+                                                                action)
+
+            # Check correctness of transition
+            assert_correct_transit(obs_gym, reward_gym, done_gym,
+                                   obs_jax, reward_jax, done_jax,
+                                   tolerance)
+            assert_correct_transit(obs_gym, reward_gym, done_gym,
+                                   obs_jit, reward_jit, done_jit,
+                                   tolerance)
+
+            # Check that post-transition states are equal
+            assert_correct_state(env_gym, env_name, state_jax,
+                                 tolerance)
+            assert_correct_state(env_gym, env_name, state_jit,
+                                 tolerance)
+
+            if done_gym:
+                break
+
+
+def test_reset(env_name):
+    """ Test reset obs/state is in space of OpenAI version. """
+    env_gym = gym.make(env_name)
+    rng, env_jax = gymnax.make(env_name)
+    for ep in range(num_episodes):
+        rng, rng_input = jax.random.split(rng)
+        obs, state = env_jax.reset(rng_input)
+        # Check state and observation space
+        env_jax.state_space.contains(state)
+        env_jax.observation_space.contains(obs)
