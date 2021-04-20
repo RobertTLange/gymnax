@@ -121,10 +121,19 @@ class CartPole(environment.Environment):
                           jnp.finfo(jnp.float32).max,
                           self.env_params["theta_threshold_radians"] * 2,
                           jnp.finfo(jnp.float32).max])
-        return spaces.Box(-high, high, (4,))
+        return spaces.Box(-high, high, (4,), dtype=jnp.float32)
 
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict(["x", "x_dot", "theta", "theta_dot",
-                            "time", "terminal"])
+        high = jnp.array([self.env_params["x_threshold"] * 2,
+                          jnp.finfo(jnp.float32).max,
+                          self.env_params["theta_threshold_radians"] * 2,
+                          jnp.finfo(jnp.float32).max])
+        return spaces.Dict(
+            {"x": spaces.Box(-high[0], high[0], (), jnp.float32),
+             "x_dot": spaces.Box(-high[1], high[1], (), jnp.float32),
+             "theta": spaces.Box(-high[2], high[2], (), jnp.float32),
+             "theta_dot": spaces.Box(-high[3], high[3], (), jnp.float32),
+             "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+             "terminal": spaces.Discrete(2)})

@@ -93,8 +93,9 @@ class ContinuousMountainCar(environment.Environment):
     @property
     def action_space(self):
         """ Action space of the environment. """
-        return spaces.Continuous(minval=self.env_params["min_action"],
-                                 maxval=self.env_params["max_action"])
+        return spaces.Box(low=self.env_params["min_action"],
+                          high=self.env_params["max_action"],
+                          shape=())
 
     @property
     def observation_space(self):
@@ -105,9 +106,19 @@ class ContinuousMountainCar(environment.Environment):
         high = jnp.array([self.env_params["max_position"],
                           self.env_params["max_speed"]],
                          dtype=jnp.float32)
-        return spaces.Box(low, high, (2,))
+        return spaces.Box(low, high, shape=(2,), dtype=jnp.float32)
 
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict(["position", "velocity", "time", "terminal"])
+        low = jnp.array([self.env_params["min_position"],
+                         -self.env_params["max_speed"]],
+                        dtype=jnp.float32)
+        high = jnp.array([self.env_params["max_position"],
+                          self.env_params["max_speed"]],
+                         dtype=jnp.float32)
+        return spaces.Dict(
+            {"position": spaces.Box(low[0], high[0], (), dtype=jnp.float32),
+             "velocity": spaces.Box(low[1], high[1], (), dtype=jnp.float32),
+             "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+             "terminal": spaces.Discrete(2)})

@@ -30,7 +30,7 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def is_terminal(self, state: dict) -> bool:
-        """ Check whether state is terminal. """
+        """ Check whether state transition is terminal. """
 
     def discount(self, state: dict) -> float:
         """ Return a discount of zero if the episode has terminated. """
@@ -45,7 +45,7 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
 
     @property
     def name(self) -> str:
-        """Distribution name."""
+        """Environment name."""
         return type(self).__name__
 
     @property

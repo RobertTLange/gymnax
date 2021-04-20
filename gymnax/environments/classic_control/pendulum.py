@@ -88,21 +88,28 @@ class Pendulum(environment.Environment):
     @property
     def action_space(self):
         """ Action space of the environment. """
-        return spaces.Continuous(minval=-self.env_params["max_torque"],
-                                 maxval=self.env_params["max_torque"])
+        return spaces.Box(low=-self.env_params["max_torque"],
+                          high=self.env_params["max_torque"],
+                          shape=(), dtype=jnp.float32)
 
     @property
     def observation_space(self):
         """ Observation space of the environment. """
         high = jnp.array([1., 1., self.env_params["max_speed"]],
                          dtype=jnp.float32)
-        return spaces.Box(-high, high, (3,))
+        return spaces.Box(-high, high, shape=(3,), dtype=jnp.float32)
 
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict(["theta", "theta_dot",
-                            "time", "terminal"])
+        return spaces.Dict(
+           {"theta": spaces.Box(-jnp.finfo(jnp.float32).max,
+                                jnp.finfo(jnp.float32).max, (), jnp.float32),
+            "theta_dot": spaces.Box(-jnp.finfo(jnp.float32).max,
+                                    jnp.finfo(jnp.float32).max, (),
+                                    jnp.float32),
+            "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+            "terminal": spaces.Discrete(2)})
 
 
 def angle_normalize(x):

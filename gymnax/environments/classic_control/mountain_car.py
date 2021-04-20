@@ -100,9 +100,20 @@ class MountainCar(environment.Environment):
         high = jnp.array([self.env_params["max_position"],
                           self.env_params["max_speed"]],
                          dtype=jnp.float32)
-        return spaces.Box(low, high, (2,))
+        return spaces.Box(low, high, (2,), dtype=jnp.float32)
 
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict(["position", "velocity", "time", "terminal"])
+        low = jnp.array([self.env_params["min_position"],
+                         -self.env_params["max_speed"]],
+                        dtype=jnp.float32)
+        high = jnp.array([self.env_params["max_position"],
+                          self.env_params["max_speed"]],
+                         dtype=jnp.float32)
+
+        return spaces.Dict(
+            {"position": spaces.Box(low[0], high[0], (), dtype=jnp.float32),
+             "velocity": spaces.Box(low[1], high[1], (), dtype=jnp.float32),
+             "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+             "terminal": spaces.Discrete(2)})

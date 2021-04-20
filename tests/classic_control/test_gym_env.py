@@ -65,8 +65,6 @@ def test_reset(env_name):
     for ep in range(num_episodes):
         rng, rng_input = jax.random.split(rng)
         obs, state = env_jax.reset(rng_input)
-        # Check observation space
-        for d in range(len(env_gym.observation_space.low)):
-            assert(env_gym.observation_space.low[d]
-                   <= obs[d]
-                   <= env_gym.observation_space.high[d])
+        # Check state and observation space
+        env_jax.state_space.contains(state)
+        env_jax.observation_space.contains(obs)

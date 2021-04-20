@@ -123,12 +123,22 @@ class Acrobot(environment.Environment):
         high = jnp.array([1.0, 1.0, 1.0, 1.0,
                           self.env_params["max_vel_1"],
                           self.env_params["max_vel_2"]], dtype=jnp.float32)
-        return spaces.Box(-high, high, (6,))
+        return spaces.Box(-high, high, (6,), jnp.float32)
 
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict(["var"])
+        high = jnp.array([jnp.finfo(jnp.float32).max,
+                          jnp.finfo(jnp.float32).max,
+                          self.env_params["max_vel_1"],
+                          self.env_params["max_vel_2"]], dtype=jnp.float32)
+        return spaces.Dict(
+            {"joint_angle1": spaces.Box(-high[0], high[0], (), jnp.float32),
+             "joint_angle2": spaces.Box(-high[1], high[1], (), jnp.float32),
+             "velocity_1": spaces.Box(-high[2], high[2], (), jnp.float32),
+             "velocity_2": spaces.Box(-high[3], high[3], (), jnp.float32),
+             "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+             "terminal": spaces.Discrete(2)})
 
 
 def dsdt(s_augmented, t, params):
