@@ -1,7 +1,8 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
-from ...utils.frozen_dict import FrozenDict
+from jax import lax
+
+from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Union, Tuple
@@ -42,19 +43,19 @@ class MountainCar(environment.Environment):
         velocity = velocity * (1 - (position ==
                                     self.env_params["min_position"])
                                * (velocity < 0))
-        done1 = ((position >= self.env_params["goal_position"])
-                 * (velocity >= self.env_params["goal_velocity"]))
 
-        # Check number of steps in episode termination condition
-        done_steps = (state["time"] + 1 >
-                      self.env_params["max_steps_in_episode"])
-        done = jnp.logical_or(done1, done_steps)
         reward = -1.0
+
+        # Update state dict and evaluate termination conditions
         state = {"position": position,
                  "velocity": velocity,
-                 "time": state["time"] + 1,
-                 "terminal": done}
-        return self.get_obs(state), state, reward, done, {}
+                 "time": state["time"] + 1}
+        done = self.is_terminal(state)
+        state["terminal"] = done
+
+        return (lax.stop_gradient(self.get_obs(state)),
+                lax.stop_gradient(state), reward, done,
+                {"discount": self.discount(state)})
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Reset environment state by sampling initial position. """
@@ -69,6 +70,16 @@ class MountainCar(environment.Environment):
     def get_obs(self, state: dict) -> Array:
         """ Return observation from raw state trafo. """
         return jnp.array([state["position"], state["velocity"]])
+
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+        done1 = ((state["position"] >= self.env_params["goal_position"])
+                 * (state["velocity"] >= self.env_params["goal_velocity"]))
+
+        # Check number of steps in episode termination condition
+        done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
+        done = jnp.logical_or(done1, done_steps)
+        return done
 
     @property
     def name(self) -> str:

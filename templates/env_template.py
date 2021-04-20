@@ -1,5 +1,7 @@
 import jax
 import jax.numpy as jnp
+from jax import lax
+
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
@@ -35,9 +37,10 @@ class YourCoolEnv(environment.Environment):
         """ Perform single timestep state transition. """
         action = jnp.clip(action, -1, 1)
         reward = 0
-        done = False
-        info = {}
-        return self.get_obs(state), state, reward, done, info
+        done = self.is_terminal(state)
+        info = {"discount": self.discount(state)}
+        return (lax.stop_gradient(self.get_obs(state)),
+                lax.stop_gradient(state), reward, done, info)
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Reset environment state by sampling initial position. """
@@ -50,6 +53,10 @@ class YourCoolEnv(environment.Environment):
     def get_obs(self, state: dict) -> Array:
         """ Return observation from raw state trafo. """
         return obs
+
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+        return False
 
     @property
     def name(self) -> str:

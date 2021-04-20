@@ -1,11 +1,13 @@
+import jax
+import jax.numpy as jnp
+from jax import lax
+
+from gymnax.utils import jittable
+from gymnax.utils.frozen_dict import freeze, unfreeze, FrozenDict
+
 import abc
 from typing import Sequence, Tuple, Union
 import chex
-from gymnax.utils import jittable
-from gymnax.utils.frozen_dict import freeze, unfreeze, FrozenDict
-import jax
-import jax.numpy as jnp
-
 Array = chex.Array
 PRNGKey = chex.PRNGKey
 
@@ -15,7 +17,7 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def step(self, key: PRNGKey, state: dict, action: Union[int, float]
-             ) -> Tuple[Array, dict,float, bool, dict]:
+             ) -> Tuple[Array, dict, float, bool, dict]:
         """ Performs step transitions in the environment."""
 
     @abc.abstractmethod
@@ -25,6 +27,14 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_obs(self, state: dict) -> Array:
         """ Applies observation function to state."""
+
+    @abc.abstractmethod
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+
+    def discount(self, state: dict) -> float:
+        """ Return a discount of zero if the episode has terminated. """
+        return lax.select(self.is_terminal(state), 0., 1.)
 
     def update_env_params(self, p_name: str,
                           p_value: Union[str, float, int, bool, Array]):

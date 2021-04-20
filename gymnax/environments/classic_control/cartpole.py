@@ -1,8 +1,10 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
-from ...utils.frozen_dict import FrozenDict
+from jax import lax
+
+from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
+
 from typing import Union, Tuple
 import chex
 Array = chex.Array
@@ -53,25 +55,21 @@ class CartPole(environment.Environment):
         theta = state["theta"] + self.env_params["tau"] * state["theta_dot"]
         theta_dot = state["theta_dot"] + self.env_params["tau"] * thetaacc
 
-        # Check termination criteria
-        done1 = jnp.logical_or(x < -self.env_params["x_threshold"],
-                               x > self.env_params["x_threshold"])
-        done2 = jnp.logical_or(theta < -self.env_params["theta_threshold_radians"],
-                               theta > self.env_params["theta_threshold_radians"])
-
         # Important: Reward is based on termination is previous step transition
         reward = 1.0 - state["terminal"]
 
-        # Check number of steps in episode termination condition
-        done_steps = (state["time"] + 1 > self.env_params["max_steps_in_episode"])
-        done = jnp.logical_or(jnp.logical_or(done1, done2), done_steps)
+        # Update state dict and evaluate termination conditions
         state = {"x": x,
                  "x_dot": x_dot,
                  "theta": theta,
                  "theta_dot": theta_dot,
-                 "time": state["time"] + 1,
-                 "terminal": done}
-        return self.get_obs(state), state, reward, done, {}
+                 "time": state["time"] + 1}
+        done = self.is_terminal(state)
+        state["terminal"] = done
+
+        return (lax.stop_gradient(self.get_obs(state)),
+                lax.stop_gradient(state), reward, done,
+                {"discount": self.discount(state)})
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Performs resetting of environment. """
@@ -90,6 +88,21 @@ class CartPole(environment.Environment):
         """ Applies observation function to state. """
         return jnp.array([state["x"], state["x_dot"],
                           state["theta"], state["theta_dot"]])
+
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+        # Check termination criteria
+        done1 = jnp.logical_or(state["x"] < -self.env_params["x_threshold"],
+                               state["x"] > self.env_params["x_threshold"])
+        done2 = jnp.logical_or(state["theta"]
+                               < -self.env_params["theta_threshold_radians"],
+                               state["theta"]
+                               > self.env_params["theta_threshold_radians"])
+
+        # Check number of steps in episode termination condition
+        done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
+        done = jnp.logical_or(jnp.logical_or(done1, done2), done_steps)
+        return done
 
     @property
     def name(self) -> str:

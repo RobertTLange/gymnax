@@ -1,8 +1,10 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
-from ...utils.frozen_dict import FrozenDict
+from jax import lax
+
+from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
+
 from typing import Union, Tuple
 import chex
 Array = chex.Array
@@ -31,8 +33,8 @@ class Pendulum(environment.Environment):
         """ Integrate pendulum ODE and return transition. """
         u = jnp.clip(action, -self.env_params["max_torque"],
                      self.env_params["max_torque"])
-        costs = (angle_normalize(state["theta"]) ** 2
-                 + .1 * state["theta_dot"] ** 2 + .001 * (u ** 2))
+        reward = - (angle_normalize(state["theta"]) ** 2
+                    + .1 * state["theta_dot"] ** 2 + .001 * (u ** 2))
 
         newthdot = state["theta_dot"] + ((-3 * self.env_params["g"] /
                             (2 * self.env_params["l"]) * jnp.sin(state["theta"]
@@ -43,15 +45,16 @@ class Pendulum(environment.Environment):
         newth = state["theta"] + newthdot * self.env_params["dt"]
         newthdot = jnp.clip(newthdot, -self.env_params["max_speed"],
                             self.env_params["max_speed"])
-        # Check number of steps in episode termination condition
-        done_steps = 1*(state["time"] + 1 >
-                        self.env_params["max_steps_in_episode"])
+
+        # Update state dict and evaluate termination conditions
         state = {"theta": newth.squeeze(),
                  "theta_dot": newthdot.squeeze(),
-                 "time": state["time"] + 1,
-                 "terminal": done_steps}
-        return self.get_obs(state), state, -costs, done_steps, {}
-
+                 "time": state["time"] + 1}
+        done = self.is_terminal(state)
+        state["terminal"] = done
+        return (lax.stop_gradient(self.get_obs(state)),
+                lax.stop_gradient(state), reward, done,
+                {"discount": self.discount(state)})
 
     def reset(self, key: PRNGKey):
         """ Reset environment state by sampling theta, theta_dot. """
@@ -65,12 +68,17 @@ class Pendulum(environment.Environment):
                  "terminal": 0}
         return self.get_obs(state), state
 
-
     def get_obs(self, state):
         """ Return angle in polar coordinates and change. """
         return jnp.array([jnp.cos(state["theta"]),
                           jnp.sin(state["theta"]),
                           state["theta_dot"]]).squeeze()
+
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+        # Check number of steps in episode termination condition
+        done = (state["time"] > self.env_params["max_steps_in_episode"])
+        return done
 
     @property
     def name(self) -> str:

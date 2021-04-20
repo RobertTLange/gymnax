@@ -1,5 +1,7 @@
 import jax
 import jax.numpy as jnp
+from jax import lax
+
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
@@ -57,22 +59,21 @@ class Acrobot(environment.Environment):
         velocity_2 = jnp.clip(ns[3], -self.env_params["max_vel_2"],
                               self.env_params["max_vel_2"])
 
-        # Check termination and construct updated state
-        done1 = (-jnp.cos(joint_angle1) - jnp.cos(joint_angle2 +
-                                                  joint_angle1) > 1.)
-        # Check number of steps in episode termination condition
-        done_steps = (state["time"] + 1 >
-                      self.env_params["max_steps_in_episode"])
-        done = jnp.logical_or(done1, done_steps)
-        reward = -1. * (1-done1)
+        done_angle = (-jnp.cos(joint_angle1) - jnp.cos(joint_angle2 +
+                                                       joint_angle1) > 1.)
+        reward = -1. * (1 - done_angle)
 
+        # Update state dict and evaluate termination conditions
         state = {"joint_angle1": joint_angle1,
                  "joint_angle2": joint_angle2,
                  "velocity_1": velocity_1,
                  "velocity_2": velocity_2,
-                 "time": state["time"] + 1,
-                 "terminal": done}
-        return self.get_obs(state), state, reward, done, {}
+                 "time": state["time"] + 1}
+        done = self.is_terminal(state)
+        state["terminal"] = done
+        return (lax.stop_gradient(self.get_obs(state)),
+                lax.stop_gradient(state), reward, done,
+                {"discount": self.discount(state)})
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Reset environment state by sampling initial position. """
@@ -94,6 +95,17 @@ class Acrobot(environment.Environment):
                           jnp.sin(state["joint_angle2"]),
                           state["velocity_1"],
                           state["velocity_2"]])
+
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+        # Check termination and construct updated state
+        done_angle = (-jnp.cos(state["joint_angle1"])
+                      - jnp.cos(state["joint_angle2"] + state["joint_angle1"])
+                      > 1.)
+        # Check number of steps in episode termination condition
+        done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
+        done = jnp.logical_or(done_angle, done_steps)
+        return done
 
     @property
     def name(self) -> str:
