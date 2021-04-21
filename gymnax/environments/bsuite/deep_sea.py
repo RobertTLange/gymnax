@@ -1,40 +1,148 @@
 import jax
 import jax.numpy as jnp
-from jax import jit
-from ...utils.frozen_dict import FrozenDict
+from jax import lax
+
+from gymnax.utils.frozen_dict import FrozenDict
+from gymnax.environments import environment, spaces
+
+from typing import Union, Tuple
+import chex
+Array = chex.Array
+PRNGKey = chex.PRNGKey
 
 
-# JAX Compatible version of DeepSea bsuite environment. Source:
-# github.com/deepmind/bsuite/blob/master/bsuite/environments/deep_sea.py
 
-# Default environment parameters
-params_deep_sea = FrozenDict({"size": 8,
-                              "deterministic": True,
-                              "sample_action_map": False,
-                              "unscaled_move_cost": 0.01,
-                              "randomize_actions": True,
-                              "action_mapping": jnp.ones([8, 8])})
+class DeepSea(environment.Environment):
+    """
+    JAX Compatible version of DeepSea bsuite environment. Source:
+    github.com/deepmind/bsuite/blob/master/bsuite/environments/deep_sea.py
+    """
+    def __init__(self):
+        super().__init__()
+        # Default environment parameters
+        self.env_params = FrozenDict({"size": 8,
+                                      "deterministic": True,
+                                      "sample_action_map": False,
+                                      "unscaled_move_cost": 0.01,
+                                      "randomize_actions": False,
+                                      "action_mapping": jnp.ones([8, 8]),
+                                      "max_steps_in_episode": 2000})
+
+    def step(self, key: PRNGKey, state: dict, action: int
+             ) -> Tuple[Array, dict, float, bool, dict]:
+        """ Perform single timestep state transition. """
+        # Pull out randomness for easier testing
+        rng_reward, rng_trans = jax.random.split(key)
+        rand_reward = jax.random.normal(rng_reward, shape=(1,))
+        rand_trans_cond = (jax.random.uniform(rng_trans, shape=(1,), minval=0,
+                                              maxval=1)
+                           > 1/self.env_params["size"])
+
+        action_right = (action ==
+                        state["action_mapping"][state["row"], state["column"]])
+        right_rand_cond = jnp.logical_or(rand_trans_cond,
+                                         self.env_params["deterministic"])
+        right_cond = jnp.logical_and(action_right, right_rand_cond)
+
+        reward, state = step_reward(state, action_right, right_cond,
+                                    rand_reward, self.env_params)
+        state = step_transition(state, action_right, right_cond,
+                                self.env_params)
+
+        # Check row condition & no. steps for termination condition
+        state["time"] += 1
+        done = self.is_terminal(state)
+        state["total_bad_episodes"] += done * state["bad_episode"]
+        state["terminal"] = done
+        info = {"discount": self.discount(state)}
+        return (lax.stop_gradient(self.get_obs(state)),
+                lax.stop_gradient(state), reward, done, info)
+
+    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+        """ Reset environment state by sampling initial position. """
+        optimal_no_cost = ((1 - self.env_params["deterministic"])
+                            * (1 - 1 / self.env_params["size"])
+                            ** (self.env_params["size"] - 1)
+                            + self.env_params["deterministic"] * 1.)
+        optimal_return = optimal_no_cost - self.env_params["unscaled_move_cost"]
+
+        a_map_rand = jax.random.bernoulli(key, 0.5,
+                                          (self.env_params["size"],
+                                           self.env_params["size"]))
+        a_map_determ = jnp.ones([self.env_params["size"],
+                                 self.env_params["size"]])
+
+        new_a_map_cond = jnp.logical_and(1-self.env_params["deterministic"],
+                                         self.env_params["sample_action_map"])
+        old_a_map_cond = jnp.logical_and(1-self.env_params["deterministic"],
+                                         1-self.env_params["sample_action_map"])
+        action_mapping = (self.env_params["deterministic"] * a_map_determ
+                          + new_a_map_cond * a_map_rand
+                          + old_a_map_cond * self.env_params["action_mapping"])
+
+        state = {"row": 0,
+                 "column": 0,
+                 "bad_episode": False,
+                 "total_bad_episodes": 0,
+                 "denoised_return": 0,
+                 "optimal_return": optimal_return,
+                 "action_mapping": action_mapping,
+                 "terminal": False,
+                 "time": 0}
+        return self.get_obs(state), state
+
+    def get_obs(self, state: dict) -> Array:
+        """ Return observation from raw state trafo. """
+        obs_end = jnp.zeros(shape=(self.env_params["size"],
+                                   self.env_params["size"]),
+                            dtype=jnp.float32)
+        end_cond = (state["row"] >= self.env_params["size"])
+        obs_upd = jax.ops.index_update(obs_end, jax.ops.index[state["row"],
+                                                              state["column"]],
+                                       1.)
+        return end_cond * obs_end + (1 - end_cond) * obs_upd
+
+    def is_terminal(self, state: dict) -> bool:
+        """ Check whether state is terminal. """
+        done_row = (state["row"] == self.env_params["size"])
+        done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
+        done = jnp.logical_or(done_row, done_steps)
+        return done
+
+    @property
+    def name(self) -> str:
+        """ Environment name. """
+        return "DeepSea-bsuite"
+
+    @property
+    def action_space(self):
+        """ Action space of the environment. """
+        return spaces.Discrete(2)
+
+    @property
+    def observation_space(self):
+        """ Observation space of the environment. """
+        return spaces.Box(0, 1, (self.env_params["size"],
+                                 self.env_params["size"]), jnp.float32)
+
+    @property
+    def state_space(self):
+        """ State space of the environment. """
+        return spaces.Dict(
+            {"row": spaces.Discrete(self.env_params["size"]),
+             "column": spaces.Discrete(self.env_params["size"]),
+             "bad_episode": spaces.Discrete(2),
+             "total_bad_episodes": spaces.Discrete(2000),
+             "denoised_return": spaces.Box(0, 1000, ()),
+             "optimal_return": spaces.Box(0, 1000, ()),
+             "action_mapping": spaces.Box(0, 1, (self.env_params["size"],
+                                                 self.env_params["size"]),
+                                          dtype=jnp.int_),
+             "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+             "terminal": spaces.Discrete(2)})
 
 
-def step(rng_input, params, state, action):
-    """ Perform single timestep state transition. """
-    # Pull out randomness for easier testing
-    rng_reward, rng_trans = jax.random.split(rng_input)
-    rand_reward = jax.random.normal(rng_reward, shape=(1,))
-    rand_trans_cond = (jax.random.uniform(rng_trans, shape=(1,), minval=0,
-                                          maxval=1) > 1/params["size"])
-
-    action_right = (action == action_mapping[state["row"], state["column"]])
-    right_rand_cond = jnp.logical_or(rand_trans_cond, params["deterministic"])
-    right_cond = jnp.logical_and(action_right, right_rand_cond)
-
-    reward, state = step_reward(state, action_right, right_cond)
-    state = step_transition(state, action_right, right_cond)
-    done, state = step_terminal(state)
-    return get_obs(state, params), state, reward, done, {}
-
-
-def step_reward(state, action_right, right_cond):
+def step_reward(state, action_right, right_cond, rand_reward, params):
     """ Get the reward for the selected action. """
     reward = 0.
     # Reward calculation.
@@ -51,10 +159,10 @@ def step_reward(state, action_right, right_cond):
     det_chain_end = jnp.logical_and(chain_end, params["deterministic"])
     reward += rand_reward * det_chain_end
     reward -= right_cond * params["unscaled_move_cost"] / params["size"]
-    return reward, state, right_cond
+    return reward, state
 
 
-def step_transition(state, action_right, right_cond):
+def step_transition(state, action_right, right_cond, params):
     """ Get the state transition for the selected action. """
     # Standard right path transition
     state["column"] = ((1 - right_cond) * state["column"] +
@@ -71,56 +179,3 @@ def step_transition(state, action_right, right_cond):
                        + action_right * state["column"])
     state["row"] = state["row"] + 1
     return state
-
-
-def step_terminal(state):
-    """ Check termination condition of state. """
-    done = (state["row"] == params["size"])
-    state["total_bad_episodes"] += done * state["bad_episode"]
-    state["terminal"] = done
-    return done, state
-
-
-def reset(rng_input, params):
-    """ Reset environment state. """
-    optimal_no_cost = ((1 - params["deterministic"])
-                        * (1 - 1 / params["size"]) ** (params["size"] - 1)
-                        + params["deterministic"] * 1.)
-    optimal_return = optimal_no_cost - params["unscaled_move_cost"]
-
-    a_map_rand = jax.random.bernoulli(rng_input, 0.5,
-                                      (params["size"], params["size"]))
-    a_map_determ = jnp.ones([params["size"], params["size"]])
-
-    new_a_map_cond = jnp.logical_and(1-params["deterministic"],
-                                     params["sample_action_map"])
-    old_a_map_cond = jnp.logical_and(1-params["deterministic"],
-                                     1-params["sample_action_map"])
-    action_mapping = (params["deterministic"] * a_map_determ
-                      + new_a_map_cond * a_map_rand
-                      + old_a_map_cond * params["action_mapping"])
-
-    state = {"row": 0,
-             "column": 0,
-             "bad_episode": False,
-             "total_bad_episodes": 0,
-             "denoised_return": 0,
-             "optimal_no_cost": optimal_no_cost,
-             "optimal_return": optimal_return,
-             "terminal": False,
-             "action_mapping": action_mapping}
-    return get_obs(state, params), state
-
-
-def get_obs(state, params):
-    """ Return observation from raw state trafo. """
-    obs_end = jnp.zeros(shape=(params["size"], params["size"]),
-                        dtype=jnp.float32)
-    end_cond = (state["row"] >= params["size"])
-    obs_upd = jax.ops.index_update(obs_end, jax.ops.index[state["row"],
-                                                          state["column"]], 1.)
-    return (1 - end_cond) * obs_end + end_cond * obs_upd
-
-
-reset_deep_sea = jit(reset, static_argnums=(1,))
-step_deep_sea = jit(step, static_argnums=(1,))

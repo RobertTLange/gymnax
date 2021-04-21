@@ -12,7 +12,8 @@ def assert_correct_state(env_gym, env_name: str, state_jax: dict,
     for k in state_gym.keys():
         if k not in ["time", "terminal"]:
             if type(state_jax[k]) in [jax.interpreters.xla._DeviceArray,
-                                      jaxlib.xla_extension.Buffer]:
+                                      jaxlib.xla_extension.Buffer,
+                                      np.ndarray]:
                 assert np.allclose(state_jax[k], state_gym[k], atol=atol)
             else:
                 # Exclude extra time and terminal state from assertion

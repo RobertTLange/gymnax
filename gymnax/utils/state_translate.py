@@ -5,7 +5,7 @@ def np_state_to_jax(env, env_name: str="Pendulum-v0"):
                     "MountainCar-v0", "MountainCarContinuous-v0",
                     "Acrobot-v1"]:
         state_gym_to_jax = control_np_to_jax(env, env_name)
-    elif env_name in ["Catch-bsuite"]:
+    elif env_name in ["Catch-bsuite", "DeepSea-bsuite"]:
         state_gym_to_jax = bsuite_np_to_jax(env, env_name)
     else:
         raise ValueError(f"{env_name} is not in set of implemented"
@@ -55,6 +55,16 @@ def bsuite_np_to_jax(env, env_name: str="Catch-bsuite"):
                             "paddle_x": env._paddle_x,
                             "paddle_y": env._paddle_y,
                             "prev_done": env._reset_next_step,
+                            "time": 0,
+                            "terminal": 0}
+    elif env_name == "DeepSea-bsuite":
+        state_gym_to_jax = {"row": env._row,
+                            "column": env._column,
+                            "bad_episode": env._bad_episode,
+                            "total_bad_episodes": env._total_bad_episodes,
+                            "denoised_return": env._denoised_return,
+                            "optimal_return": env._optimal_return,
+                            "action_mapping": env._action_mapping,
                             "time": 0,
                             "terminal": 0}
     return state_gym_to_jax
