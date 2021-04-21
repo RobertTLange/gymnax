@@ -10,7 +10,8 @@ from gymnax.environments.classic_control import (Pendulum,
 # # =============================================================================
 from gymnax.environments.bsuite import (Catch,
                                         DeepSea,
-                                        DiscountingChain)
+                                        DiscountingChain,
+                                        MemoryChain)
 
 # # =============================================================================
 # from gymnax.environments.minatar import (reset_asterix, step_asterix,
@@ -50,6 +51,8 @@ def make(env_id: str, seed_id: int = 0):
         env = DeepSea()
     elif env_id == "DiscountingChain-bsuite":
         env = DiscountingChain()
+    elif env_id == "MemoryChain-bsuite":
+        env = MemoryChain()
 
     # # 3. MinAtar Environments
     # elif env_id == "Asterix-MinAtar":
