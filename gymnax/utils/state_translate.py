@@ -6,7 +6,8 @@ def np_state_to_jax(env, env_name: str="Pendulum-v0"):
                     "Acrobot-v1"]:
         state_gym_to_jax = control_np_to_jax(env, env_name)
     elif env_name in ["Catch-bsuite", "DeepSea-bsuite",
-                      "DiscountingChain-bsuite", "MemoryChain-bsuite"]:
+                      "DiscountingChain-bsuite", "MemoryChain-bsuite",
+                      "UmbrellaChain-bsuite"]:
         state_gym_to_jax = bsuite_np_to_jax(env, env_name)
     else:
         raise ValueError(f"{env_name} is not in set of implemented"
@@ -78,6 +79,12 @@ def bsuite_np_to_jax(env, env_name: str="Catch-bsuite"):
                             "query": env._query,
                             "total_perfect": env._total_perfect,
                             "total_regret":env._total_regret,
+                            "time": env._timestep,
+                            "terminal": 0}
+    elif env_name == "UmbrellaChain-bsuite":
+        state_gym_to_jax = {"need_umbrella": env._need_umbrella,
+                            "has_umbrella": env._has_umbrella,
+                            "total_regret": env._total_regret,
                             "time": env._timestep,
                             "terminal": 0}
     return state_gym_to_jax

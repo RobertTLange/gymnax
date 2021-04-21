@@ -11,7 +11,8 @@ from gymnax.environments.classic_control import (Pendulum,
 from gymnax.environments.bsuite import (Catch,
                                         DeepSea,
                                         DiscountingChain,
-                                        MemoryChain)
+                                        MemoryChain,
+                                        UmbrellaChain)
 
 # # =============================================================================
 # from gymnax.environments.minatar import (reset_asterix, step_asterix,
@@ -53,6 +54,8 @@ def make(env_id: str, seed_id: int = 0):
         env = DiscountingChain()
     elif env_id == "MemoryChain-bsuite":
         env = MemoryChain()
+    elif env_id == "UmbrellaChain-bsuite":
+        env = UmbrellaChain()
 
     # # 3. MinAtar Environments
     # elif env_id == "Asterix-MinAtar":

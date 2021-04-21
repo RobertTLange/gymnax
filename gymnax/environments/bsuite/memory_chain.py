@@ -85,7 +85,7 @@ class MemoryChain(environment.Environment):
         """ Check whether state is terminal. """
         done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
         done_mem = (state["time"] - 1 < self.env_params["memory_length"])
-        return jnp.logical_and(done_steps, done_mem)
+        return jnp.logical_or(done_steps, done_mem)
 
     @property
     def name(self) -> str:
