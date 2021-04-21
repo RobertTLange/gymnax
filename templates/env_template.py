@@ -30,14 +30,18 @@ class YourCoolEnv(environment.Environment):
     def __init__(self):
         super().__init__()
         # Default environment parameters
-        self.env_params = FrozenDict({})
+        self.env_params = FrozenDict({"max_steps_in_episode": 100})
 
     def step(self, key: PRNGKey, state: dict, action: int
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
         action = jnp.clip(action, -1, 1)
         reward = 0
+
+        # Check game condition & no. steps for termination condition
+        state["time"] += 1
         done = self.is_terminal(state)
+        state["terminal"] = done
         info = {"discount": self.discount(state)}
         return (lax.stop_gradient(self.get_obs(state)),
                 lax.stop_gradient(state), reward, done, info)
@@ -56,6 +60,7 @@ class YourCoolEnv(environment.Environment):
 
     def is_terminal(self, state: dict) -> bool:
         """ Check whether state is terminal. """
+        done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
         return False
 
     @property
@@ -76,4 +81,6 @@ class YourCoolEnv(environment.Environment):
     @property
     def state_space(self):
         """ State space of the environment. """
-        return spaces.Dict({"state_var": spaces.Discrete(2)})
+        return spaces.Dict(
+            {"time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+             "terminal": spaces.Discrete(2)})

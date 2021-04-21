@@ -40,7 +40,7 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
                           p_value: Union[str, float, int, bool, Array]):
         " Update single environment parameter - Unfreeze & freeze dictionary. "
         env_dict = unfreeze(self.env_params)
-        env_dict["p_name"] = p_value
+        env_dict[p_name] = p_value
         self.env_params = FrozenDict(env_dict)
 
     @property

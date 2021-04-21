@@ -10,10 +10,11 @@
     - DeepMind's `bsuite`: `Catch-bsuite`, `DeepSea-bsuite`, `DiscountingChain-bsuite`, `MemoryChain-bsuite`, `UmbrellaChain-bsuite`
     - `MinAtar`: `Asterix-MinAtar`, `Breakout-MinAtar`, `Freeway-MinAtar`,  `Seaquest-MinAtar`, `SpaceInvaders-MinAtar`
     - Miscellaneous: `Bandit-misc`, `Rooms-misc`
-- Adds set of `tests` for environments comparing `gym`/`numpy` `reset` and `step` transitions with JAX-based version.
+- Adds `tests` for comparing `gym`/`numpy` `reset` + `step`  with JAX version.
+    - `tests/classic_control/test_gym_env.py`
 - Adds set of `notebooks` walking through the individual environments.
 
-##### TODO
+##### Todo
 - Adds set of `examples` incorporating `gymnax` into JAX-based RL experiments.
     - Anakin agent
     - CMA-ES policy evolution
@@ -23,5 +24,5 @@
         - GPU: V100, A100, RTX 2080Ti
         - TPU: V2, V3 - `vmap` + `pmap`
 - Adds set of `experimental` utilities:
-    - `dojos`: Multi-transition rollout via `lax.scan` + `jit` step transitions.
+    - `dojos`: Multi-transition rollout wrapper via `lax.scan` + `jit` for sequential `step`.
     - `agents`: Minimal and evaluation agent wrappers.
