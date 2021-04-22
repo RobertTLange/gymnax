@@ -12,6 +12,10 @@ PRNGKey = chex.PRNGKey
 
 
 class MemoryChain(environment.Environment):
+    """
+    JAX Compatible version of MemoryChain bsuite environment. Source:
+    github.com/deepmind/bsuite/blob/master/bsuite/environments/memory_chain.py
+    """
     def __init__(self, memory_length: int=5,
                  num_bits: int=1):
         super().__init__()

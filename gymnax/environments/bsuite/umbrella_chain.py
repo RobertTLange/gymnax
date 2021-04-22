@@ -12,6 +12,10 @@ PRNGKey = chex.PRNGKey
 
 
 class UmbrellaChain(environment.Environment):
+    """
+    JAX Compatible version of UmbrellaChain bsuite environment. Source:
+    github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py
+    """
     def __init__(self, chain_length: int = 10,
                  n_distractor: int = 0):
         super().__init__()

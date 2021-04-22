@@ -30,7 +30,7 @@ class ContinuousMountainCar(environment.Environment):
                                       "gravity": 0.0025,
                                       "max_steps_in_episode": 999})
 
-    def step(self, key: PRNGKey, state: dict, action: int
+    def step(self, key: PRNGKey, state: dict, action: float
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
         force = jnp.clip(action, self.env_params["min_action"], self.env_params["max_action"])

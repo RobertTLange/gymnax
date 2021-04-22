@@ -4,3 +4,4 @@ from gymnax.environments.bsuite.discounting_chain import DiscountingChain
 from gymnax.environments.bsuite.memory_chain import MemoryChain
 from gymnax.environments.bsuite.umbrella_chain import UmbrellaChain
 from gymnax.environments.bsuite.mnist import MNISTBandit
+from gymnax.environments.bsuite.bandit import SimpleBandit

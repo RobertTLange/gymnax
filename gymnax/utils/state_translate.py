@@ -7,7 +7,8 @@ def np_state_to_jax(env, env_name: str="Pendulum-v0"):
         state_gym_to_jax = control_np_to_jax(env, env_name)
     elif env_name in ["Catch-bsuite", "DeepSea-bsuite",
                       "DiscountingChain-bsuite", "MemoryChain-bsuite",
-                      "UmbrellaChain-bsuite", "MNISTBandit-bsuite"]:
+                      "UmbrellaChain-bsuite", "MNISTBandit-bsuite",
+                      "SimpleBandit-bsuite"]:
         state_gym_to_jax = bsuite_np_to_jax(env, env_name)
     else:
         raise ValueError(f"{env_name} is not in set of implemented"
@@ -90,6 +91,11 @@ def bsuite_np_to_jax(env, env_name: str="Catch-bsuite"):
     elif env_name == "MNISTBandit-bsuite":
         state_gym_to_jax = {"correct_label": env._correct_label,
                             "regret": env._total_regret,
+                            "time": 0,
+                            "terminal": 0}
+    elif env_name == "SimpleBandit-bsuite":
+        state_gym_to_jax = {"rewards": env._rewards,
+                            "total_regret": env._total_regret,
                             "time": 0,
                             "terminal": 0}
     return state_gym_to_jax

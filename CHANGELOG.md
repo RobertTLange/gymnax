@@ -7,7 +7,7 @@
     - Translation of numpy state to state dictionary for JAX `step`.
 - Adds base set of environments:
     - OpenAI's `classic_control`: `Pendulum-v0`, `CartPole-v0`, `MountainCar-v0`, `ContinuousMountainCar-v0`, `Acrobot-v0`
-    - DeepMind's `bsuite`: `Catch-bsuite`, `DeepSea-bsuite`, `DiscountingChain-bsuite`, `MemoryChain-bsuite`, `UmbrellaChain-bsuite`
+    - DeepMind's `bsuite`: `Catch-bsuite`, `DeepSea-bsuite`, `DiscountingChain-bsuite`, `MemoryChain-bsuite`, `UmbrellaChain-bsuite`, `MNISTBandit-bsuite`, `SimpleBandit-bsuite`
     - `MinAtar`: `Asterix-MinAtar`, `Breakout-MinAtar`, `Freeway-MinAtar`,  `Seaquest-MinAtar`, `SpaceInvaders-MinAtar`
     - Miscellaneous: `Bandit-misc`, `Rooms-misc`
 - Adds `tests` for comparing `gym`/`numpy` `reset` + `step`  with JAX version.
@@ -19,7 +19,7 @@
     - Anakin agent
     - CMA-ES policy evolution
 - Adds benchmarks on different devices (CPU/GPU/TPU):
-    - Trans./Sec vs Torch setup & Specific rollout types
+    - Transitions/Second & Specific rollout types vs Torch setup
         - CPU: Intel Xeon 2.4 GHz
         - GPU: V100, A100, RTX 2080Ti
         - TPU: V2, V3 - `vmap` + `pmap`

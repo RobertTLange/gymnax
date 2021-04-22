@@ -28,7 +28,7 @@ class Pendulum(environment.Environment):
                                       "max_steps_in_episode": 200})
 
 
-    def step(self, key: PRNGKey, state: dict, action: int
+    def step(self, key: PRNGKey, state: dict, action: float
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Integrate pendulum ODE and return transition. """
         u = jnp.clip(action, -self.env_params["max_torque"],
