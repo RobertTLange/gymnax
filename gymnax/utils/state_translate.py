@@ -10,6 +10,8 @@ def np_state_to_jax(env, env_name: str="Pendulum-v0"):
                       "UmbrellaChain-bsuite", "MNISTBandit-bsuite",
                       "SimpleBandit-bsuite"]:
         state_gym_to_jax = bsuite_np_to_jax(env, env_name)
+    elif env_name in ["Asterix-MinAtar",]:
+        state_gym_to_jax = minatar_np_to_jax(env, env_name)
     else:
         raise ValueError(f"{env_name} is not in set of implemented"
                          " environments.")
@@ -96,6 +98,15 @@ def bsuite_np_to_jax(env, env_name: str="Catch-bsuite"):
     elif env_name == "SimpleBandit-bsuite":
         state_gym_to_jax = {"rewards": env._rewards,
                             "total_regret": env._total_regret,
+                            "time": 0,
+                            "terminal": 0}
+    return state_gym_to_jax
+
+
+def bsuite_np_to_jax(env, env_name: str="Asterix-MinAtar"):
+    """ Collects env state of MinAtar into dict for JAX `step`. """
+    if env_name == "Asterix-MinAtar":
+        state_gym_to_jax = {
                             "time": 0,
                             "terminal": 0}
     return state_gym_to_jax

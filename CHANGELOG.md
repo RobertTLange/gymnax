@@ -16,8 +16,8 @@
 
 ##### Todo
 - Adds set of `examples` incorporating `gymnax` into JAX-based RL experiments.
-    - Anakin agent
-    - CMA-ES policy evolution
+    - Anakin agent - port DM Colab for gymnax
+    - CMA-ES policy evolution - port blogpost with experimental minimal agent
 - Adds benchmarks on different devices (CPU/GPU/TPU):
     - Transitions/Second & Specific rollout types vs Torch setup
         - CPU: Intel Xeon 2.4 GHz

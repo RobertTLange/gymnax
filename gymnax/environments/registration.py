@@ -17,8 +17,7 @@ from gymnax.environments.bsuite import (Catch,
                                         SimpleBandit)
 
 # # =============================================================================
-# from gymnax.environments.minatar import (reset_asterix, step_asterix,
-#                                          params_asterix)
+from gymnax.environments.minatar import (MinAsterix)
 # from gymnax.environments.minatar import (reset_breakout, step_breakout,
 #                                          params_breakout)
 # from gymnax.environments.minatar import (reset_freeway, step_freeway,
@@ -63,9 +62,9 @@ def make(env_id: str, seed_id: int = 0):
     elif env_id == "SimpleBandit-bsuite":
         env = SimpleBandit()
 
-    # # 3. MinAtar Environments
-    # elif env_id == "Asterix-MinAtar":
-    #     reset, step, env_params = reset_asterix, step_asterix, params_asterix
+    # 3. MinAtar Environments
+    elif env_id == "Asterix-MinAtar":
+        env = MinAsterix()
     # elif env_id == "Breakout-MinAtar":
     #     reset, step, env_params = (reset_breakout, step_breakout,
     #                                params_breakout)
