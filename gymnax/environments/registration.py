@@ -18,7 +18,8 @@ from gymnax.environments.bsuite import (Catch,
 
 # # =============================================================================
 from gymnax.environments.minatar import (MinAsterix,
-                                         MinBreakout)
+                                         MinBreakout,
+                                         MinFreeway)
 # from gymnax.environments.minatar import (reset_breakout, step_breakout,
 #                                          params_breakout)
 # from gymnax.environments.minatar import (reset_freeway, step_freeway,
@@ -68,8 +69,8 @@ def make(env_id: str, seed_id: int = 0):
         env = MinAsterix()
     elif env_id == "Breakout-MinAtar":
         env = MinBreakout()
-    # elif env_id == "Freeway-MinAtar":
-    #     reset, step, env_params = reset_freeway, step_freeway, params_freeway
+    elif env_id == "Freeway-MinAtar":
+        env = MinFreeway()
     # elif env_id == "Seaquest-MinAtar":
     #     reset, step, env_params = (reset_seaquest, step_seaquest,
     #                                params_seaquest)

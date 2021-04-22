@@ -121,9 +121,23 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
                             "time": 0,
                             "terminal": 0}
     elif env_name == "Breakout-MinAtar":
-        state_gym_to_jax = {}
+        state_gym_to_jax = {"ball_y": env.env.ball_y,
+                            "ball_x": env.env.ball_x,
+                            "ball_dir": env.env.ball_dir,
+                            "pos": env.env.pos,
+                            "brick_map": env.env.brick_map,
+                            "strike": env.env.strike,
+                            "last_y": env.env.last_y,
+                            "last_x": env.env.last_x,
+                            "time": 0,
+                            "terminal": 0}
     elif env_name == "Freeway-MinAtar":
-        state_gym_to_jax = {}
+        state_gym_to_jax = {"pos": env.env.pos,
+                            "cars": env.env.cars,
+                            "move_timer": env.env.move_timer,
+                            "terminate_timer": env.env.terminate_timer,
+                            "time": 0,
+                            "terminal": 0}
     elif env_name == "Seaquest-MinAtar":
         state_gym_to_jax = {}
     elif env_name == "SpaceInvaders-MinAtar":
