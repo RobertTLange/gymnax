@@ -141,5 +141,17 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
     elif env_name == "Seaquest-MinAtar":
         state_gym_to_jax = {}
     elif env_name == "SpaceInvaders-MinAtar":
-        state_gym_to_jax = {}
+        state_gym_to_jax = {"pos": env.env.pos,
+                            "f_bullet_map": env.env.f_bullet_map,
+                            "e_bullet_map": env.env.e_bullet_map,
+                            "alien_map": env.env.alien_map,
+                            "alien_dir": env.env.alien_dir,
+                            "enemy_move_interval": env.env.enemy_move_interval,
+                            "alien_move_timer": env.env.enemy_move_interval,
+                            "alien_shot_timer": env.env.enemy_shot_interval,
+                            "ramp_index": env.env.ramp_index,
+                            "shot_timer": env.env.shot_timer,
+                            "ramping": env.env.ramping,
+                            "time": 0,
+                            "terminal": 0}
     return state_gym_to_jax

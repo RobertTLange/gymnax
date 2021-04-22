@@ -19,7 +19,9 @@ from gymnax.environments.bsuite import (Catch,
 # # =============================================================================
 from gymnax.environments.minatar import (MinAsterix,
                                          MinBreakout,
-                                         MinFreeway)
+                                         MinFreeway,
+                                         #MinSeaquest,
+                                         MinSpaceInvaders)
 # from gymnax.environments.minatar import (reset_breakout, step_breakout,
 #                                          params_breakout)
 # from gymnax.environments.minatar import (reset_freeway, step_freeway,
@@ -74,11 +76,9 @@ def make(env_id: str, seed_id: int = 0):
     # elif env_id == "Seaquest-MinAtar":
     #     reset, step, env_params = (reset_seaquest, step_seaquest,
     #                                params_seaquest)
-    # elif env_id == "SpaceInvaders-MinAtar":
-    #     reset, step, env_params = (reset_space_invaders,
-    #                                step_space_invaders,
-    #                                params_space_invaders)
-    #
+    elif env_id == "SpaceInvaders-MinAtar":
+        env = MinSpaceInvaders()
+
     # # 4. Other standard/popular environments
     # elif env_id == "Bandit-misc":
     #     reset, step, env_params = reset_bandit, step_bandit, params_bandit
