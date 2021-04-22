@@ -10,7 +10,9 @@ def np_state_to_jax(env, env_name: str="Pendulum-v0"):
                       "UmbrellaChain-bsuite", "MNISTBandit-bsuite",
                       "SimpleBandit-bsuite"]:
         state_gym_to_jax = bsuite_np_to_jax(env, env_name)
-    elif env_name in ["Asterix-MinAtar",]:
+    elif env_name in ["Asterix-MinAtar", "Breakout-MinAtar",
+                      "Freeway-MinAtar", "Seaquest-MinAtar",
+                      "SpaceInvaders-MinAtar"]:
         state_gym_to_jax = minatar_np_to_jax(env, env_name)
     else:
         raise ValueError(f"{env_name} is not in set of implemented"
@@ -103,10 +105,27 @@ def bsuite_np_to_jax(env, env_name: str="Catch-bsuite"):
     return state_gym_to_jax
 
 
-def bsuite_np_to_jax(env, env_name: str="Asterix-MinAtar"):
+def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
     """ Collects env state of MinAtar into dict for JAX `step`. """
     if env_name == "Asterix-MinAtar":
-        state_gym_to_jax = {
+        state_gym_to_jax = {"player_x": env.env.player_x,
+                            "player_y": env.env.player_y,
+                            "shot_timer": env.env.shot_timer,
+                            "spawn_speed": env.env.spawn_speed,
+                            "spawn_timer": env.env.spawn_timer,
+                            "move_speed": env.env.move_speed,
+                            "move_timer": env.env.move_timer,
+                            "ramp_timer": env.env.ramp_timer,
+                            "ramp_index": env.env.ramp_index,
+                            "entities": env.env.entities,
                             "time": 0,
                             "terminal": 0}
+    elif env_name == "Breakout-MinAtar":
+        state_gym_to_jax = {}
+    elif env_name == "Freeway-MinAtar":
+        state_gym_to_jax = {}
+    elif env_name == "Seaquest-MinAtar":
+        state_gym_to_jax = {}
+    elif env_name == "SpaceInvaders-MinAtar":
+        state_gym_to_jax = {}
     return state_gym_to_jax

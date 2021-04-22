@@ -25,7 +25,7 @@ class MinAsterix(environment.Environment):
     - Difficulty periodically increases: the speed/spawn rate of enemies/treasure.
     - Channels are encoded as follows: 'player':0, 'enemy':1, 'trail':2, 'gold':3
     - Observation has dimensionality (10, 10, 4)
-    - Actions are encoded as follows: 'n':0, 'l': 1, 'u': 2, 'r': 3, 'd': 4.
+    - Actions are encoded as follows: ['n', 'l', 'u', 'r', 'd']
     """
     def __init__(self):
         super().__init__()
