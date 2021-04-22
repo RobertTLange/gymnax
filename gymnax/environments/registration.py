@@ -12,7 +12,8 @@ from gymnax.environments.bsuite import (Catch,
                                         DeepSea,
                                         DiscountingChain,
                                         MemoryChain,
-                                        UmbrellaChain)
+                                        UmbrellaChain,
+                                        MNISTBandit)
 
 # # =============================================================================
 # from gymnax.environments.minatar import (reset_asterix, step_asterix,
@@ -56,6 +57,8 @@ def make(env_id: str, seed_id: int = 0):
         env = MemoryChain()
     elif env_id == "UmbrellaChain-bsuite":
         env = UmbrellaChain()
+    elif env_id == "MNISTBandit-bsuite":
+        env = MNISTBandit()
 
     # # 3. MinAtar Environments
     # elif env_id == "Asterix-MinAtar":
