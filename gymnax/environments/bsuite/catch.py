@@ -29,26 +29,32 @@ class Catch(environment.Environment):
         # Sample new init state each step & use if there was a reset!
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(key,
                                                                self.env_params)
-        prev_done = state["terminal"]
+        prev_done = state["prev_done"]
 
         # Move the paddle + drop the ball.
         dx = action - 1  # [-1, 0, 1] = Left, no-op, right.
-        state["paddle_x"] = (jnp.clip(state["paddle_x"] + dx, 0,
-                                      self.env_params["columns"] - 1)
-                             * (1-prev_done) + paddle_x * prev_done)
-        state["ball_y"] = ((state["ball_y"] + 1) * (1-prev_done)
-                           + ball_y * prev_done)
-        state["ball_x"] = state["ball_x"] * (1-prev_done) + ball_x * prev_done
-        state["paddle_y"] = (state["paddle_y"] * (1-prev_done)
-                             + paddle_y * prev_done)
+        paddle_x = (jnp.clip(state["paddle_x"] + dx, 0,
+                             self.env_params["columns"] - 1)
+                    * (1-prev_done) + paddle_x * prev_done)
+        ball_y = ((state["ball_y"] + 1) * (1-prev_done)
+                   + ball_y * prev_done)
+        ball_x = state["ball_x"] * (1-prev_done) + ball_x * prev_done
+        paddle_y = (state["paddle_y"] * (1-prev_done)
+                    + paddle_y * prev_done)
 
         # Rewrite reward as boolean multiplication
-        state["prev_done"] = (state["ball_y"] == state["paddle_y"])
-        catched = (state["paddle_x"] == state["ball_x"])
-        reward = state["prev_done"] * (1 * catched + -1 * (1 - catched))
+        prev_done = (ball_y == paddle_y)
+        catched = (paddle_x == ball_x)
+        reward = prev_done * (1 * catched + -1 * (1 - catched))
+
+        state = {"ball_x": ball_x,
+                 "ball_y": ball_y,
+                 "paddle_x": paddle_x,
+                 "paddle_y": paddle_y,
+                 "prev_done": prev_done,
+                 "time": state["time"] + 1}
 
         # Check number of steps in episode termination condition
-        state["time"] += 1
         done = self.is_terminal(state)
         state["terminal"] = done
         return (lax.stop_gradient(self.get_obs(state)),

@@ -2,7 +2,6 @@
 
 ### Issues
 
-
 ##### New environment implementations
 `gymnax` is not intended to host *every* jittable RL environment. Instead, we focus on core/classic environments, which capture many dimensions of the RL problem formulation (exploration vs. exploitation, non-stationarity, generalization) and have an experimental/educational purpose. If you believe your favourite environment fits in this category, please open an issue.
 
