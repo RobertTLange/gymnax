@@ -29,19 +29,21 @@ class MemoryChain(environment.Environment):
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
         obs = self.get_obs(state)
-        state["time"] += 1
 
         # State smaller than mem length = 0 reward
         reward = 0
-        mem_not_full = (state["time"] - 1 < self.env_params["memory_length"])
+        mem_not_full = (state["time"] < self.env_params["memory_length"])
         correct_action = (action == state["context"][state["query"]])
         mem_correct = jnp.logical_and(1 - mem_not_full, correct_action)
         mem_wrong = jnp.logical_and(1 - mem_not_full, 1-correct_action)
         reward = reward + mem_correct - mem_wrong
 
         # Update episode loggers
-        state["total_perfect"] +=  mem_correct
-        state["total_regret"] += 2*mem_wrong
+        state = {"context": state["context"],
+                 "query": state["query"],
+                 "total_perfect": state["total_perfect"] +  mem_correct,
+                 "total_regret": state["total_regret"] + 2*mem_wrong,
+                 "time": state["time"] + 1}
 
         # Check game condition & no. steps for termination condition
         done = self.is_terminal(state)
@@ -73,7 +75,8 @@ class MemoryChain(environment.Environment):
                         dtype=jnp.float32)
         # Show time remaining - every step.
         obs = jax.ops.index_update(obs, jax.ops.index[0, 0],
-                                   1 - state["time"] / self.env_params["memory_length"])
+                                   1 - state["time"] /
+                                   self.env_params["memory_length"])
         # Show query - only last step.
         query_val = lax.select(state["time"] ==
                                self.env_params["memory_length"] - 1,
@@ -88,7 +91,7 @@ class MemoryChain(environment.Environment):
     def is_terminal(self, state: dict) -> bool:
         """ Check whether state is terminal. """
         done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
-        done_mem = (state["time"] - 1 < self.env_params["memory_length"])
+        done_mem = (state["time"] -1 == self.env_params["memory_length"])
         return jnp.logical_or(done_steps, done_mem)
 
     @property

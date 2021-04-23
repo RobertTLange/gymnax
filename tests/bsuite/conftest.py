@@ -13,4 +13,4 @@ def pytest_generate_tests(metafunc):
                                               "MNISTBandit-bsuite",
                                               "SimpleBandit-bsuite"])
         else:
-            metafunc.parametrize("env_name", ["DiscountingChain-bsuite"])
+            metafunc.parametrize("env_name", ["MemoryChain-bsuite"])
