@@ -27,10 +27,12 @@ class SimpleBandit(environment.Environment):
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
         reward = state["rewards"][action]
-        state["total_regret"] += self.env_params["optimal_return"] - reward
+        state = {"rewards": state["rewards"],
+                 "total_regret": (state["total_regret"] +
+                                  self.env_params["optimal_return"] - reward),
+                 "time": state["time"] + 1}
 
         # Check game condition & no. steps for termination condition
-        state["time"] += 1
         done = self.is_terminal(state)
         state["terminal"] = done
         info = {"discount": self.discount(state)}

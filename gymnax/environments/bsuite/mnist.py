@@ -33,12 +33,13 @@ class MNISTBandit(environment.Environment):
         """ Perform single timestep state transition. """
         correct = (action == state["correct_label"])
         reward = lax.select(correct, 1., -1.)
-        state["regret"] += self.env_params["optimal_return"] - reward
         observation = jnp.zeros(shape=self.env_params["image_shape"],
                                 dtype=jnp.float32)
-
+        state = {"correct_label": state["correct_label"],
+                 "regret": (state["regret"] + self.env_params["optimal_return"]
+                            - reward),
+                 "time": state["time"] + 1}
         # Check game condition & no. steps for termination condition
-        state["time"] += 1
         done = self.is_terminal(state)
         state["terminal"] = done
         info = {"discount": self.discount(state)}

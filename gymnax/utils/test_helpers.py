@@ -17,7 +17,10 @@ def assert_correct_state(env_gym, env_name: str, state_jax: dict,
                 assert np.allclose(state_jax[k], state_gym[k], atol=atol)
             else:
                 # Exclude extra time and terminal state from assertion
-                assert state_gym[k] == state_jax[k]
+                if type(state_gym[k]) in [float, np.float64]:
+                    np.allclose(state_gym[k], state_jax[k], atol=atol)
+                else:
+                    assert state_gym[k] == state_jax[k]
 
 
 def assert_correct_transit(obs_gym, reward_gym, done_gym,
