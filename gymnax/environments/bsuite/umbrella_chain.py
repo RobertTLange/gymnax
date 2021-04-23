@@ -27,21 +27,26 @@ class UmbrellaChain(environment.Environment):
     def step(self, key: PRNGKey, state: dict, action: int
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
-        state["time"] += 1
-        state["has_umbrella"] = lax.select(state["time"] == 1, action,
-                                           state["has_umbrella"])
+        has_umbrella = lax.select(state["time"]+1 == 1, action,
+                                  state["has_umbrella"])
         reward = 0
         # Check if chain is full/up
-        chain_full = (state["time"] == self.env_params["chain_length"])
-        has_need = (state["has_umbrella"] == state["need_umbrella"])
+        chain_full = (state["time"] + 1 == self.env_params["chain_length"])
+        has_need = (has_umbrella == state["need_umbrella"])
         reward += jnp.logical_and(chain_full, has_need)
         reward -= jnp.logical_and(chain_full, 1-has_need)
-        state["total_regret"] += 2* jnp.logical_and(chain_full, 1-has_need)
+        total_regret = state["total_regret"] + 2* jnp.logical_and(chain_full,
+                                                                  1-has_need)
 
         # If chain is not full/up add random rewards
         key_reward, key_distractor = jax.random.split(key)
         random_rew = 2*jax.random.bernoulli(key_reward, p=0.5, shape=()) - 1
         reward += (1 - chain_full) * random_rew
+
+        state = {"need_umbrella": state["need_umbrella"],
+                 "has_umbrella": has_umbrella,
+                 "total_regret": total_regret,
+                 "time": state["time"] + 1}
         # Check game condition & no. steps for termination condition
         done = self.is_terminal(state)
         state["terminal"] = done

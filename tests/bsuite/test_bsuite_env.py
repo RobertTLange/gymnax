@@ -43,6 +43,10 @@ def test_step(env_name: str):
                                                                 state,
                                                                 action)
 
+            # For umbrella chain ignore reward - randomly sampled!
+            if env_name == "UmbrellaChain-bsuite":
+                reward_jax = reward_jit = reward_bsuite
+
             # Check correctness of transition
             assert_correct_transit(obs_bsuite, reward_bsuite, done_bsuite,
                                    obs_jax, reward_jax, done_jax,
