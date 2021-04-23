@@ -11,8 +11,7 @@ from gymnax.utils import (np_state_to_jax,
 from bsuite.environments import (catch, deep_sea, discounting_chain,
                                  memory_chain, umbrella_chain, mnist, bandit)
 
-num_episodes, num_steps = 10, 150
-tolerance = 1e-04
+num_episodes, num_steps, tolerance = 10, 150, 1e-04
 
 
 def test_step(env_name: str):

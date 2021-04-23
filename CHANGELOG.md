@@ -12,6 +12,7 @@
     - Miscellaneous: `Bandit-misc`, `Rooms-misc`
 - Adds `tests` for comparing `gym`/`numpy` `reset` + `step`  with JAX version.
     - `tests/classic_control/test_gym_env.py`
+    - `tests/bsuite/test_bsuite_env.py`
 - Adds set of `notebooks` walking through the individual environments.
 
 ##### Todo

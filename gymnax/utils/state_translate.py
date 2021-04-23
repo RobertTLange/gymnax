@@ -1,3 +1,5 @@
+import jax.numpy as jnp
+
 
 def np_state_to_jax(env, env_name: str="Pendulum-v0"):
     """ Helper that collects env state into dict for JAX `step`. """
@@ -133,7 +135,7 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
                             "terminal": 0}
     elif env_name == "Freeway-MinAtar":
         state_gym_to_jax = {"pos": env.env.pos,
-                            "cars": env.env.cars,
+                            "cars": jnp.array(env.env.cars),
                             "move_timer": env.env.move_timer,
                             "terminate_timer": env.env.terminate_timer,
                             "time": 0,

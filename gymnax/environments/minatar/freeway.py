@@ -19,7 +19,7 @@ class MinFreeway(environment.Environment):
     ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
     - Player starts at bottom of screen and can travel up/down.
     - Player speed is restricted s.t. player only moves every 3 frames.
-    - A reward +1 is given when player reaches top of screen -> returns to bottom.
+    - Reward +1 given when player reaches top of screen -> returns to bottom.
     - 8 cars travel horizontally on screen and teleport to other side at edge.
     - When player is hit by a car, he is returned to the bottom of the screen.
     - Car direction and speed are indicated by 5 trail channels.
@@ -46,7 +46,7 @@ class MinFreeway(environment.Environment):
 
         # 2. Sample a new configuration for the cars if agent 'won'
         # Note: At each step we are sampling speed and dir to avoid if cond
-        # by masking - this is still faster after compilation than numpy version!
+        # by masking - still faster after compilation than numpy version!
         key_speed, key_dirs = jax.random.split(key)
         speeds = jax.random.randint(key_speed, shape=(8,), minval=1, maxval=6)
         directions = jax.random.choice(key_dirs, jnp.array([-1, 1]), shape=(8,))
@@ -58,10 +58,6 @@ class MinFreeway(environment.Environment):
 
         # 3. Update cars and check for collisions! - respawn agent at bottom
         state = step_cars(state)
-
-        # 4. Update various timers
-        state["move_timer"] -= (state["move_timer"] > 0)
-        state["terminate_timer"] -= 1
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
@@ -159,7 +155,7 @@ def step_agent(action: int, state: dict, params: FrozenDict):
                            + any_cond * params["player_speed"])
     # Check win cond. - increase reward, randomize cars, reset agent position
     win_cond = (state["pos"] == 0)
-    reward = 1 * win_cond
+    reward = win_cond
     state["pos"] = 9 * win_cond + state["pos"] * (1 - win_cond)
     return state, reward, win_cond
 
@@ -169,7 +165,8 @@ def step_cars(state: dict):
     # Update cars and check for collisions! - respawn agent at bottom
     for car_id in range(8):
         # Check for agent collision with car and if so reset agent
-        collision_cond = (state["cars"][car_id][0:2] == [4, state["pos"]])
+        collision_cond = jnp.logical_and(state["cars"][car_id][0] == 4,
+                                         state["cars"][car_id][1] == state["pos"])
         state["pos"] = 9 * collision_cond + state["pos"] * (1-collision_cond)
 
         # Check for exiting frame, reset car and then check collision again
@@ -195,9 +192,12 @@ def step_cars(state: dict):
         state["cars"] = jax.ops.index_update(state["cars"],
                                              jax.ops.index[car_id, 0],
                                              upd_0_gr)
+
         # Check collision after car position update - respawn agent
-        cond_pos = jnp.logical_and(car_cond,
-                               state["cars"][car_id][0:2] == [4, state["pos"]])
+        # Note: Need to reevaluate collision condition since cars change!
+        collision_cond = jnp.logical_and(state["cars"][car_id][0] == 4,
+                                         state["cars"][car_id][1] == state["pos"])
+        cond_pos = jnp.logical_and(car_cond, collision_cond)
         state["pos"] = cond_pos * 9 + (1 - cond_pos) * state["pos"]
         # Move car if no previous car_cond update
         alt_upd_2 = (car_cond * state["cars"][car_id][2]
@@ -205,6 +205,9 @@ def step_cars(state: dict):
         state["cars"] = jax.ops.index_update(state["cars"],
                                              jax.ops.index[car_id, 2],
                                              alt_upd_2)
+    # 4. Update various timers
+    state["move_timer"] -= (state["move_timer"] > 0)
+    state["terminate_timer"] -= 1
     return state
 
 

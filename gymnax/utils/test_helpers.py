@@ -16,6 +16,7 @@ def assert_correct_state(env_gym, env_name: str, state_jax: dict,
                                       np.ndarray]:
                 assert np.allclose(state_jax[k], state_gym[k], atol=atol)
             else:
+                #print(k, state_gym[k], state_jax[k])
                 # Exclude extra time and terminal state from assertion
                 if type(state_gym[k]) in [float, np.float64]:
                     np.allclose(state_gym[k], state_jax[k], atol=atol)
@@ -30,3 +31,22 @@ def assert_correct_transit(obs_gym, reward_gym, done_gym,
     assert np.allclose(obs_gym, obs_jax, atol=atol)
     assert np.allclose(reward_gym, reward_jax, atol=atol)
     assert np.alltrue(done_gym == done_jax)
+
+
+def minatar_action_map(action_jax: int, env_name: str):
+    """ Helper that maps gymnax MinAtar action to the numpy equivalent. """
+    all_actions = ['n','l','u','r','d','f']
+    if env_name == "Asterix-MinAtar":
+        minimal_actions = ['n', 'l', 'u', 'r', 'd']
+    elif env_name == "Breakout-MinAtar":
+        minimal_actions = ['n','l','r']
+    elif env_name == "Freeway-MinAtar":
+        minimal_actions = ['n', 'u', 'd']
+    elif env_name == "Seaquest-MinAtar":
+        minimal_actions = ['n','l','u','r','d','f']
+    elif env_name == "SpaceInvaders-MinAtar":
+        minimal_actions = ['n','l','r','f']
+    else:
+        raise ValueError(f"{env_name} not in implemented MinAtar environments.")
+    action_idx = all_actions.index(minimal_actions[action_jax])
+    return action_idx
