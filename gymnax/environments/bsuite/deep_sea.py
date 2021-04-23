@@ -44,13 +44,20 @@ class DeepSea(environment.Environment):
                                          self.env_params["deterministic"])
         right_cond = jnp.logical_and(action_right, right_rand_cond)
 
-        reward, state = step_reward(state, action_right, right_cond,
-                                    rand_reward, self.env_params)
-        state = step_transition(state, action_right, right_cond,
-                                self.env_params)
+        reward, denoised_return = step_reward(state, action_right, right_cond,
+                                              rand_reward, self.env_params)
+        column, row, bad_episode = step_transition(state, action_right,
+                                                   right_cond, self.env_params)
+        state = {"row": row,
+                 "column": column,
+                 "bad_episode": bad_episode,
+                 "total_bad_episodes": state["total_bad_episodes"],
+                 "denoised_return": denoised_return,
+                 "optimal_return": state["optimal_return"],
+                 "action_mapping": state["action_mapping"],
+                 "time": state["time"] + 1}
 
         # Check row condition & no. steps for termination condition
-        state["time"] += 1
         done = self.is_terminal(state)
         state["total_bad_episodes"] += done * state["bad_episode"]
         state["terminal"] = done
@@ -149,7 +156,7 @@ def step_reward(state, action_right, right_cond, rand_reward, params):
     rew_cond = jnp.logical_and(state["column"] == params["size"] - 1,
                                action_right)
     reward += rew_cond
-    state["denoised_return"] += rew_cond
+    denoised_return = state["denoised_return"] + rew_cond
 
     # Noisy rewards on the 'end' of chain.
     col_at_edge = jnp.logical_or(state["column"] == 0,
@@ -157,25 +164,24 @@ def step_reward(state, action_right, right_cond, rand_reward, params):
     chain_end = jnp.logical_and(state["row"] == params["size"] - 1,
                                 col_at_edge)
     det_chain_end = jnp.logical_and(chain_end, params["deterministic"])
-    reward += rand_reward * det_chain_end
+    reward += rand_reward * det_chain_end * (1 - params["deterministic"])
     reward -= right_cond * params["unscaled_move_cost"] / params["size"]
-    return reward, state
+    return reward, denoised_return
 
 
 def step_transition(state, action_right, right_cond, params):
     """ Get the state transition for the selected action. """
     # Standard right path transition
-    state["column"] = ((1 - right_cond) * state["column"] +
-                       right_cond *
-                       jnp.clip(state["column"] + 1, 0, params["size"] - 1))
+    column = ((1 - right_cond) * state["column"] + right_cond *
+              jnp.clip(state["column"] + 1, 0, params["size"] - 1))
 
     # You were on the right path and went wrong
     right_wrong_cond = jnp.logical_and(1 - action_right,
-                                       state["row"] == state["column"])
-    state["bad_episode"] = ((1 - right_wrong_cond) * state["bad_episode"]
-                            + right_wrong_cond * 1)
-    state["column"] = ((1 - action_right)
-                       * jnp.clip(state["column"] - 1, 0, params["size"] - 1)
-                       + action_right * state["column"])
-    state["row"] = state["row"] + 1
-    return state
+                                       state["row"] == column)
+    bad_episode = ((1 - right_wrong_cond) * state["bad_episode"]
+                    + right_wrong_cond * 1)
+    column = ((1 - action_right)
+               * jnp.clip(state["column"] - 1, 0, params["size"] - 1)
+               + action_right * state["column"])
+    row = state["row"] + 1
+    return column, row, bad_episode

@@ -78,13 +78,16 @@ def make_bsuite_env(env_name: str):
     if env_name == "Catch-bsuite":
         env = catch.Catch()
     elif env_name == "DeepSea-bsuite":
-        env = deep_sea.DeepSea()
+        env = deep_sea.DeepSea(size=8, randomize_actions=False)
     elif env_name == "DiscountingChain-bsuite":
-        env = discounting_chain.DiscountingChain()
+        env = discounting_chain.DiscountingChain(mapping_seed=0)
     elif env_name == "MemoryChain-bsuite":
-        env = memory_chain.MemoryChain()
+        env = memory_chain.MemoryChain(memory_length=5, num_bits=1)
     elif env_name == "UmbrellaChain-bsuite":
-        env = umbrella_chain.UmbrellaChain()
-    elif env_name == "SimpleBandit":
+        env = umbrella_chain.UmbrellaChain(chain_length=10,
+                                           n_distractor=0)
+    elif env_name == "MNISTBandit-bsuite":
+        env = mnist.MNISTBandit()
+    elif env_name == "SimpleBandit-bsuite":
         env = bandit.SimpleBandit()
     return env
