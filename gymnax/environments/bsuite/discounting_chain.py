@@ -33,9 +33,10 @@ class DiscountingChain(environment.Environment):
     def step(self, key: PRNGKey, state: dict, action: int
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
-        state["context"] = lax.select(state["time"] == 0,
-                                      action, state["context"])
-        state["time"] += 1
+        state = {"rewards": state["rewards"],
+                 "context": lax.select(state["time"] == 0,
+                                       action, state["context"]),
+                 "time": state["time"] + 1}
         reward = lax.select(
                     state["time"] ==
                     self.env_params["reward_timestep"][state["context"]],
