@@ -2,16 +2,6 @@ import numpy as np
 import jax.numpy as jnp
 
 
-def get_jax_state_from_numpy(env):
-    """ A helper for summarizing numpy env info into JAX state. """
-    state_jax = {"pos": env.env.pos,
-                 "cars": jnp.array(env.env.cars),
-                 "move_timer": env.env.move_timer,
-                 "terminate_timer": env.env.terminate_timer,
-                 "terminal": env.env.terminal}
-    return state_jax
-
-
 def det_randomize_cars_numpy(speeds, directions, old_cars, initialize):
     """ Helper _randomize_cars(self, initialize) function from numpy."""
     # We have extracted all randomness for testing purposes

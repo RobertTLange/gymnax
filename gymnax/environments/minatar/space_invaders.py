@@ -45,9 +45,9 @@ class MinSpaceInvaders(environment.Environment):
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
         # Resolve player action - fire, left, right.
-        state, bullet_terminal = step_agent(action, state, self.env_params)
+        state = step_agent(action, state, self.env_params)
         # Update aliens - border and collision check.
-        state, alien_terminal = step_aliens(state)
+        state = step_aliens(state)
         # Update aliens - shooting check and calculate rewards.
         state, reward = step_shoot(state, self.env_params)
 
@@ -67,9 +67,6 @@ class MinSpaceInvaders(environment.Environment):
                               jax.ops.index_update(state["alien_map"],
                                                    jax.ops.index[0:4, 2:8], 1)
                               + (1-reset_map_cond) * state["alien_map"])
-
-        # Combine different termination conditions
-        state["terminal"] = (bullet_terminal + alien_terminal) > 0
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
@@ -119,7 +116,7 @@ class MinSpaceInvaders(environment.Environment):
     def is_terminal(self, state: dict) -> bool:
         """ Check whether state is terminal. """
         done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
-        return done_steps
+        return jnp.logical_or(done_steps, state["terminal"])
 
     @property
     def name(self) -> str:
@@ -179,7 +176,8 @@ def step_agent(action, state, params):
     state["e_bullet_map"] = jax.ops.index_update(state["e_bullet_map"],
                                                  jax.ops.index[0, :], 0)
     bullet_terminal = state["e_bullet_map"][9, state["pos"]]
-    return state, bullet_terminal
+    state["terminal"] = jnp.logical_or(state["terminal"], bullet_terminal)
+    return state
 
 
 def step_aliens(state):
@@ -214,7 +212,8 @@ def step_aliens(state):
 
     # Jointly evaluate the 3 alien terminal conditions
     alien_terminal = (alien_terminal_1 + alien_terminal_2 + alien_terminal_3)>0
-    return state, alien_terminal
+    state["terminal"] = jnp.logical_or(state["terminal"], alien_terminal)
+    return state
 
 
 def step_shoot(state, params):
@@ -250,19 +249,22 @@ def get_nearest_alien(pos, alien_map):
     """ Find alien closest to player in manhattan distance -> shot target."""
     ids = jnp.array([jnp.abs(jnp.array([i for i in range(10)]) - pos)])
     search_order = jnp.argsort(ids).squeeze()
-    results_temp = jnp.zeros((10, 3))
+    results_temp = jnp.zeros(3)
     aliens_exist = jnp.sum(alien_map, axis=0) > 0
 
     # Work around for np.where via element-wise multiplication with ids
     # The output has 3 dims: [alien_exists, location, id]
     counter = 0
-    for i in search_order:
+    for i in search_order[::-1]:
         locations = alien_map[:, i] * jnp.arange(alien_map[:, i].shape[0])
         aliens_loc = jnp.max(locations)
-        results_temp = jax.ops.index_update(results_temp,
-                                            jax.ops.index[counter],
+        results_temp = (aliens_exist[i] * jax.ops.index_update(results_temp,
+                                            jax.ops.index[:],
                                             jnp.array([aliens_exist[i],
-                                                       aliens_loc, i]))
+                                                       aliens_loc, i])) +
+                        (1-aliens_exist[i])*results_temp)
         counter += 1
     results_temp = jnp.array(results_temp, dtype=int)
-    return results_temp[0][0], results_temp[0][1], results_temp[0][2]
+    results_out = jnp.zeros(3)
+    # Loop over results in reverse order
+    return results_temp[0], results_temp[1], results_temp[2]

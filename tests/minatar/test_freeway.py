@@ -50,7 +50,7 @@ def test_step():
 
 
 def test_reset():
-    """ Test reset obs/state is in space of OpenAI version. """
+    """ Test reset obs/state is in space of NumPy version. """
     #env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
     rng, env_jax = gymnax.make(env_name_jax)
     for ep in range(num_episodes):
@@ -88,6 +88,7 @@ def test_get_obs():
 
 
 def test_randomize_cars():
+    """ Test randomization of car locations. """
     # Test initialization version of `randomize_cars`
     for i in range(num_steps):
         speeds = np.random.randint(1, 6, 8)
