@@ -10,7 +10,7 @@ import numpy as np
 from minatar import Environment
 
 num_episodes, num_steps, tolerance = 2, 10, 1e-04
-env_name_gym, env_name_jax = 'breakout', 'Breakout-MinAtar'
+env_name_gym, env_name_jax = 'seaquest', 'Seaquest-MinAtar'
 
 
 def test_step():
