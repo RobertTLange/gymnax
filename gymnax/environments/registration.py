@@ -6,8 +6,7 @@ from gymnax.environments.classic_control import (Pendulum,
                                                  MountainCar,
                                                  ContinuousMountainCar,
                                                  Acrobot)
-
-# # =============================================================================
+# =============================================================================
 from gymnax.environments.bsuite import (Catch,
                                         DeepSea,
                                         DiscountingChain,
@@ -15,24 +14,13 @@ from gymnax.environments.bsuite import (Catch,
                                         UmbrellaChain,
                                         MNISTBandit,
                                         SimpleBandit)
-
-# # =============================================================================
+# =============================================================================
 from gymnax.environments.minatar import (MinAsterix,
                                          MinBreakout,
                                          MinFreeway,
-                                         #MinSeaquest,
+                                         MinSeaquest,
                                          MinSpaceInvaders)
-# from gymnax.environments.minatar import (reset_breakout, step_breakout,
-#                                          params_breakout)
-# from gymnax.environments.minatar import (reset_freeway, step_freeway,
-#                                          params_freeway)
-# from gymnax.environments.minatar import (reset_seaquest, step_seaquest,
-#                                          params_seaquest)
-# from gymnax.environments.minatar import (reset_space_invaders,
-#                                          step_space_invaders,
-#                                          params_space_invaders)
-#
-# # =============================================================================
+# =============================================================================
 # from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
 
 
@@ -73,9 +61,8 @@ def make(env_id: str, seed_id: int = 0):
         env = MinBreakout()
     elif env_id == "Freeway-MinAtar":
         env = MinFreeway()
-    # elif env_id == "Seaquest-MinAtar":
-    #     reset, step, env_params = (reset_seaquest, step_seaquest,
-    #                                params_seaquest)
+    elif env_id == "Seaquest-MinAtar":
+        env = MinSeaquest()
     elif env_id == "SpaceInvaders-MinAtar":
         env = MinSpaceInvaders()
 

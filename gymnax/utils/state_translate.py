@@ -1,4 +1,5 @@
 import numpy as np
+import jax
 import jax.numpy as jnp
 
 
@@ -114,8 +115,11 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
         entities_array = jnp.zeros((8, 5), dtype=jnp.int32)
         for i in range(8):
             if env.env.entities[i] is not None:
-                entities_array = jax.ops.index_update(obs, jax.ops.index[i,
-                                                      env.env.entities[i]], 1)
+                entities_array = jax.ops.index_update(entities_array,
+                                                      jax.ops.index[i,
+                                                      0:4], env.env.entities[i])
+                entities_array = jax.ops.index_update(entities_array,
+                                                      jax.ops.index[i, 4], 1)
         state_gym_to_jax = {"player_x": env.env.player_x,
                             "player_y": env.env.player_y,
                             "shot_timer": env.env.shot_timer,
@@ -147,7 +151,25 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
                             "time": 0,
                             "terminal": 0}
     elif env_name == "Seaquest-MinAtar":
-        state_gym_to_jax = {}
+        state_gym_to_jax = {"oxygen": env.env.oxygen,
+                            "diver_count": env.env.diver_count,
+                            "sub_x": env.env.sub_x,
+                            "sub_y": env.env.sub_y,
+                            "sub_or": env.env.sub_or,
+                            "f_bullets": env.env.f_bullets,
+                            "e_bullets": env.env.e_bullets,
+                            "e_fish": env.env.e_fish,
+                            "e_subs": env.env.e_subs,
+                            "divers": env.env.divers,
+                            "e_spawn_speed": env.env.e_spawn_speed,
+                            "e_spawn_timer": env.env.e_spawn_timer,
+                            "d_spawn_timer": env.env.d_spawn_timer,
+                            "move_speed": env.env.move_speed,
+                            "ramp_index": env.env.ramp_index,
+                            "shot_timer": env.env.shot_timer,
+                            "surface": env.env.surface,
+                            "time": 0,
+                            "terminal": 0}
     elif env_name == "SpaceInvaders-MinAtar":
         state_gym_to_jax = {"pos": env.env.pos,
                             "f_bullet_map": env.env.f_bullet_map,

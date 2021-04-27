@@ -57,7 +57,7 @@ class MinAsterix(environment.Environment):
         # Update entities, get reward and figure out termination
         state, reward, done = step_entities(state)
         # Update timers and ramping condition check
-        state = step_timers(state)
+        state = step_timers(state, self.env_params)
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1

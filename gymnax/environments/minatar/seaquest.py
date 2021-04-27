@@ -13,7 +13,7 @@ PRNGKey = chex.PRNGKey
 
 class MinSeaquest(environment.Environment):
     """
-    JAX Compatible version of Breakout MinAtar environment. Source:
+    JAX Compatible version of Seaquest MinAtar environment. Source:
     github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py
 
     ENVIRONMENT DESCRIPTION - 'Seaquest-MinAtar'
@@ -26,8 +26,9 @@ class MinSeaquest(environment.Environment):
     - Oxygen degrades over time. Can be restored:
     - If player moves to top of screen and has at least 1 rescued driver on board.
     - When surfacing with less than 6, one diver is removed.
-    - When surfacing with 6, remove all divers. Reward for each active cell in oxygen bar.
-    - Each time the player surfaces increase difficulty by increasing the spawn rate and movement speed of enemies.
+    - When surfacing w. 6, remove all divers. R for each active cell in oxygen bar.
+    - Each time the player surfaces increase difficulty by increasing
+      the spawn rate and movement speed of enemies.
     - Termination occurs when player is hit by an enemy fish, sub or bullet
     - Or when oxygen reached 0.
     - Or when the layer attempts to surface with no rescued divers.
@@ -71,24 +72,25 @@ class MinSeaquest(environment.Environment):
 
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Reset environment state by sampling initial position. """
-        state = {"oxygen": params["max_oxygen"],
+        state = {"oxygen": self.env_params["max_oxygen"],
                  "diver_count": 0,
                  "sub_x": 5,
                  "sub_y": 0,
-                 "sub_or": False,
-                 "f_bullets": [],
-                 "e_bullets": [],
-                 "e_fish": [],
-                 "e_subs": [],
-                 "divers": [],
-                 "e_spawn_speed": params["init_spawn_speed"],
-                 "e_spawn_timer": params["init_spawn_speed"],
-                 "d_spawn_timer": params["diver_spawn_speed"],
-                 "move_speed": params["init_move_interval"],
+                 "sub_or": 0,
+                 "f_bullets": jnp.zeros((10, 10)),
+                 "e_bullets": jnp.zeros((10, 10)),
+                 "e_fish": jnp.zeros((10, 10)),
+                 "e_subs": jnp.zeros((10, 10)),
+                 "divers": jnp.zeros((10, 10)),
+                 "e_spawn_speed": self.env_params["init_spawn_speed"],
+                 "e_spawn_timer": self.env_params["init_spawn_speed"],
+                 "d_spawn_timer": self.env_params["diver_spawn_speed"],
+                 "move_speed": self.env_params["init_move_interval"],
                  "ramp_index": 0,
                  "shot_timer": 0,
-                 "surface": True,
-                 "terminal": False}
+                 "surface": 1,
+                 "time": 0,
+                 "terminal": 0}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:
@@ -102,8 +104,10 @@ class MinSeaquest(environment.Environment):
         obs = jax.ops.index_update(obs, jax.ops.index[state['sub_y'],
                                                       back_x, 1], 1)
         obs = jax.ops.index_update(obs, jax.ops.index[9,
-                                0:state["oxygen"]*10//params["max_oxygen"], 7], 1)
-        obs = jax.ops.index_update(obs, jax.ops.index[9, 9-state["diver_count"]:9,
+                                0:state["oxygen"]*10//
+                                self.env_params["max_oxygen"], 7], 1)
+        obs = jax.ops.index_update(obs, jax.ops.index[9, 9-
+                                                      state["diver_count"]:9,
                                                       8], 1)
 
         # Set friendly bulltes, enemy bullets, enemy fish+trail, enemey sub+trail
@@ -142,7 +146,7 @@ class MinSeaquest(environment.Environment):
     def is_terminal(self, state: dict) -> bool:
         """ Check whether state is terminal. """
         done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
-        return False
+        return done_steps
 
     @property
     def name(self) -> str:
@@ -152,34 +156,58 @@ class MinSeaquest(environment.Environment):
     @property
     def action_space(self):
         """ Action space of the environment. """
-        return spaces.Discrete(2)
+        return spaces.Discrete(6)
 
     @property
     def observation_space(self):
         """ Observation space of the environment. """
-        return spaces.Box(-1, 1, (1,))
+        return spaces.Box(0, 1, self.env_params["obs_shape"])
 
     @property
     def state_space(self):
         """ State space of the environment. """
         return spaces.Dict(
-            {"oxygen": None,
-             "diver_count": None,
-             "sub_x": None,
-             "sub_y": None,
-             "sub_or": None,
-             "f_bullets": None,
-             "e_bullets": None,
-             "e_fish": None,
-             "e_subs": None,
-             "divers": None,
-             "e_spawn_speed": None,
-             "e_spawn_timer": None,
-             "d_spawn_timer": None,
-             "move_speed": None,
-             "ramp_index": None,
-             "shot_timer": None,
-             "surface": None,
-             "terminal": None,
+            {"oxygen": spaces.Discrete(self.env_params["max_oxygen"]),
+             "diver_count": spaces.Discrete(20),
+             "sub_x": spaces.Discrete(10),
+             "sub_y": spaces.Discrete(10),
+             "sub_or": spaces.Discrete(2),
+             "f_bullets": spaces.Box(0, 1, (10, 10)),
+             "e_bullets": spaces.Box(0, 1, (10, 10)),
+             "e_fish": spaces.Box(0, 1, (10, 10)),
+             "e_subs": spaces.Box(0, 1, (10, 10)),
+             "divers": spaces.Box(0, 1, (10, 10)),
+             "e_spawn_speed": spaces.Discrete(self.env_params["init_spawn_speed"]),
+             "e_spawn_timer": spaces.Discrete(self.env_params["init_spawn_speed"]),
+             "d_spawn_timer": spaces.Discrete(self.env_params["diver_spawn_speed"]),
+             "move_speed":  spaces.Discrete(1000),
+             "ramp_index":  spaces.Discrete(1000),
+             "shot_timer": spaces.Discrete(self.env_params["shot_cool_down"]),
+             "surface": spaces.Discrete(2),
              "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
              "terminal": spaces.Discrete(2)})
+
+
+def step_agent():
+    return
+
+def step_bullets():
+    return
+
+def step_divers():
+    return
+
+def step_e_subs():
+    return
+
+def step_timers():
+    return
+
+def spawn_enemy():
+    return
+
+def spawn_diver():
+    return
+
+def surface():
+    return
