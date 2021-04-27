@@ -9,6 +9,9 @@ from gymnax.utils import (np_state_to_jax,
 import numpy as np
 from minatar import Environment
 
+# from gymnax.environments.minatar.seaquest import (step_agent,)
+# from seaquest_helpers import (step_agent_numpy,)
+
 num_episodes, num_steps, tolerance = 2, 10, 1e-04
 env_name_gym, env_name_jax = 'seaquest', 'Seaquest-MinAtar'
 

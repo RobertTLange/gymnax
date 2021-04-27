@@ -44,59 +44,24 @@ class MinAsterix(environment.Environment):
         # Spawn enemy if timer is up - sample at each step and mask
         # TODO: Add conditional for case when there is no free slot
         entity, slot = spawn_entity(key, state)
-        state["entities"] = ((state["spawn_timer"] == 0) *
-                              jax.ops.index_update(state["entities"],
-                                                   jax.ops.index[slot], entity)
-                              + (state["spawn_timer"] > 0) * state["entities"])
-        state["spawn_timer"] = ((state["spawn_timer"] == 0) * state["spawn_speed"]
-                                + (state["spawn_timer"] > 0) * state["spawn_timer"])
+        state["entities"] = lax.select(state["spawn_timer"] <= 0,
+                                       jax.ops.index_update(state["entities"],
+                                                   jax.ops.index[slot], entity),
+                                       state["entities"])
+        state["spawn_timer"] = lax.select(state["spawn_timer"] <= 0,
+                                          state["spawn_speed"],
+                                          state["spawn_timer"])
 
-        # Resolve player action via implicit conditional updates of coordinates
-        # TODO: Add no-op!
-        player_x = (jnp.maximum(0, state["player_x"] - 1) * (action == 1)  # l
-                    + jnp.minimum(9, state["player_x"] + 1) * (action == 3)  # r
-                    + state["player_x"] * jnp.logical_and(action != 1,
-                                                          action != 3))  # others
-
-        player_y = (jnp.maximum(1, state["player_y"] - 1) * (action == 2)  # u
-                    + jnp.minimum(8, state["player_y"] + 1) * (action == 4)  # d
-                    + state["player_y"] * jnp.logical_and(action != 2,
-                                                          action != 4))  # others
-
-        state["player_x"] = player_x
-        state["player_y"] = player_y
-
+        # Update state of the players
+        state = step_agent(state, action)
         # Update entities, get reward and figure out termination
-        state, reward, done = update_entities(state)
-
-        # Update various timers
-        state["spawn_timer"] -= 1
-        state["move_timer"] -= 1
-
-        # Ramp difficulty if interval has elapsed
-        ramp_cond = jnp.logical_and(self.env_params["ramping"],
-                                    jnp.logical_or(state["spawn_speed"] > 1,
-                                                   state["move_speed"] > 1))
-        # 1. Update ramp_timer
-        timer_cond = jnp.logical_and(ramp_cond, state["ramp_timer"] >= 0)
-        state["ramp_timer"] = (timer_cond * (state["ramp_timer"] - 1)
-                               + (1 - timer_cond) * self.env_params["ramp_interval"])
-        # 2. Update move_speed
-        move_speed_cond = jnp.logical_and(
-                    jnp.logical_and(ramp_cond, 1 - timer_cond),
-                    jnp.logical_and(state["move_speed"], state["ramp_index"] % 2))
-        state["move_speed"] -= move_speed_cond
-        # 3. Update spawn_speed
-        spawn_speed_cond = jnp.logical_and(
-                                jnp.logical_and(ramp_cond, 1 - timer_cond),
-                                state["spawn_speed"] > 1)
-        state["spawn_speed"] -= spawn_speed_cond
-        # 4. Update ramp_index
-        state["ramp_index"] += jnp.logical_and(ramp_cond, 1 - timer_cond)
-        # TODO: Add terminal again to state dictionary
+        state, reward, done = step_entities(state)
+        # Update timers and ramping condition check
+        state = step_timers(state)
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
+        state["terminal"] = done
         done = self.is_terminal(state)
         state["terminal"] = done
         info = {"discount": self.discount(state)}
@@ -148,7 +113,7 @@ class MinAsterix(environment.Environment):
     def is_terminal(self, state: dict) -> bool:
         """ Check whether state is terminal. """
         done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
-        return False
+        return jnp.logical_or(done_steps, state["terminal"])
 
     @property
     def name(self) -> str:
@@ -181,6 +146,24 @@ class MinAsterix(environment.Environment):
              "entities": spaces.Box(0, 1, (8, 5)),
              "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
              "terminal": spaces.Discrete(2)})
+
+
+def step_agent(state: dict, action: int) -> dict:
+    """ Update the position of the agent. """
+    # Resolve player action via implicit conditional updates of coordinates
+    player_x = (jnp.maximum(0, state["player_x"] - 1) * (action == 1)  # l
+                + jnp.minimum(9, state["player_x"] + 1) * (action == 3)  # r
+                + state["player_x"] * jnp.logical_and(action != 1,
+                                                      action != 3))  # others
+
+    player_y = (jnp.maximum(1, state["player_y"] - 1) * (action == 2)  # u
+                + jnp.minimum(8, state["player_y"] + 1) * (action == 4)  # d
+                + state["player_y"] * jnp.logical_and(action != 2,
+                                                      action != 4))  # others
+
+    state["player_x"] = player_x
+    state["player_y"] = player_y
+    return state
 
 
 def spawn_entity(key, state):
@@ -226,7 +209,7 @@ def while_sample_slots(key, state_entities):
     return id_and_free[0], id_and_free[1]
 
 
-def update_entities(state):
+def step_entities(state):
     """ Update positions of the entities and return reward, done. """
     done, reward = False, 0
     # Loop over entities and check for collisions - either gold or enemy
@@ -248,7 +231,7 @@ def update_entities(state):
     # Loop over entities and move them in direction
     time_to_move = (state["move_timer"] == 0)
     state["move_timer"] = (time_to_move * state["move_speed"]
-                           + (1 - time_to_move) * state["move_speed"])
+                           + (1 - time_to_move) * state["move_timer"])
     for i in range(8):
         x = state["entities"][i]
         slot_filled = (x[4] != 0)
@@ -277,3 +260,31 @@ def update_entities(state):
         collision_enemy = jnp.logical_and(collision, 1 - x[3])
         done = collision_enemy
     return state, reward, done
+
+
+def step_timers(state, env_params):
+    # Update various timers and check the ramping condition
+    state["spawn_timer"] -= 1
+    state["move_timer"] -= 1
+
+    # Ramp difficulty if interval has elapsed
+    ramp_cond = jnp.logical_and(env_params["ramping"],
+                                jnp.logical_or(state["spawn_speed"] > 1,
+                                               state["move_speed"] > 1))
+    # 1. Update ramp_timer
+    timer_cond = jnp.logical_and(ramp_cond, state["ramp_timer"] >= 0)
+    state["ramp_timer"] = (timer_cond * (state["ramp_timer"] - 1)
+                           + (1 - timer_cond) * env_params["ramp_interval"])
+    # 2. Update move_speed
+    move_speed_cond = jnp.logical_and(
+                jnp.logical_and(ramp_cond, 1 - timer_cond),
+                jnp.logical_and(state["move_speed"], state["ramp_index"] % 2))
+    state["move_speed"] -= move_speed_cond
+    # 3. Update spawn_speed
+    spawn_speed_cond = jnp.logical_and(
+                            jnp.logical_and(ramp_cond, 1 - timer_cond),
+                            state["spawn_speed"] > 1)
+    state["spawn_speed"] -= spawn_speed_cond
+    # 4. Update ramp_index
+    state["ramp_index"] += jnp.logical_and(ramp_cond, 1 - timer_cond)
+    return state

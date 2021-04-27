@@ -5,11 +5,12 @@ from gymnax.utils import (np_state_to_jax,
                           minatar_action_map,
                           assert_correct_transit,
                           assert_correct_state)
-from gymnax.environments.minatar.freeway import (randomize_cars,
-                                                 step_agent, step_cars)
 
 import numpy as np
 from minatar import Environment
+
+from gymnax.environments.minatar.freeway import (randomize_cars,
+                                                 step_agent, step_cars)
 from freeway_helpers import (det_randomize_cars_numpy,
                              step_cars_numpy, step_agent_numpy)
 

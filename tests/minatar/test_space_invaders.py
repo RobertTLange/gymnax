@@ -5,13 +5,14 @@ from gymnax.utils import (np_state_to_jax,
                           minatar_action_map,
                           assert_correct_transit,
                           assert_correct_state)
+
+import numpy as np
+from minatar import Environment
+
 from gymnax.environments.minatar.space_invaders import (step_agent,
                                                         step_aliens,
                                                         step_shoot,
                                                         get_nearest_alien)
-
-import numpy as np
-from minatar import Environment
 from space_invaders_helpers import (step_agent_numpy,
                                     step_aliens_numpy,
                                     step_shoot_numpy,

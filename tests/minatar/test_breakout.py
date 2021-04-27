@@ -6,16 +6,15 @@ from gymnax.utils import (np_state_to_jax,
                           assert_correct_transit,
                           assert_correct_state)
 
-from gymnax.environments.minatar.breakout import (step_agent,
-                                                  step_ball_brick)
-
 import numpy as np
 from minatar import Environment
+
+
+from gymnax.environments.minatar.breakout import (step_agent,
+                                                  step_ball_brick)
 from breakout_helpers import (step_agent_numpy,
                               step_ball_brick_numpy)
 
-import numpy as np
-from minatar import Environment
 
 num_episodes, num_steps, tolerance = 10, 100, 1e-04
 env_name_gym, env_name_jax = 'breakout', 'Breakout-MinAtar'

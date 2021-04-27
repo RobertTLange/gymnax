@@ -9,11 +9,18 @@ from gymnax.utils import (np_state_to_jax,
 import numpy as np
 from minatar import Environment
 
-num_episodes, num_steps, tolerance = 2, 10, 1e-04
+from gymnax.environments.minatar.asterix import (step_agent,
+                                                 step_entities,
+                                                 step_timers)
+from asterix_helpers import (step_agent_numpy,
+                             step_entities_numpy,
+                             step_timers_numpy)
+
+num_episodes, num_steps, tolerance = 10, 100, 1e-04
 env_name_gym, env_name_jax = 'asterix', 'Asterix-MinAtar'
 
 
-def test_step():
+def test_sub_steps():
     """ Test a step transition for the env. """
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
     rng, env_jax = gymnax.make(env_name_jax)
@@ -28,24 +35,21 @@ def test_step():
             action = env_jax.action_space.sample(key_action)
             action_gym = minatar_action_map(action, env_name_jax)
 
-            reward_gym, done = env_gym.act(action_gym)
-            obs_gym = env_gym.state()
-            done_gym = env_gym.env.terminal
-            obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
-                                                                key_step,
-                                                                state,
-                                                                action)
-
-            # Check correctness of transition
-            assert_correct_transit(obs_gym, reward_gym, done_gym,
-                                   obs_jax, reward_jax, done_jax,
-                                   tolerance)
-
-            # Check that post-transition states are equal
-            assert_correct_state(env_gym, env_name_jax, state_jax,
+            step_agent_numpy(env_gym, action_gym)
+            state_jax_a = step_agent(state, action)
+            assert_correct_state(env_gym, env_name_jax, state_jax_a,
                                  tolerance)
 
-            if done_gym:
+            r = step_entities_numpy(env_gym)
+            state_jax_b, reward, done = step_entities(state_jax_a)
+            assert_correct_state(env_gym, env_name_jax, state_jax_b,
+                                 tolerance)
+
+            step_timers_numpy(env_gym)
+            state_jax_c = step_timers(state_jax_b, env_jax.params)
+            assert_correct_state(env_gym, env_name_jax, state_jax_c,
+                                 tolerance)
+            if env_gym.env.terminal:
                 break
 
 

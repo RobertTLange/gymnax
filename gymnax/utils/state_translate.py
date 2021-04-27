@@ -1,3 +1,4 @@
+import numpy as np
 import jax.numpy as jnp
 
 
@@ -110,6 +111,11 @@ def bsuite_np_to_jax(env, env_name: str="Catch-bsuite"):
 def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
     """ Collects env state of MinAtar into dict for JAX `step`. """
     if env_name == "Asterix-MinAtar":
+        entities_array = jnp.zeros((8, 5), dtype=jnp.int32)
+        for i in range(8):
+            if env.env.entities[i] is not None:
+                entities_array = jax.ops.index_update(obs, jax.ops.index[i,
+                                                      env.env.entities[i]], 1)
         state_gym_to_jax = {"player_x": env.env.player_x,
                             "player_y": env.env.player_y,
                             "shot_timer": env.env.shot_timer,
@@ -119,7 +125,7 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
                             "move_timer": env.env.move_timer,
                             "ramp_timer": env.env.ramp_timer,
                             "ramp_index": env.env.ramp_index,
-                            "entities": env.env.entities,
+                            "entities": entities_array,
                             "time": 0,
                             "terminal": 0}
     elif env_name == "Breakout-MinAtar":

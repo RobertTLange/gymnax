@@ -11,6 +11,7 @@ def assert_correct_state(env_gym, env_name: str, state_jax: dict,
     # Loop over keys and assert that individual entries are same/close
     for k in state_gym.keys():
         if k not in ["time", "terminal"]:
+            print(k)
             if type(state_jax[k]) in [jax.interpreters.xla._DeviceArray,
                                       jaxlib.xla_extension.Buffer,
                                       np.ndarray]:
