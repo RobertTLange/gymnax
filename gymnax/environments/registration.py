@@ -21,7 +21,6 @@ from gymnax.environments.minatar import (MinAsterix,
                                          MinSeaquest,
                                          MinSpaceInvaders)
 # =============================================================================
-# from gymnax.environments.misc import reset_bandit, step_bandit, params_bandit
 
 
 def make(env_id: str, seed_id: int = 0):
@@ -65,12 +64,6 @@ def make(env_id: str, seed_id: int = 0):
         env = MinSeaquest()
     elif env_id == "SpaceInvaders-MinAtar":
         env = MinSpaceInvaders()
-
-    # # 4. Other standard/popular environments
-    # elif env_id == "Bandit-misc":
-    #     reset, step, env_params = reset_bandit, step_bandit, params_bandit
-    # else:
-    #     raise ValueError("Env ID is not in set of defined environments.")
 
     # Create a jax PRNG key for random seed control
     rng = jax.random.PRNGKey(seed_id)

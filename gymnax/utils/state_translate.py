@@ -151,16 +151,36 @@ def minatar_np_to_jax(env, env_name: str="Asterix-MinAtar"):
                             "time": 0,
                             "terminal": 0}
     elif env_name == "Seaquest-MinAtar":
+        f_bullets = np.zeros((100, 3))
+        for i, f_b in enumerate(env.env.f_bullets):
+            f_bullets[i] = f_b
+        e_bullets = np.zeros((100, 3))
+        for i, e_b in enumerate(env.env.e_bullets):
+            e_bullets[i] = e_b
+        e_fish = np.zeros((100, 5))
+        for i, e_f in enumerate(env.env.e_fish):
+            e_fish[i] = e_f + [10]
+        e_subs = np.zeros((100, 5))
+        for i, e_s in enumerate(env.env.e_subs):
+            e_subs[i] = e_s
+        divers = np.zeros((100, 4))
+        for i, d in enumerate(env.env.divers):
+            divers[i] = d
+
         state_gym_to_jax = {"oxygen": env.env.oxygen,
-                            "diver_count": env.env.diver_count,
                             "sub_x": env.env.sub_x,
                             "sub_y": env.env.sub_y,
                             "sub_or": env.env.sub_or,
-                            "f_bullets": env.env.f_bullets,
-                            "e_bullets": env.env.e_bullets,
-                            "e_fish": env.env.e_fish,
-                            "e_subs": env.env.e_subs,
-                            "divers": env.env.divers,
+                            "f_bullet_count": len(env.env.f_bullets),
+                            "f_bullets": f_bullets,
+                            "e_bullet_count": len(env.env.e_bullets),
+                            "e_bullets": e_bullets,
+                            "e_fish_count": len(env.env.e_fish),
+                            "e_fish": e_fish,
+                            "e_subs_count": len(env.env.e_subs),
+                            "e_subs": e_subs,
+                            "diver_count": env.env.diver_count,
+                            "divers": divers,
                             "e_spawn_speed": env.env.e_spawn_speed,
                             "e_spawn_timer": env.env.e_spawn_timer,
                             "d_spawn_timer": env.env.d_spawn_timer,

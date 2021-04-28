@@ -55,13 +55,34 @@ class MinSeaquest(environment.Environment):
                                       "enemy_shot_interval": 10,
                                       "enemy_move_interval": 5,
                                       "diver_move_interval": 5,
+                                      "ramping": 1,
                                       "obs_shape": (10, 10, 10),
                                       "max_steps_in_episode": 100})
 
     def step(self, key: PRNGKey, state: dict, action: int
              ) -> Tuple[Array, dict, float, bool, dict]:
         """ Perform single timestep state transition. """
-        reward = 0
+        # If timer is up spawn enemy and divers [always sample]
+        key_enemy, key_diver = jax.random.split(key)
+        spawned_enemy = spawn_enemy(key_enemy)
+        spawn_enemy_cond = (state["e_spawn_timer"] == 0)
+        state["e_spawn_timer"] = lax.select(spawn_enemy_cond,
+                                            state["e_spawn_speed"],
+                                            state["e_spawn_timer"])
+
+        spawned_diver = spawn_diver(key_diver)
+        spawn_diver_cond = (state["d_spawn_timer"] == 0)
+        state["d_spawn_timer"] = lax.select(spawn_diver_cond,
+                                            state["d_spawn_speed"],
+                                            state["d_spawn_timer"])
+
+        # Sequentially go through substate and update the state
+        state = step_agent(state, action, self.env_params)
+        reward = step_bullets(state)
+        state = step_divers(state)
+        state, reward = step_e_sub(state, reward)
+        state, reward = step_e_bullets(state, reward)
+        state, reward = step_timers(state, reward)
         # Check game condition & no. steps for termination condition
         state["time"] += 1
         done = self.is_terminal(state)
@@ -73,15 +94,19 @@ class MinSeaquest(environment.Environment):
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """ Reset environment state by sampling initial position. """
         state = {"oxygen": self.env_params["max_oxygen"],
-                 "diver_count": 0,
                  "sub_x": 5,
                  "sub_y": 0,
                  "sub_or": 0,
-                 "f_bullets": jnp.zeros((10, 10)),
-                 "e_bullets": jnp.zeros((10, 10)),
-                 "e_fish": jnp.zeros((10, 10)),
-                 "e_subs": jnp.zeros((10, 10)),
-                 "divers": jnp.zeros((10, 10)),
+                 "f_bullet_count": 0,
+                 "f_bullets": jnp.zeros((100, 3), dtype=jnp.int32),
+                 "e_bullet_count": 0,
+                 "e_bullets": jnp.zeros((100, 3), dtype=jnp.int32),
+                 "e_fish_count": 0,
+                 "e_fish": jnp.zeros((100, 5), dtype=jnp.int32),
+                 "e_subs_count": 0,
+                 "e_subs": jnp.zeros((100, 5), dtype=jnp.int32),
+                 "diver_count": 0,
+                 "divers": jnp.zeros((100, 4), dtype=jnp.int32),
                  "e_spawn_speed": self.env_params["init_spawn_speed"],
                  "e_spawn_timer": self.env_params["init_spawn_speed"],
                  "d_spawn_timer": self.env_params["diver_spawn_speed"],
@@ -111,42 +136,53 @@ class MinSeaquest(environment.Environment):
                                                       8], 1)
 
         # Set friendly bulltes, enemy bullets, enemy fish+trail, enemey sub+trail
-        for bullet in state["f_bullets"]:
-            obs = jax.ops.index_update(obs, jax.ops.index[bullet[1], bullet[0],
-                                                          2], 1)
-        for bullet in state["e_bullets"]:
-            obs = jax.ops.index_update(obs, jax.ops.index[bullet[1], bullet[0],
-                                                          4], 1)
+        for f_b_id in range(state["f_bullet_count"]):
+            obs = jax.ops.index_update(obs,
+                        jax.ops.index[state["f_bullets"][f_b_id, 1],
+                                      state["f_bullets"][f_b_id, 0], 2], 1)
+        for e_b_id in range(state["e_bullet_count"]):
+            obs = jax.ops.index_update(obs,
+                        jax.ops.index[state["e_bullets"][e_b_id, 1],
+                                      state["e_bullets"][e_b_id, 0], 4], 1)
 
-        for fish in state["e_fish"]:
-            obs = jax.ops.index_update(obs, jax.ops.index[fish[1], fish[0], 5], 1)
+        for e_f_id in range(state["e_fish_count"]):
+            obs = jax.ops.index_update(obs,
+                        jax.ops.index[state["e_fish"][e_f_id, 1],
+                                      state["e_fish"][e_f_id, 0], 5], 1)
             back_x = ((fish[0] - 1) * fish[2] +
                       (fish[0] + 1) * (1 - fish[2]))
             border_cond = jnp.logical_and(back_x >= 0, back_x <= 9)
-            obs = (border_cond * jax.ops.index_update(obs, jax.ops.index[fish[1],
-                   back_x, 3], 1) + (1 - border_cond) * obs)
+            obs = (border_cond * jax.ops.index_update(obs,
+                   jax.ops.index[state["e_fish"][e_f_id][1],
+                                 back_x, 3], 1) + (1 - border_cond) * obs)
 
-        for sub in state["e_subs"]:
-            obs = jax.ops.index_update(obs, jax.ops.index[sub[1], sub[0], 6], 1)
+        for e_s_id in range(state["e_subs_count"]):
+            obs = jax.ops.index_update(obs,
+                        jax.ops.index[state["e_subs"][e_s_id, 1],
+                                      state["e_subs"][e_s_id, 0], 6], 1)
             back_x = ((sub[0] - 1) * sub[2] +
                       (sub[0] + 1) * (1 - sub[2]))
             border_cond = jnp.logical_and(back_x >= 0, back_x <= 9)
-            obs = (border_cond * jax.ops.index_update(obs, jax.ops.index[sub[1],
-                   back_x, 3], 1) + (1 - border_cond) * obs)
+            obs = (border_cond * jax.ops.index_update(obs,
+                        jax.ops.index[state["e_subs"][e_s_id, 1],
+                                      back_x, 3], 1) + (1 - border_cond) * obs)
 
-        for diver in state["divers"]:
-            obs = jax.ops.index_update(obs, jax.ops.index[diver[1],diver[0], 9], 1)
+        for d_id in range(state["diver_count"]):
+            obs = jax.ops.index_update(obs,
+                        jax.ops.index[state["divers"][d_id, 1],
+                                      state["divers"][d_id, 0], 9], 1)
             back_x = ((diver[0] - 1) * diver[2] +
                       (diver[0] + 1) * (1 - diver[2]))
             border_cond = jnp.logical_and(back_x >= 0, back_x <= 9)
-            obs = (border_cond * jax.ops.index_update(obs, jax.ops.index[diver[1],
-                   back_x, 3], 1) + (1 - border_cond) * obs)
+            obs = (border_cond * jax.ops.index_update(obs,
+                        jax.ops.index[state["divers"][d_id, 1],
+                                      back_x, 3], 1) + (1 - border_cond) * obs)
         return obs
 
     def is_terminal(self, state: dict) -> bool:
         """ Check whether state is terminal. """
         done_steps = (state["time"] > self.env_params["max_steps_in_episode"])
-        return done_steps
+        return jnp.logical_or(state["terminal"], done_steps)
 
     @property
     def name(self) -> str:
@@ -172,42 +208,151 @@ class MinSeaquest(environment.Environment):
              "sub_x": spaces.Discrete(10),
              "sub_y": spaces.Discrete(10),
              "sub_or": spaces.Discrete(2),
-             "f_bullets": spaces.Box(0, 1, (10, 10)),
-             "e_bullets": spaces.Box(0, 1, (10, 10)),
-             "e_fish": spaces.Box(0, 1, (10, 10)),
-             "e_subs": spaces.Box(0, 1, (10, 10)),
-             "divers": spaces.Box(0, 1, (10, 10)),
+             "f_bullets": spaces.Box(0, 1, (100, 3)),
+             "e_bullets": spaces.Box(0, 1, (100, 3)),
+             "e_fish": spaces.Box(0, 1, (100, 5)),
+             "e_subs": spaces.Box(0, 1, (100, 5)),
+             "divers": spaces.Box(0, 1, (100, 4)),
              "e_spawn_speed": spaces.Discrete(self.env_params["init_spawn_speed"]),
              "e_spawn_timer": spaces.Discrete(self.env_params["init_spawn_speed"]),
              "d_spawn_timer": spaces.Discrete(self.env_params["diver_spawn_speed"]),
-             "move_speed":  spaces.Discrete(1000),
-             "ramp_index":  spaces.Discrete(1000),
+             "move_speed": spaces.Discrete(1000),
+             "ramp_index": spaces.Discrete(1000),
              "shot_timer": spaces.Discrete(self.env_params["shot_cool_down"]),
              "surface": spaces.Discrete(2),
              "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
              "terminal": spaces.Discrete(2)})
 
 
-def step_agent():
-    return
+def step_agent(state: dict, action: int, env_params: dict) -> dict:
+    """ Perform submarine position and friendly bullets transition. """
+    # Update submarine position based on l, r or u, d actions
+    not_l_or_r = jnp.logical_and(action != 1, action != 3)
+    state["sub_x"] = ((action == 1) * jnp.maximum(0, state["sub_x"] - 1)
+                      + (action == 3) * jnp.minimum(9, state["sub_x"] + 1)
+                      + not_l_or_r * state["sub_x"])
+    state["sub_or"] = lax.select(action == 1, False, state["sub_or"])
+    state["sub_or"] = lax.select(action == 3, True, state["sub_or"])
 
-def step_bullets():
-    return
+    not_u_or_d = jnp.logical_and(action != 2, action != 4)
+    state["sub_y"] = ((action == 2) * jnp.maximum(0, state["sub_y"] - 1)
+                      + (action == 4) * jnp.minimum(8, state["sub_y"] + 1)
+                      + not_u_or_d * state["sub_y"])
+
+    # Update friendly bullets based on f action and shot_timer
+    bullet_cond = jnp.logical_and(action == 5, state["shot_timer"] == 0)
+    state["shot_timer"] = lax.select(bullet_cond, env_params["shot_cool_down"],
+                                     state["shot_timer"])
+    bullet_array = jnp.array([state["sub_x"], state["sub_y"], state["sub_or"]])
+    # Use counter to keep track of row idx to update!
+    f_bullets_add = jax.ops.index_update(state["f_bullets"],
+                                         jax.ops.index[state["f_bullet_count"]], bullet_array)
+    state["f_bullets"] = lax.select(bullet_cond, f_bullets_add,
+                                    state["f_bullets"])
+    state["f_bullet_count"] += bullet_cond
+    return state
+
+
+def step_bullets(state: dict) -> Tuple[dict, float]:
+    """ Perform friendly bullets transition. """
+    reward = 0
+    return state, reward
+
 
 def step_divers():
+    """ Perform diver transition. """
     return
+
 
 def step_e_subs():
+    """ Perform enemy submarine transition. """
     return
 
-def step_timers():
+
+def step_e_bullets():
+    """ Perform enemy bullets and enemy fish transition. """
     return
 
-def spawn_enemy():
-    return
 
-def spawn_diver():
-    return
+def spawn_enemy(key: PRNGKey, state: dict,
+                env_params: dict) -> Array:
+    """ Spawn a new enemy. """
+    lr_key, sub_key, y_key = jax.random.splt(key, 3)
+    lr = jax.random.choice(lr_key, 2, ())
+    is_sub = jax.random.choice(sub_key, 2, (), p=jnp.array([1/3, 2/3]))
+    x = lax.select(lr, 0, 9)
+    y = jax.random.choice(y_key, jnp.arange(1, 9), ())
 
-def surface():
-    return
+    # # Do not spawn in same row an opposite direction as existing
+    # if(any([z[1]==y and z[2]!=lr for z in self.e_subs+self.e_fish])):
+    #     return
+    # if(is_sub):
+    #     self.e_subs+=[[x,y,lr,self.move_speed,enemy_shot_interval]]
+    # else:
+    #     self.e_fish+=[[x,y,lr,self.move_speed]]
+    return jnp.array([is_sub, x, y, lr, state["move_speed"],
+                      env_params["enemy_shot_interval"]])
+
+
+def spawn_diver(key: PRNGKey, env_params: dict) -> Array:
+    """ Spawn a new diver. """
+    lr_key, y_key = jax.random.splt(key)
+    lr = jax.random.choice(key_lr, 2, ())
+    x = lax.select(lr, 0, 9)
+    y = jax.random.choice(y_key, jnp.arange(1, 9), ())
+    return jnp.array([x, y, lr, env_params["diver_move_interval"]])
+
+
+def step_timers(state, reward, env_params):
+    """ Update the timers of the environment and calculate surface reward. """
+    state["e_spawn_timer"] -= (state["e_spawn_timer"] > 0)
+    state["d_spawn_timer"] -= (state["d_spawn_timer"] > 0)
+    state["shot_timer"] -= (state["shot_timer"] > 0)
+    oxy_term = lax.select(state["oxygen"] < 0, 1, 0)
+
+    # Update oxygen and surface indicator if submarine is above
+    above_surface = (state["sub_y"] > 0)
+    state["oxygen"] = lax.select(above_surface, state["oxygen"] - 1,
+                                 state["oxygen"])
+    state["surface"] = lax.select(above_surface, 1, 0)
+
+    # Calculate reward/terminate episode otherwise
+    below_cond = jnp.logical_and(1-above_surface, 1-state["surface"])
+    diver_term = jnp.logical_and(below_cond, state["diver_count"] == 0)
+    surface_cond = jnp.logical_and(below_cond, 1 - (state["diver_count"] == 0))
+    state, surface_reward = surface(surface_cond, state, env_params)
+    reward += surface_cond * surface_reward
+    return state, reward
+
+
+def surface(surface_cond: bool, state: dict,
+            env_params: dict) -> Tuple[dict, float]:
+    """ Perform surface transition and reward calculations. """
+    surface = 1
+    diver_count = lax.select(state["diver_count"] == 6, 0,
+                             state["diver_count"])
+    reward = lax.select(state["diver_count"] == 6, state["oxygen"]*10
+                        //env_params["max_oxygen"], 0)
+    oxygen = env_params["oxygen"]
+    diver_count -= 1
+    ramp_cond = jnp.logical_and(env_params["ramping"],
+                                jnp.logical_or(state["e_spawn_speed"] > 1,
+                                               state["move_speed"] > 2))
+    move_cond = jnp.logical_and(ramp_cond,
+                                jnp.logical_and(state["move_speed"] > 2,
+                                                state["ramp_index"] % 2))
+    move_speed = lax.select(move_cond, state["move_speed"] - 1,
+                            state["move_speed"])
+    e_spawn_cond = jnp.logical_and(ramp_cond, state["e_spawn_speed"] > 1)
+    e_spawn_speed = lax.select(e_spawn_cond, state["e_spawn_speed"] - 1,
+                               state["e_spawn_speed"])
+
+    # Update the state based on the surface_cond - only update if cond met!
+    state["diver_count"] = lax.select(surface_cond, diver_count,
+                                      state["diver_count"])
+    state["oxygen"] = lax.select(surface_cond, oxygen, state["oxygen"])
+    state["move_speed"] = lax.select(surface_cond, move_speed,
+                                     state["move_speed"])
+    state["e_spawn_speed"] = lax.select(surface_cond, e_spawn_speed,
+                                        state["e_spawn_speed"])
+    return state, reward

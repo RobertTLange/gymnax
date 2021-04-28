@@ -18,8 +18,10 @@ If you believe that there are fundamental examples missing in the [`examples`](e
 You can find a couple things that need to be tackled in the [issues of this project](https://github.com/RobertTLange/gymnax/issues). Below is a quick overview of large milestones that could need your help:
 
 - [ ] Build `env.render(state)` support by adapting original plotting code.
-- [ ] Add a set of jit-compatible wrappers.
+- [ ] Add a set of jit-compatible action and observation wrappers.
     - [ ] Framestacking
     - [ ] Reward normalization
     - [ ] Sticky actions
+    - [ ] Greyscaling and observation normalization
+- [ ] Environment registration ala `gym` factory so that users can easily write their own environments and create jittable instances via `gymnax.make(<env_name>)`
 - [ ] Better documentation via sphinx, code style and PEP setup.

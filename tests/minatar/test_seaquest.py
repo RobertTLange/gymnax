@@ -9,14 +9,17 @@ from gymnax.utils import (np_state_to_jax,
 import numpy as np
 from minatar import Environment
 
-# from gymnax.environments.minatar.seaquest import (step_agent,)
-# from seaquest_helpers import (step_agent_numpy,)
+from gymnax.environments.minatar.seaquest import (step_agent,)
+from seaquest_helpers import (step_agent_numpy, step_bullets_numpy,
+                              step_divers_numpy, step_e_subs_numpy,
+                              step_e_bullets_numpy, step_timers_numpy,
+                              surface)
 
 num_episodes, num_steps, tolerance = 2, 10, 1e-04
 env_name_gym, env_name_jax = 'seaquest', 'Seaquest-MinAtar'
 
 
-def test_step():
+def test_sub_steps():
     """ Test a step transition for the env. """
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
     rng, env_jax = gymnax.make(env_name_jax)
@@ -31,24 +34,12 @@ def test_step():
             action = env_jax.action_space.sample(key_action)
             action_gym = minatar_action_map(action, env_name_jax)
 
-            reward_gym, done = env_gym.act(action_gym)
-            obs_gym = env_gym.state()
-            done_gym = env_gym.env.terminal
-            obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
-                                                                key_step,
-                                                                state,
-                                                                action)
-
-            # Check correctness of transition
-            assert_correct_transit(obs_gym, reward_gym, done_gym,
-                                   obs_jax, reward_jax, done_jax,
-                                   tolerance)
-
-            # Check that post-transition states are equal
-            assert_correct_state(env_gym, env_name_jax, state_jax,
+            step_agent_numpy(env_gym, action_gym)
+            state_jax_a = step_agent(state, action, env_jax.params)
+            assert_correct_state(env_gym, env_name_jax, state_jax_a,
                                  tolerance)
 
-            if done_gym:
+            if env_gym.env.terminal:
                 break
 
 
