@@ -246,7 +246,8 @@ def step_agent(state: dict, action: int, env_params: dict) -> dict:
     bullet_array = jnp.array([state["sub_x"], state["sub_y"], state["sub_or"]])
     # Use counter to keep track of row idx to update!
     f_bullets_add = jax.ops.index_update(state["f_bullets"],
-                                         jax.ops.index[state["f_bullet_count"]], bullet_array)
+                                         jax.ops.index[state["f_bullet_count"]],
+                                         bullet_array)
     state["f_bullets"] = lax.select(bullet_cond, f_bullets_add,
                                     state["f_bullets"])
     state["f_bullet_count"] += bullet_cond
@@ -256,7 +257,46 @@ def step_agent(state: dict, action: int, env_params: dict) -> dict:
 def step_bullets(state: dict) -> Tuple[dict, float]:
     """ Perform friendly bullets transition. """
     reward = 0
+    f_bullet_count = 0
+    f_bullets = jnp.zeros((100, 3))
+    e_fish = jnp.zeros((100, 3))
+    for f_b_id in range(state["f_bullet_count"]):
+        bullet_to_check = state["f_bullets"][f_b_id].copy()
+        bullet_to_check[0] = lax.select(bullet_to_check[2],
+                                        bullet_to_check[0]+1,
+                                        bullet_to_check[0]-1)
+
+        # Add bullet if it has not exited
+        bullet_border = jnp.logical_or(bullet_to_check[0] < 0,
+                                       bullet_to_check[0] > 9)
+        f_bullets = jax.ops.index_update(f_bullets,
+                                         jax.ops.index(f_bullet_count),
+                                         bullet_to_check * (1-bullet_border))
+        f_bullet_count += (1 - bullet_border)
+
+        # Check for collision with enemy fish
+        removed = 0
+        for e_f_id in range(state["e_fish_count"]):
+            e_fish_to_check = state["e_fish"][e_f_id].copy()
+            hit = (state["f_bullets"][f_b_id][0:2] ==
+                   state["e_fish"][e_f_id][0:2])
+
+
     return state, reward
+
+
+def collision_and_remove(indiv_to_check, entity_counter, entities):
+    """ Helper function that checks for collision and updates entities. """
+    entities_clean = jnp.zeros(entities.shape)
+    entity_counter_clean = 0
+    for e_id in range(entity_counter):
+        hit = (indiv_to_check[0:2] == entities[e_id][0:2]).all()
+        # If no hit - add entity to array and increase clean counter
+        entities_clean = jax.ops.index_update(entities_clean,
+                                         jax.ops.index(entity_counter_clean),
+                                         entities[e_id] * (1-hit))
+        entity_counter_clean += hit
+    return
 
 
 def step_divers():

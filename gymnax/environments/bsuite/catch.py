@@ -19,7 +19,7 @@ class Catch(environment.Environment):
     def __init__(self):
         super().__init__()
         # Default environment parameters
-        self.env_params = FrozenDict({"max_steps_in_episode": 2000,
+        self.env_params = FrozenDict({"max_steps_in_episode": 100000000,
                                       "rows": 10,
                                       "columns": 5})
 
@@ -45,7 +45,7 @@ class Catch(environment.Environment):
         # Rewrite reward as boolean multiplication
         prev_done = (ball_y == paddle_y)
         catched = (paddle_x == ball_x)
-        reward = prev_done * (1 * catched + -1 * (1 - catched))
+        reward = prev_done * (1. * catched + -1. * (1 - catched))
 
         state = {"ball_x": ball_x,
                  "ball_y": ball_y,

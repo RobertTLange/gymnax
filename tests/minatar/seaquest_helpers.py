@@ -149,7 +149,7 @@ def step_timers_numpy(env, r):
     return r, env.env.terminal
 
 
-def surface(env):
+def surface_numpy(env):
     env.env.surface = True
     if(env.env.diver_count == 6):
         env.env.diver_count = 0

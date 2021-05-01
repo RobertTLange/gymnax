@@ -9,11 +9,14 @@ from gymnax.utils import (np_state_to_jax,
 import numpy as np
 from minatar import Environment
 
-from gymnax.environments.minatar.seaquest import (step_agent,)
+from gymnax.environments.minatar.seaquest import (step_agent, step_bullets,
+                                                  step_divers, step_e_subs,
+                                                  step_e_bullets, step_timers,
+                                                  surface)
 from seaquest_helpers import (step_agent_numpy, step_bullets_numpy,
                               step_divers_numpy, step_e_subs_numpy,
                               step_e_bullets_numpy, step_timers_numpy,
-                              surface)
+                              surface_numpy)
 
 num_episodes, num_steps, tolerance = 2, 10, 1e-04
 env_name_gym, env_name_jax = 'seaquest', 'Seaquest-MinAtar'
@@ -36,6 +39,11 @@ def test_sub_steps():
 
             step_agent_numpy(env_gym, action_gym)
             state_jax_a = step_agent(state, action, env_jax.params)
+            assert_correct_state(env_gym, env_name_jax, state_jax_a,
+                                 tolerance)
+
+            reward = step_bullets_numpy(env_gym)
+            state_jax_b = step_bullets(state_jax_a)
             assert_correct_state(env_gym, env_name_jax, state_jax_a,
                                  tolerance)
 
