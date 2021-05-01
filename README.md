@@ -2,7 +2,9 @@
 
 Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap` to classic OpenAI gym environments.
 
-## Basic API Usage
+## Basic `gymnax` API Usage :stew:
+
+- Classic Open AI gym wrapper including `gymnax.make`, `env.reset`, `env.step`:
 
 ```python
 import jax, gymnax
@@ -15,30 +17,117 @@ action = your_jax_policy(policy_params, obs)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action)
 ```
 
+- Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):
+
+```python
+jitted_step = jax.jit(env.step)
+jitted_reset = jax.jit(env.reset)
+```
+
+- Vectorization over different environment parametrizations:
+
+```python
+env.step(key_step, state, action, env_params)
+```
+
+## Implemented Accelerated Environments :earth_africa:
 <details><summary>
-Implemented classic OpenAI environments.
+<a href="https://github.com/openai/gym/">Classic Control OpenAI gym</a> environments.
 
 </summary>
 
-| Environment Class | Environment Name | Implemented | Tested | Single Step Speed Gain (Estimate vs. OpenAI) |
+| Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
 | --- | --- | --- | --- | --- |
-| Classic Control | `Pendulum-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| Classic Control | `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| Classic Control | `MountainCar-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| Classic Control | `MountainCarContinuous-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| Classic Control | `Acrobot-v1` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Pendulum-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| `MountainCar-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| `MountainCarContinuous-v0` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Acrobot-v1` | :heavy_check_mark:  | :heavy_check_mark: |
 </details>
 
-<details>
-  <summary><code>jit</code>-ting entire episode rollouts & vectorization via <code>vmap</code>.
-  </summary>
+<details><summary>
+<a href="https://github.com/deepmind/bsuite/">DeepMind's BSuite</a> environments.
 
-```python
-Wrapper!
+</summary>
+
+| Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
+| --- | --- | --- | --- | --- |
+| `Catch-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `DeepSea-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `MemoryChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `UmbrellaChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `DiscountingChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `MNISTBandit-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `SimpleBandit-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+</details>
+
+<details><summary>
+<a href="https://github.com/kenjyoung/MinAtar">K. Young's and T. Tian's MinAtar</a> environments.
+
+</summary>
+
+| Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
+| --- | --- | --- | --- | --- |
+| `Asterix-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Breakout-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Freeway-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Seaquest-MinAtar` | :x:  | :x: |
+| `SpaceInvaders-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
+</details>
+
+## Installation :memo:
+
+`gymnax` can be directly installed from PyPi.
+
+```
+pip install gymnax
 ```
 
-</details>
+Alternatively, you can clone this repository and 'manually' install the `gymnax`:
+```
+git clone https://github.com/RobertTLange/gymnax.git
+cd gymnax
+pip install -e .
+```
 
+Note that by default the `gymnax` installation will install CPU-only `jaxlib`. In order to install the CUDA-supported version, simply upgrade to the right `jaxlib`. E.g. for a CUDA 10.1 driver:
+
+```
+pip install --upgrade jaxlib==0.1.57+cuda101 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+```
+
+You can find more details in the official [JAX documentation](https://github.com/google/jax#installation).
+
+## Benchmarking Details :train:
+
+![](docs/classic_runtime_benchmark.png)
+
+## Examples :school_satchel:
+* :notebook: [Environment API](notebooks/classic_control.ipynb) - Check out the API and accelerated control environments.
+* :notebook: [Anakin Agent](examples/catch_anakin.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
+* :notebook: [CMA-ES](examples/catch_anakin.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
+
+### Acknowledgements & Citing `gymnax` :pencil2:
+
+To cite this repository:
+
+```
+@software{gymnax2021github,
+  author = {Robert Tjarko Lange},
+  title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
+  url = {http://github.com/RobertTLange/gymnax},
+  version = {0.0.1},
+  year = {2021},
+}
+```
+
+Much of the design of `gymnax` has been inspired by the classic OpenAI gym RL environment API. It relies on bits and pieces from DeepMind's JAX eco-system. I am grateful to the JAX team and Matteo Hessel for their support and motivating words. Finally, a big thank you goes out to the TRC team at Google for granting me TPU quota for benchmarking `gymnax`.
+
+## Notes, Development & Questions :question:
+
+- If you find a bug or want a new feature, feel free to contact me [@RobertTLange](https://twitter.com/RobertTLange) or create an issue :hugs:
+- You can check out the history of release modifications in [`CHANGELOG.md`](CHANGELOG.md) (*added, changed, fixed*).
+- You can find a set of open milestones in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 <details>
   <summary>Important design questions (control flow, random numbers, episode termination). </summary>
 
@@ -49,56 +138,3 @@ Wrapper!
 5. Boolean conditionals are eliminated by replacing them by weighted sums. E.g.: `r_effective = r * (1 - done) + r_term * done`
 
 </details>
-
-## Installing `gymnax` and dependencies
-
-`gymnax` can be directly installed from PyPi.
-
-```
-pip install gymnax
-```
-
-Alternatively, you can clone this repository and afterwards 'manually' install the toolbox (preferably in a clean Python 3.6 environment):
-
-```
-git clone https://github.com/RobertTLange/gymnax.git
-cd gymnax
-pip install -e .
-```
-
-This will install all required dependencies. Note that by default the `gymnax` installation will install CPU-only `jaxlib`. In order to install the CUDA-supported version, simply upgrade to the right `jaxlib`. E.g. for a CUDA 10.1 driver:
-
-```
-pip install --upgrade jaxlib==0.1.57+cuda101 -f https://storage.googleapis.com/jax-releases/jax_releases.html
-```
-
-You can find more details in the [JAX documentation](https://github.com/google/jax#installation). Finally, please note that `gymnax` is only tested for Python 3.6. You can directly run the test from the repo directory via `pytest`.
-
-## Benchmarking Details
-
-![](docs/classic_runtime_benchmark.png)
-
-## Getting started
-* :notebook: [Classic Control](examples/classic_control.ipynb) - Checkout the API and accelerated control tasks.
-
-### Citing `gymnax` & Acknowledgements
-
-To cite this repository:
-
-```
-@software{gymnax2021github,
-  author = {Robert Tjarko Lange},
-  title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
-  url = {http://github.com/google/jax},
-  version = {0.0.1},
-  year = {2021},
-}
-```
-
-Much of the design of `gymnax` has been inspired by the classic OpenAI gym RL environment API. Furthermore, it relies on bits and pieces from DeepMind JAX eco-system. I am grateful to the JAX team and Matteo Hessel for their support and motivating words.
-
-## Notes, Development & Questions
-
-- If you find a bug or want a new feature, feel free to contact me [@RobertTLange](https://twitter.com/RobertTLange) or create an issue :hugs:
-- You can check out the history of release modifications in [`CHANGELOG.md`](CHANGELOG.md) (*added, changed, fixed*).
-- You can find a set of open milestones in [`CONTRIBUTING.md`](CONTRIBUTING.md).

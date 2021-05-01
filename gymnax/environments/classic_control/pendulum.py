@@ -65,7 +65,7 @@ class Pendulum(environment.Environment):
         state = {"theta": state[0],
                  "theta_dot": state[1],
                  "time": timestep,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state):
