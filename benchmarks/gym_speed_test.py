@@ -115,4 +115,4 @@ if __name__ == "__main__":
         all_envs_results.append(result_dict)
 
     df_to_store = pd.DataFrame(all_envs_results)
-    df_to_store.to_csv("gym_speed_" + device_to_store + ".csv")
+    df_to_store.to_csv("results/gym_speed_" + device_to_store + ".csv")

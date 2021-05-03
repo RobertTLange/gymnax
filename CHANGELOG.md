@@ -13,12 +13,13 @@
     - `tests/classic_control/test_gym_env.py`
     - `tests/bsuite/test_bsuite_env.py`
 - Adds set of `notebooks` walking through the individual environments.
-
-##### Todo
 - Adds set of `examples` incorporating `gymnax` into JAX-based RL experiments.
     - Anakin agent - port DM Colab for gymnax
     - CMA-ES policy evolution - port blogpost with experimental minimal agent
-- Adds benchmarks on different devices (CPU/GPU/TPU):
+
+##### Todo
+
+- Adds benchmark infrastructure and numbers on different devices (CPU/GPU/TPU):
     - Transitions/Second & Specific rollout types vs Torch setup
         - CPU: Intel Xeon 2.4 GHz
         - GPU: V100, A100, RTX 2080Ti

@@ -64,7 +64,7 @@ class MountainCar(environment.Environment):
         state = {"position": init_state,
                  "velocity": 0,
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

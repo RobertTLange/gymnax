@@ -3,11 +3,11 @@ import torch
 
 
 class MLP_Policy(nn.Module):
-    def __init__(self, input_dim, output_dim, discrete):
+    def __init__(self, input_dim, output_dim, discrete, hidden_dim=64):
         super(MLP_Policy, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 64)
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(64, output_dim)
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
         self.discrete = discrete
 
     def forward(self, x):

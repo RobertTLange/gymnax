@@ -54,7 +54,7 @@ class MNISTBandit(environment.Environment):
         state = {"correct_label": self.labels[idx],
                  "regret": 0,
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return image, state
 
     def is_terminal(self, state: dict) -> bool:

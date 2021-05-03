@@ -84,7 +84,7 @@ class Acrobot(environment.Environment):
                  "velocity_1": init_state[2],
                  "velocity_2": init_state[3],
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

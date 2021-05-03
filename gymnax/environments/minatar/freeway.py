@@ -80,7 +80,7 @@ class MinFreeway(environment.Environment):
                  "move_timer": self.env_params["player_speed"],
                  "terminate_timer": self.env_params["time_limit"],
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

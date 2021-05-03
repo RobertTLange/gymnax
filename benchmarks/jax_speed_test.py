@@ -11,44 +11,46 @@ import gymnax
 from policies.jax_policies import init_ffw_policy
 
 
-def policy_rollout(rng_input, policy_params, env_params, num_steps):
+def policy_rollout(rng_input, policy_params, num_steps):
     """ Rollout a pendulum episode with lax.scan. """
     # Single step transition helper function
     def policy_step(state_input, tmp):
         """ lax.scan compatible step transition in jax env. """
-        rng, obs, state, policy_params, env_params = state_input
-        rng, rng_input, rng_policy = jax.random.split(rng, 3)
+        rng, obs, state, policy_params = state_input
+        rng, rng_step, rng_policy = jax.random.split(rng, 3)
         action = policy(rng_policy, policy_params, obs)
-        next_o, next_s, reward, done, _ = step(rng_input, env_params,
-                                               state, action)
-        carry, y = [rng, next_o.squeeze(), next_s.squeeze(),
-                    policy_params, env_params], [reward]
+        next_o, next_s, reward, done, _ = env.step(rng_step, state, action)
+        carry, y = [rng, next_o.squeeze(), next_s,
+                    policy_params], [reward]
         return carry, y
 
-    obs, state = reset(rng_input, env_params)
+    obs, state = env.reset(rng_input)
     scan_out1, scan_out2 = jax.lax.scan(policy_step,
                                         [rng_input, obs, state,
-                                         policy_params, env_params],
+                                         policy_params],
                                         [jnp.zeros(num_steps)])
     return scan_out1, jnp.array(scan_out2)
 
 
-episode_rollouts = jit(vmap(policy_rollout, in_axes=(0, None, None, None),
-                            out_axes=0), static_argnums=(3))
+episode_rollouts = jit(vmap(policy_rollout, in_axes=(0, None, None),
+                            out_axes=0), static_argnums=(2))
 
 
-def speed_ffw_jax_episode(rng, input_dim, output_dim, num_episodes=50,
-                          num_env_steps=200, num_evals=100):
+def speed_jax_episode(rng, input_dim, output_dim, num_episodes=50,
+                      num_env_steps=200, num_evals=100, random=False):
     """ Eval runtime of gymnax-based OpenAI environments. - FFW Policy """
     # Initialize network and get episode rollout keys ready
     rng, rng_input = jax.random.split(rng)
-    network_params = init_ffw_policy(rng_input, sizes=[input_dim, 64,
-                                                       output_dim])
+    # Differentiate between random rollout and FFW policy Rollout
+    if not random:
+        network_params = init_ffw_policy(rng_input, sizes=[input_dim, 64,
+                                                           output_dim])
+    else:
+        network_params = output_dim
     rollout_keys = jax.random.split(rng, num_episodes)
 
     # Run first episode outside of timed loop - includes compilation
-    out1, out2 = episode_rollouts(rollout_keys, network_params,
-                                  env_params, num_env_steps)
+    out1, out2 = episode_rollouts(rollout_keys, network_params, num_env_steps)
 
     times = []
     # Loop over individual episodes and collect time estimate data
@@ -57,30 +59,7 @@ def speed_ffw_jax_episode(rng, input_dim, output_dim, num_episodes=50,
         rng, rng_input = jax.random.split(rng)
         rollout_keys = jax.random.split(rng, num_episodes)
         out1, out2 = episode_rollouts(rollout_keys, network_params,
-                                      env_params, num_env_steps)
-        out2.block_until_ready()
-        times.append(time.time() - start_t)
-    return np.array(times)
-
-
-def speed_random_jax_episode(rng, output_range, num_episodes=50,
-                             num_env_steps=200, num_evals=100):
-    """ Eval runtime of gymnax-based OpenAI environments. - Random Policy """
-    # Initialize network and get episode rollout keys ready
-    rng, rng_input = jax.random.split(rng)
-    rollout_keys = jax.random.split(rng, num_episodes)
-    # Run first episode outside of timed loop - includes compilation
-    out1, out2 = episode_rollouts(rollout_keys, output_range,
-                                  env_params, num_env_steps)
-
-    times = []
-    # Loop over individual episodes and collect time estimate data
-    for e in range(num_evals):
-        start_t = time.time()
-        rng, rng_input = jax.random.split(rng)
-        rollout_keys = jax.random.split(rng, num_episodes)
-        out1, out2 = episode_rollouts(rollout_keys, output_range,
-                                      env_params, num_env_steps)
+                                      num_env_steps)
         out2.block_until_ready()
         times.append(time.time() - start_t)
     return np.array(times)
@@ -115,10 +94,9 @@ if __name__ == "__main__":
     for seed_id, env_name in enumerate(env_names):
         print(env_name)
         # Import environment from gymnax
-        rng, reset, step, env_params = gymnax.make(env_name, seed_id)
+        rng, env = gymnax.make(env_name, seed_id)
 
         #======================================================================
-
         # Run simulations for random episode rollouts
         if env_dims[env_name]["discrete"]:
             from policies.jax_policies import random_discrete_policy as policy
@@ -126,20 +104,26 @@ if __name__ == "__main__":
             from policies.jax_policies import random_continuous_policy as policy
 
         # Rollout single episode
-        ep_random_times = speed_random_jax_episode(rng,
-                                   output_range=env_dims[env_name]["output_range"],
-                                   num_episodes=1,
-                                   num_env_steps=num_steps,
-                                   num_evals=num_evals)
+        ep_random_times = speed_jax_episode(
+                               rng,
+                               input_dim=None,
+                               output_dim=env_dims[env_name]["output_range"],
+                               num_episodes=1,
+                               num_env_steps=num_steps,
+                               num_evals=num_evals,
+                               random=True)
         # Rollout batch episodes
-        batch_random_times = speed_random_jax_episode(rng,
-                                   output_range=env_dims[env_name]["output_range"],
-                                   num_episodes=num_batch_episodes,
-                                   num_env_steps=num_steps,
-                                   num_evals=num_evals)
+        batch_random_times = speed_jax_episode(
+                               rng,
+                               input_dim=None,
+                               output_dim=env_dims[env_name]["output_range"],
+                               num_episodes=num_batch_episodes,
+                               num_env_steps=num_steps,
+                               num_evals=num_evals,
+                               random=True
+                               )
 
         #======================================================================
-
         # Run simulations for FFW architecture
         if env_dims[env_name]["discrete"]:
             from policies.jax_policies import ffw_discrete_policy as policy
@@ -147,19 +131,21 @@ if __name__ == "__main__":
             from policies.jax_policies import ffw_continuous_policy as policy
 
         # Rollout single episode
-        ep_ffw_times = speed_ffw_jax_episode(rng,
+        ep_ffw_times = speed_jax_episode(rng,
                                    input_dim=env_dims[env_name]["input"],
                                    output_dim=env_dims[env_name]["output"],
                                    num_episodes=1,
                                    num_env_steps=num_steps,
-                                   num_evals=num_evals)
+                                   num_evals=num_evals,
+                                   random=False)
         # Rollout batch episodes
-        batch_ffw_times = speed_ffw_jax_episode(rng,
+        batch_ffw_times = speed_jax_episode(rng,
                                    input_dim=env_dims[env_name]["input"],
                                    output_dim=env_dims[env_name]["output"],
                                    num_episodes=num_batch_episodes,
                                    num_env_steps=num_steps,
-                                   num_evals=num_evals)
+                                   num_evals=num_evals,
+                                   random=False)
 
         print(f"Random-Episode: {np.mean(ep_random_times)*1000}, {np.std(ep_random_times)*1000}")
         print(f"Random-Batch: {np.mean(batch_random_times)*1000}, {np.std(batch_random_times)*1000}")

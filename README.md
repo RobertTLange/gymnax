@@ -51,7 +51,7 @@ env.step(key_step, state, action, env_params)
 </summary>
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- |
 | `Catch-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
 | `DeepSea-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
 | `MemoryChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
@@ -67,7 +67,7 @@ env.step(key_step, state, action, env_params)
 </summary>
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- |
 | `Asterix-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
 | `Breakout-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
 | `Freeway-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |

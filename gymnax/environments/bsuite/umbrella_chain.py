@@ -63,7 +63,7 @@ class UmbrellaChain(environment.Environment):
                  "has_umbrella": has_umbrella,
                  "total_regret": 0,
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state, key_distractor), state
 
     def get_obs(self, state: dict, key: PRNGKey) -> Array:

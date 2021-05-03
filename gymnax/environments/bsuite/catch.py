@@ -72,7 +72,7 @@ class Catch(environment.Environment):
                  "paddle_y": paddle_y,
                  "prev_done": 0,
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

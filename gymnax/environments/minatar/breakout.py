@@ -67,7 +67,7 @@ class MinBreakout(environment.Environment):
             "last_y": 3,
             "last_x": ball_x,
             "time": 0,
-            "terminal": 0
+            "terminal": False
         }
         return self.get_obs(state), state
 

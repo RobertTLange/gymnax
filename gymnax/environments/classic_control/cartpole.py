@@ -81,7 +81,7 @@ class CartPole(environment.Environment):
                  "theta": init_state[2],
                  "theta_dot": init_state[3],
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

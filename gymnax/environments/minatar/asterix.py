@@ -82,7 +82,7 @@ class MinAsterix(environment.Environment):
             "ramp_index": 0,
             "entities": jnp.zeros((8, 5), dtype=int),
             "time": 0,
-            "terminal": 0
+            "terminal": False
         }
         return self.get_obs(state), state
 

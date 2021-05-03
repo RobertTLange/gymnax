@@ -54,7 +54,7 @@ class DiscountingChain(environment.Environment):
         state = {"rewards": self.env_params["rewards"],
                  "context": -1,
                  "time": 0,
-                 "terminal": 0}
+                 "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

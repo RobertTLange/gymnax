@@ -2,6 +2,7 @@ import contextlib
 import os
 from abc import ABC, abstractmethod
 
+# Imported from https://github.com/openai/baselines/tree/master/baselines/common/vec_envs
 
 class AlreadySteppingError(Exception):
     """

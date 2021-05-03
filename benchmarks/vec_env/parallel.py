@@ -1,9 +1,9 @@
 import gym
-
 import numpy as np
 from multiprocessing import Process, Pipe
 from vec_env.vectorize import VecEnv, CloudpickleWrapper
 
+# Imported from https://github.com/openai/baselines/tree/master/baselines/common/vec_envs
 
 def make_parallel_env(env_id, seed, n_rollout_threads):
     def get_env_fn(rank):
