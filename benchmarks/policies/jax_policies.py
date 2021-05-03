@@ -39,7 +39,8 @@ def ffw_continuous_policy(rng, params, obs):
 
 
 def ffw_discrete_policy(rng, params, obs):
-    """ Forward pass + return sampled disrete action from policy. """
+    """ Flatten + Forward pass + return sampled disrete action from policy. """
+    obs = jnp.ravel(obs)
     activations = relu_layer(params["W1"], params["b1"], obs)
     policy_logits = jnp.dot(params["W2"], activations) + params["b2"]
     action = hk.multinomial(rng, policy_logits, 1).squeeze()

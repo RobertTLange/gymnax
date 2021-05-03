@@ -70,7 +70,7 @@ class Catch(environment.Environment):
                  "ball_y": ball_y,
                  "paddle_x": paddle_x,
                  "paddle_y": paddle_y,
-                 "prev_done": 0,
+                 "prev_done": False,
                  "time": 0,
                  "terminal": False}
         return self.get_obs(state), state

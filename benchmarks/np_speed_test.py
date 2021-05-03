@@ -45,12 +45,11 @@ def speed_torch_gym_episode(env_name, input_dim, output_dim,
 
 
 if __name__ == "__main__":
-    env_names = ["Pendulum-v0", "CartPole-v0",
-                 "MountainCar-v0", "Acrobot-v1"]
     env_dims = {"Pendulum-v0": {"input": 3, "output": 1, "discrete": 0},
                 "CartPole-v0": {"input": 4, "output": 2, "discrete": 1},
                 "MountainCar-v0": {"input": 2, "output": 3, "discrete": 1},
-                "Acrobot-v1": {"input": 6, "output": 3, "discrete": 1}}
+                "Acrobot-v1": {"input": 6, "output": 3, "discrete": 1},
+                "MountainCarContinuous-v0": {"input": 2, "output": 1, "discrete": 0}}
 
     num_evals = 100
     num_steps = 200
@@ -63,7 +62,8 @@ if __name__ == "__main__":
     if device_to_store == "gpu":
         num_batch_episodes = 40
 
-    for seed_id, env_name in enumerate(env_names):
+    print(40*"=")
+    for seed_id, env_name in enumerate(env_dims.keys()):
         print(env_name)
 
         #======================================================================

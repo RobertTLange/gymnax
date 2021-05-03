@@ -66,16 +66,41 @@ def speed_jax_episode(rng, input_dim, output_dim, num_episodes=50,
 
 
 if __name__ == "__main__":
-    env_names = ["Pendulum-v0", "CartPole-v0",
-                 "MountainCar-v0", "Acrobot-v1"]
-    env_dims = {"Pendulum-v0": {"input": 3, "output": 1, "discrete": 0,
-                                "output_range": jnp.array([-1, 1])},
-                "CartPole-v0": {"input": 4, "output": 2, "discrete": 1,
-                                "output_range": jnp.array([0, 1])},
-                "MountainCar-v0": {"input": 2, "output": 3, "discrete": 1,
-                                   "output_range": jnp.array([0, 1, 2]).astype(int)},
-                "Acrobot-v1": {"input": 6, "output": 3, "discrete": 1,
-                               "output_range": jnp.array([0, 1, 2])}}
+    gym_env_dims = {"Pendulum-v0": {"input": 3, "output": 1, "discrete": 0,
+                                    "output_range": jnp.array([-1, 1])},
+                    "CartPole-v0": {"input": 4, "output": 2, "discrete": 1,
+                                    "output_range": jnp.array([0, 1])},
+                    "MountainCar-v0": {"input": 2, "output": 3, "discrete": 1,
+                                       "output_range": jnp.array([0, 1, 2])},
+                    "Acrobot-v1": {"input": 6, "output": 3, "discrete": 1,
+                                   "output_range": jnp.array([0, 1, 2])}}
+
+    bsuite_env_dims = {
+                "Catch-bsuite": {"input": 50, "output": 3, "discrete": 1,
+                                 "output_range": jnp.array([0, 1, 2])},
+                "DeepSea-bsuite": {"input": 64, "output": 2, "discrete": 1,
+                                   "output_range": jnp.array([0, 1])},
+                "DiscountingChain-bsuite": {"input": 2, "output": 5, "discrete": 1,
+                                            "output_range": jnp.array([0, 1, 2, 3, 4])},
+                "MemoryChain-bsuite": {"input": 3, "output": 2, "discrete": 1,
+                                       "output_range": jnp.array([0, 1])},
+                "UmbrellaChain-bsuite": {"input": 3, "output": 2, "discrete": 1,
+                                         "output_range": jnp.array([0, 1])},
+                "MNISTBandit-bsuite": {"input": 784, "output": 10, "discrete": 1,
+                                       "output_range": jnp.arange(10)},
+                "SimpleBandit-bsuite": {"input": 1, "output": 11, "discrete": 1,
+                                        "output_range": jnp.arange(11)},}
+
+    minatar_env_dims = {
+                "Asterix-MinAtar": {"input": 500, "output": 5, "discrete": 1,
+                                    "output_range": jnp.arange(5)},
+                "Breakout-MinAtar": {"input": 400, "output": 3, "discrete": 1,
+                                    "output_range": jnp.arange(3)},
+                "Freeway-MinAtar": {"input": 700, "output": 3, "discrete": 1,
+                                    "output_range": jnp.arange(3)},
+                "SpaveInvaders-MinAtar": {"input": 600, "output": 4, "discrete": 1,
+                                       "output_range": jnp.arange(4)},}
+
     num_evals = 100
     num_steps = 200
     num_batch_episodes = 20
@@ -91,7 +116,9 @@ if __name__ == "__main__":
     if device == "gpu":
         num_batch_episodes = 2000
 
-    for seed_id, env_name in enumerate(env_names):
+    env_dims = bsuite_env_dims
+    print(40*"=")
+    for seed_id, env_name in enumerate(env_dims.keys()):
         print(env_name)
         # Import environment from gymnax
         rng, env = gymnax.make(env_name, seed_id)
@@ -167,4 +194,4 @@ if __name__ == "__main__":
         all_envs_results.append(result_dict)
 
     df_to_store = pd.DataFrame(all_envs_results)
-    df_to_store.to_csv("gymnax_speed_" + device + ".csv")
+    df_to_store.to_csv("results/jax_speed_" + device + ".csv")
