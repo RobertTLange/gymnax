@@ -17,7 +17,7 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def step(self, key: PRNGKey, state: dict, action: Union[int, float]
-             ) -> Tuple[Array, dict, float, bool, dict]:
+             ) -> Tuple[Array, dict, float, bool]:
         """ Performs step transitions in the environment."""
 
     @abc.abstractmethod

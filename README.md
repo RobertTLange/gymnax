@@ -1,4 +1,7 @@
-![](docs/gymnax_logo.png)
+# Gymnax
+## JAX-Based Reinforcement Learning Gym API
+[![Pyversions](https://img.shields.io/pypi/pyversions/mle-toolbox.svg?style=flat-square)](https://pypi.python.org/pypi/mle-toolbox)[![Docs Latest](https://img.shields.io/badge/docs-dev-blue.svg)](https://github.com/RobertTLange/mle-toolbox/) [![PyPI version](https://badge.fury.io/py/mle-toolbox.svg)](https://badge.fury.io/py/mle-toolbox)
+<a href="docs/gymnax_logo.png"><img src="docs/gymnax_logo.png" width="200" align="right" /></a>
 
 Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap` to classic OpenAI gym environments.
 
