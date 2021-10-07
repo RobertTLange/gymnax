@@ -1,30 +1,39 @@
 import jax
 
 # =============================================================================
-from gymnax.environments.classic_control import (Pendulum,
-                                                 CartPole,
-                                                 MountainCar,
-                                                 ContinuousMountainCar,
-                                                 Acrobot)
+from gymnax.environments.classic_control import (
+    Pendulum,
+    CartPole,
+    MountainCar,
+    ContinuousMountainCar,
+    Acrobot,
+)
+
 # =============================================================================
-from gymnax.environments.bsuite import (Catch,
-                                        DeepSea,
-                                        DiscountingChain,
-                                        MemoryChain,
-                                        UmbrellaChain,
-                                        MNISTBandit,
-                                        SimpleBandit)
+from gymnax.environments.bsuite import (
+    Catch,
+    DeepSea,
+    DiscountingChain,
+    MemoryChain,
+    UmbrellaChain,
+    MNISTBandit,
+    SimpleBandit,
+)
+
 # =============================================================================
-from gymnax.environments.minatar import (MinAsterix,
-                                         MinBreakout,
-                                         MinFreeway,
-                                         MinSeaquest,
-                                         MinSpaceInvaders)
+from gymnax.environments.minatar import (
+    MinAsterix,
+    MinBreakout,
+    MinFreeway,
+    MinSeaquest,
+    MinSpaceInvaders,
+)
+
 # =============================================================================
 
 
 def make(env_id: str, seed_id: int = 0):
-    """ A JAX-version of OpenAI's infamous env.make(env_name)"""
+    """A JAX-version of OpenAI's infamous env.make(env_name)"""
     # 1. Classic OpenAI Control Tasks
     if env_id == "Pendulum-v0":
         env = Pendulum()

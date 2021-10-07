@@ -1,6 +1,4 @@
-from gymnax.agents.minimal import (MinimalEvaluationAgent,
-                                   MinimalInterleavedAgent)
+from gymnax.agents.minimal import MinimalEvaluationAgent, MinimalInterleavedAgent
 
 
-__all__ = ["MinimalEvaluationAgent",
-           "MinimalInterleavedAgent"]
+__all__ = ["MinimalEvaluationAgent", "MinimalInterleavedAgent"]

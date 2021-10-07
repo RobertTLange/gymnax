@@ -9,14 +9,21 @@ from gymnax.utils import init_buffer, push_buffer, sample_buffer
 from catch_dqn_rlax_bsuite import build_network, Params, ActorOutput
 
 ActorState = collections.namedtuple("ActorState", "count evaluation")
-LearnerState = collections.namedtuple("LearnerState",
-                                      "count opt_state discount_factor")
+LearnerState = collections.namedtuple("LearnerState", "count opt_state discount_factor")
 
 
 class DQN:
     """A simple Double DQN agent."""
-    def __init__(self, obs_template, num_actions, epsilon_cfg,
-                 target_period, learning_rate, discount_factor):
+
+    def __init__(
+        self,
+        obs_template,
+        num_actions,
+        epsilon_cfg,
+        target_period,
+        learning_rate,
+        discount_factor,
+    ):
         self._obs_template = obs_template
         self._num_actions = num_actions
         self._target_period = target_period
@@ -50,27 +57,42 @@ class DQN:
 
     def learner_step(self, key, params, learner_state, data):
         target_params = rlax.periodic_update(
-            params.online, params.target,
-            learner_state.count, self._target_period)
+            params.online, params.target, learner_state.count, self._target_period
+        )
         discount = (1 - data["done"]) * learner_state.discount_factor
-        dloss_dtheta = jax.grad(self._loss)(params.online, target_params,
-            data["obs"], data["action"], data["reward"],
-            discount, data["next_obs"])
-        updates, opt_state = self._optimizer.update(dloss_dtheta,
-                                                    learner_state.opt_state)
+        dloss_dtheta = jax.grad(self._loss)(
+            params.online,
+            target_params,
+            data["obs"],
+            data["action"],
+            data["reward"],
+            discount,
+            data["next_obs"],
+        )
+        updates, opt_state = self._optimizer.update(
+            dloss_dtheta, learner_state.opt_state
+        )
         online_params = optax.apply_updates(params.online, updates)
-        return (Params(online_params, target_params),
-                LearnerState(learner_state.count + 1, opt_state,
-                             self._discount_factor))
+        return (
+            Params(online_params, target_params),
+            LearnerState(learner_state.count + 1, opt_state, self._discount_factor),
+        )
 
-    def _loss(self, online_params, target_params,
-              obs_tm1, a_tm1, r_t, discount_t, obs_t):
+    def _loss(
+        self, online_params, target_params, obs_tm1, a_tm1, r_t, discount_t, obs_t
+    ):
         q_tm1 = self._network.apply(online_params, obs_tm1)
         q_t_val = self._network.apply(target_params, obs_t)
         q_t_select = self._network.apply(online_params, obs_t)
         batched_loss = jax.vmap(rlax.double_q_learning)
-        td_error = batched_loss(q_tm1, a_tm1.squeeze().astype(int), r_t.squeeze(),
-                                discount_t.squeeze(), q_t_val, q_t_select)
+        td_error = batched_loss(
+            q_tm1,
+            a_tm1.squeeze().astype(int),
+            r_t.squeeze(),
+            discount_t.squeeze(),
+            q_t_val,
+            q_t_select,
+        )
         return jnp.mean(rlax.l2_loss(td_error))
 
 
@@ -81,19 +103,26 @@ def main(train_config):
     action = jnp.array([0])
     buffer = init_buffer(state, obs, action, train_config["replay_capacity"])
     num_actions = 3
-    epsilon_cfg = dict(init_value=train_config["epsilon_begin"],
-                       end_value=train_config["epsilon_end"],
-                       transition_steps=train_config["epsilon_steps"],
-                       power=1.)
+    epsilon_cfg = dict(
+        init_value=train_config["epsilon_begin"],
+        end_value=train_config["epsilon_end"],
+        transition_steps=train_config["epsilon_steps"],
+        power=1.0,
+    )
     rng, rng_net = jax.random.split(rng)
-    agent = DQN(obs, num_actions, epsilon_cfg,
-                train_config["target_period"],
-                train_config["learning_rate"],
-                train_config["discount_factor"])
+    agent = DQN(
+        obs,
+        num_actions,
+        epsilon_cfg,
+        train_config["target_period"],
+        train_config["learning_rate"],
+        train_config["discount_factor"],
+    )
     agent_params = agent.initial_params(rng_net)
     # Interleaved dojo for actor-learner step-updates
-    collector = InterleavedDojo(agent, buffer, push_buffer, sample_buffer,
-                                step, reset, env_params)
+    collector = InterleavedDojo(
+        agent, buffer, push_buffer, sample_buffer, step, reset, env_params
+    )
     collector.init_dojo(agent_params)
 
     evaluator = EvaluationDojo(agent, step, reset, env_params)
@@ -101,34 +130,40 @@ def main(train_config):
     for i in range(train_config["train_step_rollouts"]):
         rng, rng_train, rng_eval = jax.random.split(rng, 3)
         rng_evals = jax.random.split(rng_eval, train_config["eval_episodes"])
-        trace, reward = collector.steps_rollout(rng_train,
-                                                train_config["steps_per_rollout"])
-        trace, reward = evaluator.batch_rollout(rng_evals, 9,
-                                                collector.agent_params)
+        trace, reward = collector.steps_rollout(
+            rng_train, train_config["steps_per_rollout"]
+        )
+        trace, reward = evaluator.batch_rollout(rng_evals, 9, collector.agent_params)
         print(jnp.sum(reward, axis=1).mean())
 
 
 if __name__ == "__main__":
-    train_config = {"seed": 42,
-                    "train_step_rollouts": 10,
-                    "batch_size": 32,
-                    "target_period": 50,
-                    "replay_capacity": 2000,
-                    "hidden_units": 50,
-                    "epsilon_begin": 1.,
-                    "epsilon_end": 0.01,
-                    "epsilon_steps": 5000,
-                    "discount_factor": 0.99,
-                    "learning_rate": 0.005,
-                    "eval_episodes": 100,
-                    "evaluate_every": 300,
-                    "steps_per_rollout": 300}
+    train_config = {
+        "seed": 42,
+        "train_step_rollouts": 10,
+        "batch_size": 32,
+        "target_period": 50,
+        "replay_capacity": 2000,
+        "hidden_units": 50,
+        "epsilon_begin": 1.0,
+        "epsilon_end": 0.01,
+        "epsilon_steps": 5000,
+        "discount_factor": 0.99,
+        "learning_rate": 0.005,
+        "eval_episodes": 100,
+        "evaluate_every": 300,
+        "steps_per_rollout": 300,
+    }
 
     # Run the learning loop
     start_t = time.time()
     main(train_config)
     stop_t = time.time()
-    print("Done with {} set of {} steps after {:.2f}"
-          " seconds".format(train_config["train_step_rollouts"],
-                            train_config["steps_per_rollout"],
-                            stop_t - start_t))
+    print(
+        "Done with {} set of {} steps after {:.2f}"
+        " seconds".format(
+            train_config["train_step_rollouts"],
+            train_config["steps_per_rollout"],
+            stop_t - start_t,
+        )
+    )
