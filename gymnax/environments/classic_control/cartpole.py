@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array
@@ -99,7 +99,6 @@ class CartPole(environment.Environment):
     def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
         """Performs resetting of environment."""
         init_state = jax.random.uniform(key, minval=-0.05, maxval=0.05, shape=(4,))
-        timestep = 0
         state = {
             "x": init_state[0],
             "x_dot": init_state[1],

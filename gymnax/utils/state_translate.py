@@ -3,11 +3,11 @@ import jax
 import jax.numpy as jnp
 
 
-def np_state_to_jax(env, env_name: str = "Pendulum-v0"):
+def np_state_to_jax(env, env_name: str = "Pendulum-v1"):
     """Helper that collects env state into dict for JAX `step`."""
     if env_name in [
-        "Pendulum-v0",
-        "CartPole-v0",
+        "Pendulum-v1",
+        "CartPole-v1",
         "MountainCar-v0",
         "MountainCarContinuous-v0",
         "Acrobot-v1",
@@ -36,16 +36,16 @@ def np_state_to_jax(env, env_name: str = "Pendulum-v0"):
     return state_gym_to_jax
 
 
-def control_np_to_jax(env, env_name: str = "Pendulum-v0"):
+def control_np_to_jax(env, env_name: str = "Pendulum-v1"):
     """Collects env state of classic_control into dict for JAX `step`."""
-    if env_name == "Pendulum-v0":
+    if env_name == "Pendulum-v1":
         state_gym_to_jax = {
             "theta": env.state[0],
             "theta_dot": env.state[1],
             "time": 0,
             "terminal": 0,
         }
-    elif env_name == "CartPole-v0":
+    elif env_name == "CartPole-v1":
         state_gym_to_jax = {
             "x": env.state[0],
             "x_dot": env.state[1],
@@ -145,7 +145,7 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite"):
     return state_gym_to_jax
 
 
-def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar"):
+def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar"):  # noqa: C901
     """Collects env state of MinAtar into dict for JAX `step`."""
     if env_name == "Asterix-MinAtar":
         entities_array = jnp.zeros((8, 5), dtype=jnp.int32)

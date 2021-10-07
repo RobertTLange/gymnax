@@ -15,6 +15,8 @@ requires = [
             'chex'
             ]
 
+test_requires = ['gym', 'bsuite']
+
 setup(
      name='gymnax',
      version='0.0.1',
@@ -34,5 +36,6 @@ setup(
      include_package_data=True,
      zip_safe=False,
      platforms='any',
-     install_requires=requires
+     install_requires=requires,
+     tests_require=test_requires,
  )

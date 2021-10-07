@@ -32,12 +32,12 @@ from gymnax.environments.minatar import (
 # =============================================================================
 
 
-def make(env_id: str, seed_id: int = 0):
+def make(env_id: str, seed_id: int = 0):  # noqa:C901
     """A JAX-version of OpenAI's infamous env.make(env_name)"""
     # 1. Classic OpenAI Control Tasks
-    if env_id == "Pendulum-v0":
+    if env_id == "Pendulum-v1":
         env = Pendulum()
-    elif env_id == "CartPole-v0":
+    elif env_id == "CartPole-v1":
         env = CartPole()
     elif env_id == "MountainCar-v0":
         env = MountainCar()
@@ -73,6 +73,8 @@ def make(env_id: str, seed_id: int = 0):
         env = MinSeaquest()
     elif env_id == "SpaceInvaders-MinAtar":
         env = MinSpaceInvaders()
+    else:
+        raise ValueError("Environment ID is not registered.")
 
     # Create a jax PRNG key for random seed control
     rng = jax.random.PRNGKey(seed_id)

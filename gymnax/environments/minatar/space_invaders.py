@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array
@@ -309,6 +309,5 @@ def get_nearest_alien(pos, alien_map):
         )
         counter += 1
     results_temp = jnp.array(results_temp, dtype=int)
-    results_out = jnp.zeros(3)
     # Loop over results in reverse order
     return results_temp[0], results_temp[1], results_temp[2]

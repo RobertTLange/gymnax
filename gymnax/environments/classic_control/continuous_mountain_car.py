@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array

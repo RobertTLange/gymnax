@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array
@@ -48,18 +48,19 @@ class Pendulum(environment.Environment):
 
         newthdot = state["theta_dot"] + (
             (
-                -3
+                3
                 * self.env_params["g"]
                 / (2 * self.env_params["l"])
-                * jnp.sin(state["theta"] + jnp.pi)
+                * jnp.sin(state["theta"])
                 + 3.0 / (self.env_params["m"] * self.env_params["l"] ** 2) * u
             )
             * self.env_params["dt"]
         )
-        newth = state["theta"] + newthdot * self.env_params["dt"]
+
         newthdot = jnp.clip(
             newthdot, -self.env_params["max_speed"], self.env_params["max_speed"]
         )
+        newth = state["theta"] + newthdot * self.env_params["dt"]
 
         # Update state dict and evaluate termination conditions
         state = {

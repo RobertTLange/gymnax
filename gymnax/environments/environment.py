@@ -1,12 +1,10 @@
-import jax
-import jax.numpy as jnp
 from jax import lax
 
 from gymnax.utils import jittable
-from gymnax.utils.frozen_dict import freeze, unfreeze, FrozenDict
+from gymnax.utils.frozen_dict import unfreeze, FrozenDict
 
 import abc
-from typing import Sequence, Tuple, Union
+from typing import Tuple, Union
 import chex
 
 Array = chex.Array

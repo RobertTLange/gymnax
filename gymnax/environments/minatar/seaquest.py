@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array
@@ -87,7 +87,7 @@ class MinSeaquest(environment.Environment):
         state = step_agent(state, action, self.env_params)
         reward = step_bullets(state)
         state = step_divers(state)
-        state, reward = step_e_sub(state, reward)
+        state, reward = step_e_subs(state, reward)
         state, reward = step_e_bullets(state, reward)
         state, reward = step_timers(state, reward)
         # Check game condition & no. steps for termination condition
@@ -134,6 +134,7 @@ class MinSeaquest(environment.Environment):
 
     def get_obs(self, state: dict) -> Array:
         """Return observation from raw state trafo."""
+        fish, sub, diver = [], [], []
         obs = jnp.zeros((10, 10, 10), dtype=bool)
         # Set agents sub-front and back, oxygen_gauge and diver_gauge
         obs = jax.ops.index_update(
@@ -391,7 +392,7 @@ def spawn_enemy(key: PRNGKey, state: dict, env_params: dict) -> Array:
 def spawn_diver(key: PRNGKey, env_params: dict) -> Array:
     """Spawn a new diver."""
     lr_key, y_key = jax.random.splt(key)
-    lr = jax.random.choice(key_lr, 2, ())
+    lr = jax.random.choice(lr_key, 2, ())
     x = lax.select(lr, 0, 9)
     y = jax.random.choice(y_key, jnp.arange(1, 9), ())
     return jnp.array([x, y, lr, env_params["diver_move_interval"]])

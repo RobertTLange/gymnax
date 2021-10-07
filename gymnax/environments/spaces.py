@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple, Union
+from typing import Tuple, Union
 from collections import OrderedDict
 import chex
 from gymnax.utils import jittable

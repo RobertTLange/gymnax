@@ -6,7 +6,7 @@ from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 from gymnax.utils.load_mnist import load_mnist
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array

@@ -1,12 +1,8 @@
-import jax
-import jax.numpy as jnp
-from jax import lax, jit, vmap
-from functools import partial
 from .base_dojo import BaseDojo
 
 
 class EvaluationDojo(BaseDojo):
-    """Evaluation episode rollouts w\o learning (e.g. neuroevo/RL testing)."""
+    """Evaluation episode rollouts w/o learning (e.g. neuroevo/RL testing)."""
 
     def __init__(self, agent, step, reset, env_params):
         BaseDojo.__init__(self, step, reset, env_params)

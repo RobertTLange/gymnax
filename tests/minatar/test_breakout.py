@@ -7,7 +7,7 @@ from gymnax.utils import (np_state_to_jax,
                           assert_correct_state)
 
 import numpy as np
-from minatar import Environment
+from minatar.environment import Environment
 
 
 from gymnax.environments.minatar.breakout import (step_agent,

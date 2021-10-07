@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array
@@ -137,7 +137,7 @@ class Catch(environment.Environment):
 
 def sample_init_state(key, params):
     """Sample a new initial state."""
-    high = jnp.zeros((params["rows"], params["columns"]))
+    # high = jnp.zeros((params["rows"], params["columns"]))
     ball_x = jax.random.randint(key, shape=(), minval=0, maxval=params["columns"])
     ball_y = 0
     paddle_x = params["columns"] // 2

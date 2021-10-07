@@ -28,6 +28,11 @@ jobs:
         pip install pytest pytest-timeout
         pip install flake8 black
         pip install -e .
+        pip install gym bsuite
+        # Setup dependency for minatar tests
+        git clone https://github.com/kenjyoung/MinAtar.git
+        rm MinAtar/minatar/__init__.py
+        pip install -e MinAtar/.
 #     - name: Format with black style
 #       run: |
 #         black --verbose ./mle_logging
@@ -39,4 +44,6 @@ jobs:
         flake8 ./gymnax --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run unit/integration tests
       run: |
-        pytest -vv --durations=0 --ignore=tests/minatar/test_seaquest.py
+        python -m pytest tests/classic_control/ --all -vv
+        python -m pytest tests/bsuite/ --all -vv
+        python -m pytest --ignore=tests/minatar/test_seaquest.py

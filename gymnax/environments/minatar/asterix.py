@@ -5,7 +5,7 @@ from jax import lax
 from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
-from typing import Union, Tuple
+from typing import Tuple
 import chex
 
 Array = chex.Array
@@ -213,7 +213,7 @@ def while_sample_slots(key, state_entities):
     """Go through random order of slots until slot is found that is free."""
     init_val = jnp.array([0, 0])
     # Sample random order of slot entries to go through - hack around jnp.where
-    order_to_go_through = jax.random.permutation(key, jnp.arange(8))
+    # order_to_go_through = jax.random.permutation(key, jnp.arange(8))
 
     def condition_to_check(val):
         # Check if we haven't gone through all possible slots and whether free

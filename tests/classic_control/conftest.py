@@ -5,10 +5,10 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     if "env_name" in metafunc.fixturenames:
         if metafunc.config.getoption("all"):
-            metafunc.parametrize("env_name", ["Pendulum-v0",
-                                              "CartPole-v0",
+            metafunc.parametrize("env_name", ["Pendulum-v1",
+                                              "CartPole-v1",
                                               "MountainCar-v0",
                                               "MountainCarContinuous-v0",
                                               "Acrobot-v1"])
         else:
-            metafunc.parametrize("env_name", ["Pendulum-v0"])
+            metafunc.parametrize("env_name", ["Pendulum-v1"])
