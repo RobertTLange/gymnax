@@ -1,12 +1,9 @@
 import jax
-import jax.numpy as jnp
 import gymnax
 from gymnax.utils import (np_state_to_jax,
                           minatar_action_map,
                           assert_correct_transit,
                           assert_correct_state)
-
-import numpy as np
 from minatar.environment import Environment
 
 from gymnax.environments.minatar.space_invaders import (step_agent,
@@ -24,8 +21,9 @@ env_name_gym, env_name_jax = 'space_invaders', 'SpaceInvaders-MinAtar'
 
 def test_step():
     """ Test a step transition for the env. """
+    rng = jax.random.PRNGKey(0)
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
-    rng, env_jax = gymnax.make(env_name_jax)
+    env_jax, env_params = gymnax.make(env_name_jax)
 
     # Loop over test episodes
     for ep in range(num_episodes):
@@ -43,7 +41,8 @@ def test_step():
             obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
                                                                 key_step,
                                                                 state,
-                                                                action)
+                                                                action,
+                                                                env_params)
 
             # Check correctness of transition
             assert_correct_transit(obs_gym, reward_gym, done_gym,
@@ -60,8 +59,9 @@ def test_step():
 
 def test_sub_steps():
     """ Test a step transition for the env. """
+    rng = jax.random.PRNGKey(0)
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
-    rng, env_jax = gymnax.make(env_name_jax)
+    env_jax, env_params = gymnax.make(env_name_jax)
 
     # Loop over test episodes
     for ep in range(num_episodes):
@@ -74,7 +74,7 @@ def test_sub_steps():
             action_gym = minatar_action_map(action, env_name_jax)
 
             terminal = step_agent_numpy(env_gym, action_gym)
-            state_jax_a = step_agent(action, state, env_jax.params)
+            state_jax_a = step_agent(action, state, env_params)
             assert_correct_state(env_gym, env_name_jax, state_jax_a,
                                  tolerance)
 
@@ -85,7 +85,7 @@ def test_sub_steps():
 
             reward_gym = step_shoot_numpy(env_gym)
             state_jax_c, reward_jax = step_shoot(state_jax_b,
-                                                 env_jax.params)
+                                                 env_params)
             assert_correct_state(env_gym, env_name_jax, state_jax_c,
                                  tolerance)
 
@@ -96,19 +96,21 @@ def test_sub_steps():
 def test_reset():
     """ Test reset obs/state is in space of NumPy version. """
     #env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
-    rng, env_jax = gymnax.make(env_name_jax)
+    rng = jax.random.PRNGKey(0)
+    env_jax, env_params = gymnax.make(env_name_jax)
     for ep in range(num_episodes):
         rng, rng_input = jax.random.split(rng)
-        obs, state = env_jax.reset(rng_input)
+        obs, state = env_jax.reset(rng_input, env_params)
         # Check state and observation space
-        env_jax.state_space.contains(state)
-        env_jax.observation_space.contains(obs)
+        env_jax.state_space(env_params).contains(state)
+        env_jax.observation_space(env_params).contains(obs)
 
 
 def test_get_obs():
     """ Test observation function. """
+    rng = jax.random.PRNGKey(0)
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
-    rng, env_jax = gymnax.make(env_name_jax)
+    env_jax, env_params = gymnax.make(env_name_jax)
 
     # Loop over test episodes
     for ep in range(num_episodes):
@@ -133,8 +135,9 @@ def test_get_obs():
 
 def test_nearest_alien():
     """ Test nearest alien computation. """
+    rng = jax.random.PRNGKey(0)
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
-    rng, env_jax = gymnax.make(env_name_jax)
+    env_jax, env_params = gymnax.make(env_name_jax)
 
     # Loop over test episodes
     for ep in range(num_episodes):

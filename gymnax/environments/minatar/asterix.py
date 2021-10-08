@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -31,21 +29,22 @@ class MinAsterix(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (10, 10, 5)
+
+    @property
+    def default_params(self):
         # Default environment parameters
-        self.env_params = FrozenDict(
-            {
-                "ramping": 1,
-                "ramp_interval": 100,
-                "init_spawn_speed": 10,
-                "init_move_interval": 5,
-                "shot_cool_down": 5,
-                "obs_shape": (10, 10, 5),
-                "max_steps_in_episode": 2000,
-            }
-        )
+        return {
+            "ramping": 1,
+            "ramp_interval": 100,
+            "init_spawn_speed": 10,
+            "init_move_interval": 5,
+            "shot_cool_down": 5,
+            "max_steps_in_episode": 2000,
+        }
 
     def step(
-        self, key: PRNGKey, state: dict, action: int
+        self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         # Spawn enemy if timer is up - sample at each step and mask
@@ -65,14 +64,14 @@ class MinAsterix(environment.Environment):
         # Update entities, get reward and figure out termination
         state, reward, done = step_entities(state)
         # Update timers and ramping condition check
-        state = step_timers(state, self.env_params)
+        state = step_timers(state, params)
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
         state["terminal"] = done
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
-        info = {"discount": self.discount(state)}
+        info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
@@ -81,17 +80,17 @@ class MinAsterix(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         state = {
             "player_x": 5,
             "player_y": 5,
             "shot_timer": 0,
-            "spawn_speed": self.env_params["init_spawn_speed"],
-            "spawn_timer": self.env_params["init_spawn_speed"],
-            "move_speed": self.env_params["init_move_interval"],
-            "move_timer": self.env_params["init_move_interval"],
-            "ramp_timer": self.env_params["ramp_interval"],
+            "spawn_speed": params["init_spawn_speed"],
+            "spawn_timer": params["init_spawn_speed"],
+            "move_speed": params["init_move_interval"],
+            "move_timer": params["init_move_interval"],
+            "ramp_timer": params["ramp_interval"],
             "ramp_index": 0,
             "entities": jnp.zeros((8, 5), dtype=int),
             "time": 0,
@@ -102,7 +101,7 @@ class MinAsterix(environment.Environment):
     def get_obs(self, state: dict) -> Array:
         """Return observation from raw state trafo."""
         # Add a 5th channel to help with not used entities
-        obs = jnp.zeros(self.env_params["obs_shape"], dtype=bool)
+        obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the agent in the grid
         obs = jax.ops.index_update(
             obs, jax.ops.index[state["player_y"], state["player_x"], 0], 1
@@ -124,9 +123,9 @@ class MinAsterix(environment.Environment):
             )
         return obs[:, :, :4]
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > self.env_params["max_steps_in_episode"]
+        done_steps = state["time"] > params["max_steps_in_episode"]
         return jnp.logical_or(done_steps, state["terminal"])
 
     @property
@@ -139,13 +138,11 @@ class MinAsterix(environment.Environment):
         """Action space of the environment."""
         return spaces.Discrete(5)
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.env_params["obs_shape"])
+        return spaces.Box(0, 1, self.obs_shape)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         return spaces.Dict(
             {
@@ -159,7 +156,7 @@ class MinAsterix(environment.Environment):
                 "ramp_timer": spaces.Discrete(1000),
                 "ramp_index": spaces.Discrete(1000),
                 "entities": spaces.Box(0, 1, (8, 5)),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )

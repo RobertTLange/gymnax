@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -36,27 +34,28 @@ class MinSpaceInvaders(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (10, 10, 6)
+
+    @property
+    def default_params(self):
         # Default environment parameters
-        self.env_params = FrozenDict(
-            {
-                "shot_cool_down": 5,
-                "enemy_move_interval": 12,
-                "enemy_shot_interval": 10,
-                "obs_shape": (10, 10, 6),
-                "max_steps_in_episode": 100,
-            }
-        )
+        return {
+            "shot_cool_down": 5,
+            "enemy_move_interval": 12,
+            "enemy_shot_interval": 10,
+            "max_steps_in_episode": 100,
+        }
 
     def step(
-        self, key: PRNGKey, state: dict, action: int
+        self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         # Resolve player action - fire, left, right.
-        state = step_agent(action, state, self.env_params)
+        state = step_agent(action, state, params)
         # Update aliens - border and collision check.
         state = step_aliens(state)
         # Update aliens - shooting check and calculate rewards.
-        state, reward = step_shoot(state, self.env_params)
+        state, reward = step_shoot(state, params)
 
         # Update various timers & evaluate all terminal conditions
         state["shot_timer"] = state["shot_timer"] - (state["shot_timer"] > 0)
@@ -79,7 +78,7 @@ class MinSpaceInvaders(environment.Environment):
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
         info = {"discount": 1 - done}
         return (
@@ -90,7 +89,7 @@ class MinSpaceInvaders(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         alien_map = jnp.zeros((10, 10))
         alien_map = jax.ops.index_update(alien_map, jax.ops.index[0:4, 2:9], 1)
@@ -100,9 +99,9 @@ class MinSpaceInvaders(environment.Environment):
             "e_bullet_map": jnp.zeros((10, 10)),
             "alien_map": alien_map,
             "alien_dir": -1,
-            "enemy_move_interval": self.env_params["enemy_move_interval"],
-            "alien_move_timer": self.env_params["enemy_move_interval"],
-            "alien_shot_timer": self.env_params["enemy_shot_interval"],
+            "enemy_move_interval": params["enemy_move_interval"],
+            "alien_move_timer": params["enemy_move_interval"],
+            "alien_shot_timer": params["enemy_shot_interval"],
             "ramp_index": 0,
             "shot_timer": 0,
             "ramping": True,
@@ -127,9 +126,9 @@ class MinSpaceInvaders(environment.Environment):
         obs = jax.ops.index_update(obs, jax.ops.index[:, :, 5], state["e_bullet_map"])
         return obs
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > self.env_params["max_steps_in_episode"]
+        done_steps = state["time"] > params["max_steps_in_episode"]
         return jnp.logical_or(done_steps, state["terminal"])
 
     @property
@@ -142,13 +141,11 @@ class MinSpaceInvaders(environment.Environment):
         """Action space of the environment."""
         return spaces.Discrete(4)
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.env_params["obs_shape"])
+        return spaces.Box(0, 1, self.obs_shape)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         return spaces.Dict(
             {
@@ -157,19 +154,13 @@ class MinSpaceInvaders(environment.Environment):
                 "e_bullet_map": spaces.Box(0, 1, (10, 10)),
                 "alien_map": spaces.Box(0, 1, (10, 10)),
                 "alien_dir": spaces.Box(-1, 3, ()),
-                "enemy_move_interval": spaces.Discrete(
-                    self.env_params["enemy_move_interval"]
-                ),
-                "alien_move_timer": spaces.Discrete(
-                    self.env_params["enemy_move_interval"]
-                ),
-                "alien_shot_timer": spaces.Discrete(
-                    self.env_params["enemy_shot_interval"]
-                ),
+                "enemy_move_interval": spaces.Discrete(params["enemy_move_interval"]),
+                "alien_move_timer": spaces.Discrete(params["enemy_move_interval"]),
+                "alien_shot_timer": spaces.Discrete(params["enemy_shot_interval"]),
                 "ramp_index": spaces.Discrete(2),
                 "shot_timer": spaces.Discrete(1000),
                 "ramping": spaces.Discrete(2),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )

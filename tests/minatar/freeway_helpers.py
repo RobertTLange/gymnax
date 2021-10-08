@@ -1,5 +1,4 @@
 import numpy as np
-import jax.numpy as jnp
 
 
 def det_randomize_cars_numpy(speeds, directions, old_cars, initialize):

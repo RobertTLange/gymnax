@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -34,22 +32,23 @@ class MinFreeway(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (10, 10, 7)
+
+    @property
+    def default_params(self):
         # Default environment parameters
-        self.env_params = FrozenDict(
-            {
+        return {
                 "player_speed": 3,
                 "time_limit": 2500,
-                "obs_shape": (10, 10, 7),
                 "max_steps_in_episode": 100,
             }
-        )
 
     def step(
-        self, key: PRNGKey, state: dict, action: int
+        self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         # 1. Update position of agent only if timer condition is met!
-        state, reward, win_cond = step_agent(action, state, self.env_params)
+        state, reward, win_cond = step_agent(action, state, params)
 
         # 2. Sample a new configuration for the cars if agent 'won'
         # Note: At each step we are sampling speed and dir to avoid if cond
@@ -69,9 +68,9 @@ class MinFreeway(environment.Environment):
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
-        info = {"discount": self.discount(state)}
+        info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
@@ -80,7 +79,7 @@ class MinFreeway(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         # Sample the initial speeds and directions of the cars
         key_speed, key_dirs = jax.random.split(key)
@@ -92,8 +91,8 @@ class MinFreeway(environment.Environment):
             "cars": randomize_cars(
                 speeds, directions, jnp.zeros((8, 4), dtype=int), True
             ),
-            "move_timer": self.env_params["player_speed"],
-            "terminate_timer": self.env_params["time_limit"],
+            "move_timer": params["player_speed"],
+            "terminate_timer": params["time_limit"],
             "time": 0,
             "terminal": False,
         }
@@ -101,7 +100,7 @@ class MinFreeway(environment.Environment):
 
     def get_obs(self, state: dict) -> Array:
         """Return observation from raw state trafo."""
-        obs = jnp.zeros((10, 10, 7), dtype=bool)
+        obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the chicken agent, cars, and trails
         obs = jax.ops.index_update(obs, jax.ops.index[state["pos"], 4, 0], 1)
         for car_id in range(8):
@@ -126,9 +125,9 @@ class MinFreeway(environment.Environment):
             )
         return obs
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > self.env_params["max_steps_in_episode"]
+        done_steps = state["time"] > params["max_steps_in_episode"]
         done_timer = state["terminate_timer"] < 0
         return jnp.logical_or(done_steps, done_timer)
 
@@ -142,27 +141,25 @@ class MinFreeway(environment.Environment):
         """Action space of the environment."""
         return spaces.Discrete(3)
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.env_params["obs_shape"])
+        return spaces.Box(0, 1, self.obs_shape)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         return spaces.Dict(
             {
                 "pos": spaces.Discrete(10),
                 "cars": spaces.Box(0, 1, jnp.zeros((8, 4)), dtype=jnp.int_),
-                "move_timer": spaces.Discrete(self.env_params["player_speed"]),
-                "terminate_timer": spaces.Discrete(self.env_params["time_limit"]),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "move_timer": spaces.Discrete(params["player_speed"]),
+                "terminate_timer": spaces.Discrete(params["time_limit"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )
 
 
-def step_agent(action: int, state: dict, params: FrozenDict):
+def step_agent(action: int, state: dict, params: dict):
     """Perform 1st part of step transition for agent."""
     cond_up = jnp.logical_and(action == 1, state["move_timer"] == 0)
     cond_down = jnp.logical_and(action == 2, state["move_timer"] == 0)

@@ -33,13 +33,15 @@ class MinBreakout(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (10, 10, 4)
+
+    @property
+    def default_params(self):
         # Default environment parameters
-        self.env_params = FrozenDict(
-            {"obs_shape": (10, 10, 4), "max_steps_in_episode": 100}
-        )
+        return {"max_steps_in_episode": 100}
 
     def step(
-        self, key: PRNGKey, state: dict, action: int
+        self, key: PRNGKey, state: dict, action: int, params: dict,
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         state, new_x, new_y = step_agent(state, action)
@@ -47,9 +49,9 @@ class MinBreakout(environment.Environment):
 
         # Check game condition & no. steps for termination condition
         state["time"] += 1
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
-        info = {"discount": self.discount(state)}
+        info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
@@ -58,7 +60,7 @@ class MinBreakout(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=(1,))
         ball_x = jnp.array([0, 9])[ball_start]
@@ -81,7 +83,7 @@ class MinBreakout(environment.Environment):
 
     def get_obs(self, state: dict) -> Array:
         """Return observation from raw state trafo."""
-        obs = jnp.zeros((10, 10, 4), dtype=bool)
+        obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the ball, paddle, trail and the brick map
         obs = jax.ops.index_update(
             obs, jax.ops.index[state["ball_y"], state["ball_x"], 1], 1
@@ -93,9 +95,9 @@ class MinBreakout(environment.Environment):
         obs = jax.ops.index_update(obs, jax.ops.index[:, :, 3], state["brick_map"])
         return obs
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > self.env_params["max_steps_in_episode"]
+        done_steps = state["time"] > params["max_steps_in_episode"]
         return jnp.logical_or(done_steps, state["terminal"])
 
     @property
@@ -108,13 +110,11 @@ class MinBreakout(environment.Environment):
         """Action space of the environment."""
         return spaces.Discrete(3)
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.env_params["obs_shape"])
+        return spaces.Box(0, 1, self.obs_shape)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         return spaces.Dict(
             {
@@ -126,7 +126,7 @@ class MinBreakout(environment.Environment):
                 "strike": spaces.Discrete(2),
                 "last_y": spaces.Discrete(10),
                 "last_x": spaces.Discrete(10),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )

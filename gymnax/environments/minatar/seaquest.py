@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -47,26 +45,27 @@ class MinSeaquest(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (10, 10, 10)
+
+    @property
+    def default_params(self):
         # Default environment parameters
-        self.env_params = FrozenDict(
-            {
-                "ramp_interval": 100,
-                "max_oxygen": 200,
-                "init_spawn_speed": 20,
-                "diver_spawn_speed": 30,
-                "init_move_interval": 5,
-                "shot_cool_down": 5,
-                "enemy_shot_interval": 10,
-                "enemy_move_interval": 5,
-                "diver_move_interval": 5,
-                "ramping": 1,
-                "obs_shape": (10, 10, 10),
-                "max_steps_in_episode": 100,
-            }
-        )
+        return {
+            "ramp_interval": 100,
+            "max_oxygen": 200,
+            "init_spawn_speed": 20,
+            "diver_spawn_speed": 30,
+            "init_move_interval": 5,
+            "shot_cool_down": 5,
+            "enemy_shot_interval": 10,
+            "enemy_move_interval": 5,
+            "diver_move_interval": 5,
+            "ramping": 1,
+            "max_steps_in_episode": 100,
+        }
 
     def step(
-        self, key: PRNGKey, state: dict, action: int
+        self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         # If timer is up spawn enemy and divers [always sample]
@@ -92,21 +91,21 @@ class MinSeaquest(environment.Environment):
         state, reward = step_timers(state, reward)
         # Check game condition & no. steps for termination condition
         state["time"] += 1
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
-        info = {"discount": self.discount(state)}
+        info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state)),
+            lax.stop_gradient(self.get_obs(state, params)),
             lax.stop_gradient(state),
             reward,
             done,
             info,
         )
 
-    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         state = {
-            "oxygen": self.env_params["max_oxygen"],
+            "oxygen": params["max_oxygen"],
             "sub_x": 5,
             "sub_y": 0,
             "sub_or": 0,
@@ -120,22 +119,22 @@ class MinSeaquest(environment.Environment):
             "e_subs": jnp.zeros((100, 5), dtype=jnp.int32),
             "diver_count": 0,
             "divers": jnp.zeros((100, 4), dtype=jnp.int32),
-            "e_spawn_speed": self.env_params["init_spawn_speed"],
-            "e_spawn_timer": self.env_params["init_spawn_speed"],
-            "d_spawn_timer": self.env_params["diver_spawn_speed"],
-            "move_speed": self.env_params["init_move_interval"],
+            "e_spawn_speed": params["init_spawn_speed"],
+            "e_spawn_timer": params["init_spawn_speed"],
+            "d_spawn_timer": params["diver_spawn_speed"],
+            "move_speed": params["init_move_interval"],
             "ramp_index": 0,
             "shot_timer": 0,
             "surface": 1,
             "time": 0,
             "terminal": False,
         }
-        return self.get_obs(state), state
+        return self.get_obs(state, params), state
 
-    def get_obs(self, state: dict) -> Array:
+    def get_obs(self, state: dict, params: dict) -> Array:
         """Return observation from raw state trafo."""
         fish, sub, diver = [], [], []
-        obs = jnp.zeros((10, 10, 10), dtype=bool)
+        obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set agents sub-front and back, oxygen_gauge and diver_gauge
         obs = jax.ops.index_update(
             obs, jax.ops.index[state["sub_y"], state["sub_x"], 0], 1
@@ -147,7 +146,7 @@ class MinSeaquest(environment.Environment):
         obs = jax.ops.index_update(
             obs,
             jax.ops.index[
-                9, 0 : state["oxygen"] * 10 // self.env_params["max_oxygen"], 7
+                9, 0 : state["oxygen"] * 10 // params["max_oxygen"], 7
             ],
             1,
         )
@@ -226,9 +225,9 @@ class MinSeaquest(environment.Environment):
             )
         return obs
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > self.env_params["max_steps_in_episode"]
+        done_steps = state["time"] > params["max_steps_in_episode"]
         return jnp.logical_or(state["terminal"], done_steps)
 
     @property
@@ -241,17 +240,15 @@ class MinSeaquest(environment.Environment):
         """Action space of the environment."""
         return spaces.Discrete(6)
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.env_params["obs_shape"])
+        return spaces.Box(0, 1, self.obs_shape)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         return spaces.Dict(
             {
-                "oxygen": spaces.Discrete(self.env_params["max_oxygen"]),
+                "oxygen": spaces.Discrete(params["max_oxygen"]),
                 "diver_count": spaces.Discrete(20),
                 "sub_x": spaces.Discrete(10),
                 "sub_y": spaces.Discrete(10),
@@ -261,14 +258,14 @@ class MinSeaquest(environment.Environment):
                 "e_fish": spaces.Box(0, 1, (100, 5)),
                 "e_subs": spaces.Box(0, 1, (100, 5)),
                 "divers": spaces.Box(0, 1, (100, 4)),
-                "e_spawn_speed": spaces.Discrete(self.env_params["init_spawn_speed"]),
-                "e_spawn_timer": spaces.Discrete(self.env_params["init_spawn_speed"]),
-                "d_spawn_timer": spaces.Discrete(self.env_params["diver_spawn_speed"]),
+                "e_spawn_speed": spaces.Discrete(params["init_spawn_speed"]),
+                "e_spawn_timer": spaces.Discrete(params["init_spawn_speed"]),
+                "d_spawn_timer": spaces.Discrete(params["diver_spawn_speed"]),
                 "move_speed": spaces.Discrete(1000),
                 "ramp_index": spaces.Discrete(1000),
-                "shot_timer": spaces.Discrete(self.env_params["shot_cool_down"]),
+                "shot_timer": spaces.Discrete(params["shot_cool_down"]),
                 "surface": spaces.Discrete(2),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )
