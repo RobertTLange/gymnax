@@ -42,5 +42,5 @@ jobs:
     - name: Run unit/integration tests
       run: |
         python -m pytest tests/classic_control/ --all -vv
-        # python -m pytest tests/bsuite/ -vv --all
+        python -m pytest tests/bsuite/ -vv --all
         # python -m pytest tests/minatar/ --v --ignore=tests/minatar/test_seaquest.py
