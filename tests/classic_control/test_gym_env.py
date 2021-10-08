@@ -1,9 +1,5 @@
 import jax
-import jax.numpy as jnp
 import gym
-import unittest, math
-import numpy as np
-
 import gymnax
 from gymnax.utils import (np_state_to_jax,
                           assert_correct_transit,
@@ -14,8 +10,9 @@ num_episodes, num_steps, tolerance = 10, 150, 1e-04
 
 def test_step(env_name):
     """ Test a step transition for the env. """
+    rng = jax.random.PRNGKey(0)
     env_gym = gym.make(env_name)
-    rng, env_jax = gymnax.make(env_name)
+    env_jax, env_params = gymnax.make(env_name)
     # Create jitted version of step transition function
     jit_step = jax.jit(env_jax.step)
 
@@ -32,11 +29,13 @@ def test_step(env_name):
             obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
                                                                 rng_input,
                                                                 state,
-                                                                action)
+                                                                action,
+                                                                env_params)
             obs_jit, state_jit, reward_jit, done_jit, _ = jit_step(
                                                                 rng_input,
                                                                 state,
-                                                                action)
+                                                                action,
+                                                                env_params)
 
             # Check correctness of transition
             assert_correct_transit(obs_gym, reward_gym, done_gym,
@@ -59,10 +58,11 @@ def test_step(env_name):
 def test_reset(env_name):
     """ Test reset obs/state is in space of OpenAI version. """
     # env_gym = gym.make(env_name)
-    rng, env_jax = gymnax.make(env_name)
+    rng = jax.random.PRNGKey(0)
+    env_jax, env_params = gymnax.make(env_name)
     for ep in range(num_episodes):
         rng, rng_input = jax.random.split(rng)
-        obs, state = env_jax.reset(rng_input)
+        obs, state = env_jax.reset(rng_input, env_params)
         # Check state and observation space
-        env_jax.state_space.contains(state)
-        env_jax.observation_space.contains(obs)
+        env_jax.state_space(env_params).contains(state)
+        env_jax.observation_space(env_params).contains(obs)

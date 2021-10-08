@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -20,26 +18,25 @@ class Pendulum(environment.Environment):
 
     def __init__(self):
         super().__init__()
-        # Default environment parameters for Pendulum-v0
-        self.env_params = FrozenDict(
-            {
-                "max_speed": 8,
-                "max_torque": 2.0,
-                "dt": 0.05,
-                "g": 10.0,
-                "m": 1.0,
-                "l": 1.0,
-                "max_steps_in_episode": 200,
-            }
-        )
+
+    @property
+    def default_params(self):
+        """Default environment parameters for Pendulum-v0."""
+        return {
+            "max_speed": 8,
+            "max_torque": 2.0,
+            "dt": 0.05,
+            "g": 10.0,
+            "m": 1.0,
+            "l": 1.0,
+            "max_steps_in_episode": 200,
+        }
 
     def step(
-        self, key: PRNGKey, state: dict, action: float
+        self, key: PRNGKey, state: dict, action: float, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Integrate pendulum ODE and return transition."""
-        u = jnp.clip(
-            action, -self.env_params["max_torque"], self.env_params["max_torque"]
-        )
+        u = jnp.clip(action, -params["max_torque"], params["max_torque"])
         reward = -(
             angle_normalize(state["theta"]) ** 2
             + 0.1 * state["theta_dot"] ** 2
@@ -48,19 +45,14 @@ class Pendulum(environment.Environment):
 
         newthdot = state["theta_dot"] + (
             (
-                3
-                * self.env_params["g"]
-                / (2 * self.env_params["l"])
-                * jnp.sin(state["theta"])
-                + 3.0 / (self.env_params["m"] * self.env_params["l"] ** 2) * u
+                3 * params["g"] / (2 * params["l"]) * jnp.sin(state["theta"])
+                + 3.0 / (params["m"] * params["l"] ** 2) * u
             )
-            * self.env_params["dt"]
+            * params["dt"]
         )
 
-        newthdot = jnp.clip(
-            newthdot, -self.env_params["max_speed"], self.env_params["max_speed"]
-        )
-        newth = state["theta"] + newthdot * self.env_params["dt"]
+        newthdot = jnp.clip(newthdot, -params["max_speed"], params["max_speed"])
+        newth = state["theta"] + newthdot * params["dt"]
 
         # Update state dict and evaluate termination conditions
         state = {
@@ -68,17 +60,17 @@ class Pendulum(environment.Environment):
             "theta_dot": newthdot.squeeze(),
             "time": state["time"] + 1,
         }
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward,
             done,
-            {"discount": self.discount(state)},
+            {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey):
+    def reset(self, key: PRNGKey, params: dict):
         """Reset environment state by sampling theta, theta_dot."""
         high = jnp.array([jnp.pi, 1])
         state = jax.random.uniform(key, shape=(2,), minval=-high, maxval=high)
@@ -97,35 +89,32 @@ class Pendulum(environment.Environment):
             [jnp.cos(state["theta"]), jnp.sin(state["theta"]), state["theta_dot"]]
         ).squeeze()
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
-        done = state["time"] > self.env_params["max_steps_in_episode"]
+        done = state["time"] > params["max_steps_in_episode"]
         return done
 
     @property
     def name(self) -> str:
         """Environment name."""
-        return "Pendulum-v0"
+        return "Pendulum-v1"
 
-    @property
-    def action_space(self):
+    def action_space(self, params: dict):
         """Action space of the environment."""
         return spaces.Box(
-            low=-self.env_params["max_torque"],
-            high=self.env_params["max_torque"],
+            low=-params["max_torque"],
+            high=params["max_torque"],
             shape=(),
             dtype=jnp.float32,
         )
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
-        high = jnp.array([1.0, 1.0, self.env_params["max_speed"]], dtype=jnp.float32)
+        high = jnp.array([1.0, 1.0, params["max_speed"]], dtype=jnp.float32)
         return spaces.Box(-high, high, shape=(3,), dtype=jnp.float32)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         return spaces.Dict(
             {
@@ -141,7 +130,7 @@ class Pendulum(environment.Environment):
                     (),
                     jnp.float32,
                 ),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )

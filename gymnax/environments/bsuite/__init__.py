@@ -14,5 +14,5 @@ __all__ = [
     "MemoryChain",
     "UmbrellaChain",
     "MNISTBandit",
-    "SimpleBandit"
+    "SimpleBandit",
 ]

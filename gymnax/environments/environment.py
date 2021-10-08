@@ -32,9 +32,9 @@ class Environment(jittable.Jittable, metaclass=abc.ABCMeta):
     def is_terminal(self, state: dict) -> bool:
         """Check whether state transition is terminal."""
 
-    def discount(self, state: dict) -> float:
+    def discount(self, state: dict, params: dict) -> float:
         """Return a discount of zero if the episode has terminated."""
-        return lax.select(self.is_terminal(state), 0.0, 1.0)
+        return lax.select(self.is_terminal(state, params), 0.0, 1.0)
 
     def update_env_params(
         self, p_name: str, p_value: Union[str, float, int, bool, Array]

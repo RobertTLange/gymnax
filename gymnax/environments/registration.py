@@ -77,5 +77,4 @@ def make(env_id: str, seed_id: int = 0):  # noqa:C901
         raise ValueError("Environment ID is not registered.")
 
     # Create a jax PRNG key for random seed control
-    rng = jax.random.PRNGKey(seed_id)
-    return rng, env
+    return env, env.default_params

@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -21,36 +19,37 @@ class Acrobot(environment.Environment):
 
     def __init__(self):
         super().__init__()
+
+    @property
+    def default_params(self):
         # Default environment parameters
-        self.env_params = FrozenDict(
-            {
-                "dt": 0.2,
-                "link_length_1": 1.0,
-                "link_length_2": 1.0,
-                "link_mass_1": 1.0,
-                "link_mass_2": 1.0,
-                "link_com_pos_1": 0.5,
-                "link_com_pos_2": 0.5,
-                "link_moi": 1.0,
-                "max_vel_1": 4 * jnp.pi,
-                "max_vel_2": 9 * jnp.pi,
-                "available_torque": jnp.array([-1.0, 0.0, +1.0]),
-                "torque_noise_max": 0.0,
-                "max_steps_in_episode": 500,
-            }
-        )
+        return {
+            "dt": 0.2,
+            "link_length_1": 1.0,
+            "link_length_2": 1.0,
+            "link_mass_1": 1.0,
+            "link_mass_2": 1.0,
+            "link_com_pos_1": 0.5,
+            "link_com_pos_2": 0.5,
+            "link_moi": 1.0,
+            "max_vel_1": 4 * jnp.pi,
+            "max_vel_2": 9 * jnp.pi,
+            "available_torque": jnp.array([-1.0, 0.0, +1.0]),
+            "torque_noise_max": 0.0,
+            "max_steps_in_episode": 500,
+        }
 
     def step(
-        self, key: PRNGKey, state: dict, action: int
+        self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
-        torque = self.env_params["available_torque"][action]
+        torque = params["available_torque"][action]
         # Add noise to force action - always sample - conditionals in JAX
         torque = torque + jax.random.uniform(
             key,
             shape=(),
-            minval=-self.env_params["torque_noise_max"],
-            maxval=self.env_params["torque_noise_max"],
+            minval=-params["torque_noise_max"],
+            maxval=params["torque_noise_max"],
         )
 
         # Augment state with force action so it can be passed to ds/dt
@@ -63,14 +62,14 @@ class Acrobot(environment.Environment):
                 torque,
             ]
         )
-        ns = rk4(s_augmented, self.env_params)
+        ns = rk4(s_augmented, params)
         joint_angle1 = wrap(ns[0], -jnp.pi, jnp.pi)
         joint_angle2 = wrap(ns[1], -jnp.pi, jnp.pi)
         velocity_1 = jnp.clip(
-            ns[2], -self.env_params["max_vel_1"], self.env_params["max_vel_1"]
+            ns[2], -params["max_vel_1"], params["max_vel_1"]
         )
         velocity_2 = jnp.clip(
-            ns[3], -self.env_params["max_vel_2"], self.env_params["max_vel_2"]
+            ns[3], -params["max_vel_2"], params["max_vel_2"]
         )
 
         done_angle = -jnp.cos(joint_angle1) - jnp.cos(joint_angle2 + joint_angle1) > 1.0
@@ -84,17 +83,17 @@ class Acrobot(environment.Environment):
             "velocity_2": velocity_2,
             "time": state["time"] + 1,
         }
-        done = self.is_terminal(state)
+        done = self.is_terminal(state, params)
         state["terminal"] = done
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward,
             done,
-            {"discount": self.discount(state)},
+            {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey) -> Tuple[Array, dict]:
+    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(4,), minval=-0.1, maxval=0.1)
         state = {
@@ -120,7 +119,7 @@ class Acrobot(environment.Environment):
             ]
         )
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
         # Check termination and construct updated state
         done_angle = (
@@ -129,22 +128,21 @@ class Acrobot(environment.Environment):
             > 1.0
         )
         # Check number of steps in episode termination condition
-        done_steps = state["time"] > self.env_params["max_steps_in_episode"]
+        done_steps = state["time"] > params["max_steps_in_episode"]
         done = jnp.logical_or(done_angle, done_steps)
         return done
 
     @property
     def name(self) -> str:
         """Environment name."""
-        return "Acrobot-v0"
+        return "Acrobot-v1"
 
     @property
     def action_space(self):
         """Action space of the environment."""
         return spaces.Discrete(3)
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: dict):
         """Observation space of the environment."""
         high = jnp.array(
             [
@@ -152,22 +150,21 @@ class Acrobot(environment.Environment):
                 1.0,
                 1.0,
                 1.0,
-                self.env_params["max_vel_1"],
-                self.env_params["max_vel_2"],
+                params["max_vel_1"],
+                params["max_vel_2"],
             ],
             dtype=jnp.float32,
         )
         return spaces.Box(-high, high, (6,), jnp.float32)
 
-    @property
-    def state_space(self):
+    def state_space(self, params: dict):
         """State space of the environment."""
         high = jnp.array(
             [
                 jnp.finfo(jnp.float32).max,
                 jnp.finfo(jnp.float32).max,
-                self.env_params["max_vel_1"],
-                self.env_params["max_vel_2"],
+                params["max_vel_1"],
+                params["max_vel_2"],
             ],
             dtype=jnp.float32,
         )
@@ -177,7 +174,7 @@ class Acrobot(environment.Environment):
                 "joint_angle2": spaces.Box(-high[1], high[1], (), jnp.float32),
                 "velocity_1": spaces.Box(-high[2], high[2], (), jnp.float32),
                 "velocity_2": spaces.Box(-high[3], high[3], (), jnp.float32),
-                "time": spaces.Discrete(self.env_params["max_steps_in_episode"]),
+                "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
         )
