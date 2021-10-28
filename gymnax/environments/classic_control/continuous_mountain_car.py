@@ -35,25 +35,19 @@ class ContinuousMountainCar(environment.Environment):
             "max_steps_in_episode": 999,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: float, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
-        force = jnp.clip(
-            action, params["min_action"], params["max_action"]
-        )
+        force = jnp.clip(action, params["min_action"], params["max_action"])
         velocity = (
             state["velocity"]
             + force * params["power"]
             - jnp.cos(3 * state["position"]) * params["gravity"]
         )
-        velocity = jnp.clip(
-            velocity, -params["max_speed"], params["max_speed"]
-        )
+        velocity = jnp.clip(velocity, -params["max_speed"], params["max_speed"])
         position = state["position"] + velocity
-        position = jnp.clip(
-            position, params["min_position"], params["max_position"]
-        )
+        position = jnp.clip(position, params["min_position"], params["max_position"])
         velocity = velocity * (
             1 - (position >= params["goal_position"]) * (velocity < 0)
         )
@@ -75,7 +69,7 @@ class ContinuousMountainCar(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
         state = {"position": init_state, "velocity": 0, "time": 0, "terminal": False}

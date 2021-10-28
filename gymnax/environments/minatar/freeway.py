@@ -38,12 +38,12 @@ class MinFreeway(environment.Environment):
     def default_params(self):
         # Default environment parameters
         return {
-                "player_speed": 3,
-                "time_limit": 2500,
-                "max_steps_in_episode": 100,
-            }
+            "player_speed": 3,
+            "time_limit": 2500,
+            "max_steps_in_episode": 100,
+        }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -79,7 +79,7 @@ class MinFreeway(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         # Sample the initial speeds and directions of the cars
         key_speed, key_dirs = jax.random.split(key)

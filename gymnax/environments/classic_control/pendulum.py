@@ -32,7 +32,7 @@ class Pendulum(environment.Environment):
             "max_steps_in_episode": 200,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: float, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Integrate pendulum ODE and return transition."""
@@ -70,7 +70,7 @@ class Pendulum(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey, params: dict):
+    def reset_env(self, key: PRNGKey, params: dict):
         """Reset environment state by sampling theta, theta_dot."""
         high = jnp.array([jnp.pi, 1])
         state = jax.random.uniform(key, shape=(2,), minval=-high, maxval=high)

@@ -32,7 +32,7 @@ class DeepSea(environment.Environment):
             "max_steps_in_episode": 2000,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -45,9 +45,7 @@ class DeepSea(environment.Environment):
         )
 
         action_right = action == state["action_mapping"][state["row"], state["column"]]
-        right_rand_cond = jnp.logical_or(
-            rand_trans_cond, params["deterministic"]
-        )
+        right_rand_cond = jnp.logical_or(rand_trans_cond, params["deterministic"])
         right_cond = jnp.logical_and(action_right, right_rand_cond)
 
         reward, denoised_return = step_reward(
@@ -80,16 +78,14 @@ class DeepSea(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
-        optimal_no_cost = (1 - params["deterministic"]) * (
-            1 - 1 / self.size
-        ) ** (self.size - 1) + params["deterministic"] * 1.0
+        optimal_no_cost = (1 - params["deterministic"]) * (1 - 1 / self.size) ** (
+            self.size - 1
+        ) + params["deterministic"] * 1.0
         optimal_return = optimal_no_cost - params["unscaled_move_cost"]
 
-        a_map_rand = jax.random.bernoulli(
-            key, 0.5, (self.size, self.size)
-        )
+        a_map_rand = jax.random.bernoulli(key, 0.5, (self.size, self.size))
         a_map_determ = jnp.ones([self.size, self.size])
 
         new_a_map_cond = jnp.logical_and(
@@ -120,9 +116,7 @@ class DeepSea(environment.Environment):
 
     def get_obs(self, state: dict) -> Array:
         """Return observation from raw state trafo."""
-        obs_end = jnp.zeros(
-            shape=(self.size, self.size), dtype=jnp.float32
-        )
+        obs_end = jnp.zeros(shape=(self.size, self.size), dtype=jnp.float32)
         end_cond = state["row"] >= self.size
         obs_upd = jax.ops.index_update(
             obs_end, jax.ops.index[state["row"], state["column"]], 1.0
@@ -148,9 +142,7 @@ class DeepSea(environment.Environment):
 
     def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(
-            0, 1, (self.size, self.size), jnp.float32
-        )
+        return spaces.Box(0, 1, (self.size, self.size), jnp.float32)
 
     def state_space(self, params: dict):
         """State space of the environment."""
@@ -183,9 +175,7 @@ def step_reward(state, action_right, right_cond, rand_reward, size, params):
     denoised_return = state["denoised_return"] + rew_cond
 
     # Noisy rewards on the 'end' of chain.
-    col_at_edge = jnp.logical_or(
-        state["column"] == 0, state["column"] == size - 1
-    )
+    col_at_edge = jnp.logical_or(state["column"] == 0, state["column"] == size - 1)
     chain_end = jnp.logical_and(state["row"] == size - 1, col_at_edge)
     det_chain_end = jnp.logical_and(chain_end, params["deterministic"])
     reward += rand_reward * det_chain_end * (1 - params["deterministic"])

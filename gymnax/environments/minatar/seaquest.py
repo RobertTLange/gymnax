@@ -64,7 +64,7 @@ class MinSeaquest(environment.Environment):
             "max_steps_in_episode": 100,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -102,7 +102,7 @@ class MinSeaquest(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         state = {
             "oxygen": params["max_oxygen"],
@@ -145,9 +145,7 @@ class MinSeaquest(environment.Environment):
         obs = jax.ops.index_update(obs, jax.ops.index[state["sub_y"], back_x, 1], 1)
         obs = jax.ops.index_update(
             obs,
-            jax.ops.index[
-                9, 0 : state["oxygen"] * 10 // params["max_oxygen"], 7
-            ],
+            jax.ops.index[9, 0 : state["oxygen"] * 10 // params["max_oxygen"], 7],
             1,
         )
         obs = jax.ops.index_update(

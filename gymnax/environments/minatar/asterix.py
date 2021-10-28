@@ -43,7 +43,7 @@ class MinAsterix(environment.Environment):
             "max_steps_in_episode": 2000,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -80,7 +80,7 @@ class MinAsterix(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         state = {
             "player_x": 5,

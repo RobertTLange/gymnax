@@ -1,7 +1,6 @@
 from typing import Tuple, Union
 from collections import OrderedDict
 import chex
-from gymnax.utils import jittable
 import jax
 import jax.numpy as jnp
 
@@ -9,7 +8,7 @@ Array = chex.Array
 PRNGKey = chex.PRNGKey
 
 
-class Discrete(jittable.Jittable):
+class Discrete(object):
     """
     Minimal jittable class for discrete gymnax spaces.
     TODO: For now this is a 1d space. Make composable for multi-discrete.
@@ -35,7 +34,7 @@ class Discrete(jittable.Jittable):
         return range_cond
 
 
-class Box(jittable.Jittable):
+class Box(object):
     """
     Minimal jittable class for array-shaped gymnax spaces.
     TODO: Add unboundedness - sampling from other distributions, etc.
@@ -63,7 +62,7 @@ class Box(jittable.Jittable):
         return range_cond
 
 
-class Dict(jittable.Jittable):
+class Dict(object):
     """Minimal jittable class for dictionary of simpler jittable spaces."""
 
     def __init__(self, spaces: dict):
@@ -91,7 +90,7 @@ class Dict(jittable.Jittable):
         return out_of_space == 0
 
 
-class Tuple(jittable.Jittable):
+class Tuple(object):
     """Minimal jittable class for tuple (product) of jittable spaces."""
 
     def __init__(self, spaces: Union[tuple, list]):

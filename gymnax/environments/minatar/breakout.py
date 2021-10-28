@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -40,8 +38,12 @@ class MinBreakout(environment.Environment):
         # Default environment parameters
         return {"max_steps_in_episode": 100}
 
-    def step(
-        self, key: PRNGKey, state: dict, action: int, params: dict,
+    def step_env(
+        self,
+        key: PRNGKey,
+        state: dict,
+        action: int,
+        params: dict,
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         state, new_x, new_y = step_agent(state, action)
@@ -60,7 +62,7 @@ class MinBreakout(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=(1,))
         ball_x = jnp.array([0, 9])[ball_start]

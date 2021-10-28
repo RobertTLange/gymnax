@@ -26,19 +26,20 @@ class Catch(environment.Environment):
         # Default environment parameters
         return {"max_steps_in_episode": 100000000}
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         # Sample new init state each step & use if there was a reset!
-        ball_x, ball_y, paddle_x, paddle_y = sample_init_state(key, self.rows, self.columns)
+        ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
+            key, self.rows, self.columns
+        )
         prev_done = state["prev_done"]
 
         # Move the paddle + drop the ball.
         dx = action - 1  # [-1, 0, 1] = Left, no-op, right.
         paddle_x = (
-            jnp.clip(state["paddle_x"] + dx, 0, self.columns - 1)
-            * (1 - prev_done)
+            jnp.clip(state["paddle_x"] + dx, 0, self.columns - 1) * (1 - prev_done)
             + paddle_x * prev_done
         )
         ball_y = (state["ball_y"] + 1) * (1 - prev_done) + ball_y * prev_done
@@ -70,9 +71,11 @@ class Catch(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
-        ball_x, ball_y, paddle_x, paddle_y = sample_init_state(key, self.rows, self.columns)
+        ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
+            key, self.rows, self.columns
+        )
         # Last two state vector correspond to timestep and done
         state = {
             "ball_x": ball_x,
@@ -115,9 +118,7 @@ class Catch(environment.Environment):
 
     def observation_space(self, params: dict):
         """Observation space of the environment."""
-        return spaces.Box(
-            0, 1, (self.rows, self.columns), dtype=jnp.int_
-        )
+        return spaces.Box(0, 1, (self.rows, self.columns), dtype=jnp.int_)
 
     def state_space(self, params: dict):
         """State space of the environment."""

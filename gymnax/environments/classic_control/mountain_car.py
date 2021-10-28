@@ -33,7 +33,7 @@ class MountainCar(environment.Environment):
             "max_steps_in_episode": 200,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -42,13 +42,9 @@ class MountainCar(environment.Environment):
             + (action - 1) * params["force"]
             - jnp.cos(3 * state["position"]) * params["gravity"]
         )
-        velocity = jnp.clip(
-            velocity, -params["max_speed"], params["max_speed"]
-        )
+        velocity = jnp.clip(velocity, -params["max_speed"], params["max_speed"])
         position = state["position"] + velocity
-        position = jnp.clip(
-            position, params["min_position"], params["max_position"]
-        )
+        position = jnp.clip(position, params["min_position"], params["max_position"])
         velocity = velocity * (
             1 - (position == params["min_position"]) * (velocity < 0)
         )
@@ -68,7 +64,7 @@ class MountainCar(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
         state = {"position": init_state, "velocity": 0, "time": 0, "terminal": False}

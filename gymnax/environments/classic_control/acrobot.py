@@ -39,7 +39,7 @@ class Acrobot(environment.Environment):
             "max_steps_in_episode": 500,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -65,12 +65,8 @@ class Acrobot(environment.Environment):
         ns = rk4(s_augmented, params)
         joint_angle1 = wrap(ns[0], -jnp.pi, jnp.pi)
         joint_angle2 = wrap(ns[1], -jnp.pi, jnp.pi)
-        velocity_1 = jnp.clip(
-            ns[2], -params["max_vel_1"], params["max_vel_1"]
-        )
-        velocity_2 = jnp.clip(
-            ns[3], -params["max_vel_2"], params["max_vel_2"]
-        )
+        velocity_1 = jnp.clip(ns[2], -params["max_vel_1"], params["max_vel_1"])
+        velocity_2 = jnp.clip(ns[3], -params["max_vel_2"], params["max_vel_2"])
 
         done_angle = -jnp.cos(joint_angle1) - jnp.cos(joint_angle2 + joint_angle1) > 1.0
         reward = -1.0 * (1 - done_angle)
@@ -93,7 +89,7 @@ class Acrobot(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(4,), minval=-0.1, maxval=0.1)
         state = {

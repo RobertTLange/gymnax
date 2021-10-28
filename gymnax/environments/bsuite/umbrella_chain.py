@@ -28,7 +28,7 @@ class UmbrellaChain(environment.Environment):
             "max_steps_in_episode": 100,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -66,7 +66,7 @@ class UmbrellaChain(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         key_need, key_has, key_distractor = jax.random.split(key, 3)
         need_umbrella = jax.random.bernoulli(key_need, p=0.5, shape=())
@@ -82,9 +82,7 @@ class UmbrellaChain(environment.Environment):
 
     def get_obs(self, state: dict, key: PRNGKey, params: dict) -> Array:
         """Return observation from raw state trafo."""
-        obs = jnp.zeros(
-            shape=(1, 3 + self.n_distractor), dtype=jnp.float32
-        )
+        obs = jnp.zeros(shape=(1, 3 + self.n_distractor), dtype=jnp.float32)
         obs = jax.ops.index_update(obs, jax.ops.index[0, 0], state["need_umbrella"])
         obs = jax.ops.index_update(obs, jax.ops.index[0, 1], state["has_umbrella"])
         obs = jax.ops.index_update(

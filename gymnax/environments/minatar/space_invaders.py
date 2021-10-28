@@ -46,7 +46,7 @@ class MinSpaceInvaders(environment.Environment):
             "max_steps_in_episode": 100,
         }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -89,7 +89,7 @@ class MinSpaceInvaders(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         alien_map = jnp.zeros((10, 10))
         alien_map = jax.ops.index_update(alien_map, jax.ops.index[0:4, 2:9], 1)

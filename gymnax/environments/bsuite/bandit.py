@@ -24,20 +24,18 @@ class SimpleBandit(environment.Environment):
     def default_params(self):
         # Default environment parameters
         return {
-                "optimal_return": 1,
-                "max_steps_in_episode": 100,
-            }
+            "optimal_return": 1,
+            "max_steps_in_episode": 100,
+        }
 
-    def step(
-        self, key: PRNGKey, state: dict, action: int, params:dict
+    def step_env(
+        self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
         reward = state["rewards"][action]
         state = {
             "rewards": state["rewards"],
-            "total_regret": (
-                state["total_regret"] + params["optimal_return"] - reward
-            ),
+            "total_regret": (state["total_regret"] + params["optimal_return"] - reward),
             "time": state["time"] + 1,
         }
 
@@ -53,7 +51,7 @@ class SimpleBandit(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         action_mask = jax.random.choice(
             key,
@@ -95,9 +93,7 @@ class SimpleBandit(environment.Environment):
         return spaces.Dict(
             {
                 "rewards": spaces.Box(0, 1, (self.num_actions,)),
-                "total_regret": spaces.Box(
-                    0, params["max_steps_in_episode"], ()
-                ),
+                "total_regret": spaces.Box(0, params["max_steps_in_episode"], ()),
                 "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }

@@ -43,4 +43,4 @@ jobs:
       run: |
         python -m pytest tests/classic_control/ --all -vv
         python -m pytest tests/bsuite/ -vv --all
-        python -m pytest tests/minatar/ --vv
+        python -m pytest tests/minatar/ -vv

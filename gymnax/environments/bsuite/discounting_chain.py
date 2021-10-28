@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-
-from gymnax.utils.frozen_dict import FrozenDict
 from gymnax.environments import environment, spaces
 
 from typing import Tuple
@@ -25,7 +23,9 @@ class DiscountingChain(environment.Environment):
 
         # Setup reward fct fron mapping seed - random sampling outside of env
         reward = jnp.ones(self.n_actions)
-        self.reward = jax.ops.index_update(reward, jax.ops.index[self.mapping_seed], 1.1)
+        self.reward = jax.ops.index_update(
+            reward, jax.ops.index[self.mapping_seed], 1.1
+        )
 
     @property
     def default_params(self):
@@ -36,8 +36,7 @@ class DiscountingChain(environment.Environment):
             "optimal_return": 1.1,
         }
 
-
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -64,7 +63,7 @@ class DiscountingChain(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         state = {
             "rewards": self.reward,
@@ -108,12 +107,8 @@ class DiscountingChain(environment.Environment):
         """State space of the environment."""
         return spaces.Dict(
             {
-                "rewards": spaces.Box(
-                    1, 1.1, (self.n_actions,), dtype=jnp.float32
-                ),
-                "context": spaces.Box(
-                    -1, self.n_actions, (), dtype=jnp.float32
-                ),
+                "rewards": spaces.Box(1, 1.1, (self.n_actions,), dtype=jnp.float32),
+                "context": spaces.Box(-1, self.n_actions, (), dtype=jnp.float32),
                 "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }

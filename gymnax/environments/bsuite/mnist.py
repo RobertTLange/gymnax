@@ -18,18 +18,18 @@ class MNISTBandit(environment.Environment):
         (images, labels), _ = load_mnist()
         self.num_data = int(fraction * len(labels))
         self.image_shape = images.shape[1:]
-        self.images = jnp.array(images[:self.num_data])
-        self.labels = jnp.array(labels[:self.num_data])
+        self.images = jnp.array(images[: self.num_data])
+        self.labels = jnp.array(labels[: self.num_data])
 
     @property
     def default_params(self):
         # Default environment parameters
         return {
-                "optimal_return": 1,
-                "max_steps_in_episode": 1,
-            }
+            "optimal_return": 1,
+            "max_steps_in_episode": 1,
+        }
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -53,11 +53,9 @@ class MNISTBandit(environment.Environment):
             info,
         )
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
-        idx = jax.random.randint(
-            key, minval=0, maxval=self.num_data, shape=()
-        )
+        idx = jax.random.randint(key, minval=0, maxval=self.num_data, shape=())
         image = self.images[idx].astype(jnp.float32) / 255
         state = {
             "correct_label": self.labels[idx],

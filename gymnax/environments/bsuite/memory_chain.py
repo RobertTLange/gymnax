@@ -25,7 +25,7 @@ class MemoryChain(environment.Environment):
         # Default environment parameters
         return {"memory_length": 5, "max_steps_in_episode": 1000}
 
-    def step(
+    def step_env(
         self, key: PRNGKey, state: dict, action: int, params: dict
     ) -> Tuple[Array, dict, float, bool, dict]:
         """Perform single timestep state transition."""
@@ -54,15 +54,11 @@ class MemoryChain(environment.Environment):
         info = {"discount": self.discount(state, params)}
         return (lax.stop_gradient(obs), lax.stop_gradient(state), reward, done, info)
 
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         key_context, key_query = jax.random.split(key)
-        context = jax.random.bernoulli(
-            key_context, p=0.5, shape=(self.num_bits,)
-        )
-        query = jax.random.randint(
-            key_query, minval=0, maxval=self.num_bits, shape=()
-        )
+        context = jax.random.bernoulli(key_context, p=0.5, shape=(self.num_bits,))
+        query = jax.random.randint(key_query, minval=0, maxval=self.num_bits, shape=())
         state = {
             "context": context,
             "query": query,
@@ -126,12 +122,8 @@ class MemoryChain(environment.Environment):
             {
                 "context": spaces.Discrete(2),
                 "query": spaces.Discrete(self.num_bits),
-                "total_perfect": spaces.Discrete(
-                    params["max_steps_in_episode"]
-                ),
-                "total_regret": spaces.Discrete(
-                    params["max_steps_in_episode"]
-                ),
+                "total_perfect": spaces.Discrete(params["max_steps_in_episode"]),
+                "total_regret": spaces.Discrete(params["max_steps_in_episode"]),
                 "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
