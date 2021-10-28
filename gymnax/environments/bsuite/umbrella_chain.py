@@ -49,9 +49,9 @@ class UmbrellaChain(environment.Environment):
         reward += (1 - chain_full) * random_rew
 
         state = {
-            "need_umbrella": state["need_umbrella"],
-            "has_umbrella": has_umbrella,
-            "total_regret": total_regret,
+            "need_umbrella": jnp.int32(state["need_umbrella"]),
+            "has_umbrella": jnp.int32(has_umbrella),
+            "total_regret": jnp.int32(total_regret),
             "time": state["time"] + 1,
         }
         # Check game condition & no. steps for termination condition
@@ -69,8 +69,8 @@ class UmbrellaChain(environment.Environment):
     def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         key_need, key_has, key_distractor = jax.random.split(key, 3)
-        need_umbrella = jax.random.bernoulli(key_need, p=0.5, shape=())
-        has_umbrella = jax.random.bernoulli(key_has, p=0.5, shape=())
+        need_umbrella = jnp.int32(jax.random.bernoulli(key_need, p=0.5, shape=()))
+        has_umbrella = jnp.int32(jax.random.bernoulli(key_has, p=0.5, shape=()))
         state = {
             "need_umbrella": need_umbrella,
             "has_umbrella": has_umbrella,

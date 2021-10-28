@@ -16,7 +16,14 @@ class Environment(object):
         self, key: PRNGKey, state: dict, action: Union[int, float], params: dict
     ) -> Tuple[Array, dict, float, bool]:
         """Performs step transitions in the environment."""
-        obs, state, reward, done, info = self.step_env(key, state, action, params)
+        key, key_reset = jax.random.split(key)
+        obs_st, state_st, reward, done, info = self.step_env(key, state, action, params)
+        obs_re, state_re = self.reset_env(key_reset, params)
+        # Auto-reset environment based on termination
+        state = jax.tree_multimap(
+            lambda x, y: jax.lax.select(done, x, y), state_re, state_st
+        )
+        obs = jax.lax.select(done, obs_re, obs_st)
         return obs, state, reward, done, info
 
     @partial(jax.jit, static_argnums=(0,))

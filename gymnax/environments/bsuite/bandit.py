@@ -61,7 +61,7 @@ class SimpleBandit(environment.Environment):
         )
         rewards = jnp.linspace(0, 1, self.num_actions)[action_mask]
 
-        state = {"rewards": rewards, "total_regret": 0, "time": 0, "terminal": False}
+        state = {"rewards": rewards, "total_regret": 0.0, "time": 0, "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

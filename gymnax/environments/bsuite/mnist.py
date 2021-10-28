@@ -59,7 +59,7 @@ class MNISTBandit(environment.Environment):
         image = self.images[idx].astype(jnp.float32) / 255
         state = {
             "correct_label": self.labels[idx],
-            "regret": 0,
+            "regret": 0.0,
             "time": 0,
             "terminal": False,
         }

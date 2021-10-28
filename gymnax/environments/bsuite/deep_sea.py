@@ -104,7 +104,7 @@ class DeepSea(environment.Environment):
         state = {
             "row": 0,
             "column": 0,
-            "bad_episode": False,
+            "bad_episode": 0,
             "total_bad_episodes": 0,
             "denoised_return": 0,
             "optimal_return": optimal_return,
@@ -180,7 +180,7 @@ def step_reward(state, action_right, right_cond, rand_reward, size, params):
     det_chain_end = jnp.logical_and(chain_end, params["deterministic"])
     reward += rand_reward * det_chain_end * (1 - params["deterministic"])
     reward -= right_cond * params["unscaled_move_cost"] / size
-    return reward, denoised_return
+    return reward.squeeze(), denoised_return.squeeze()
 
 
 def step_transition(state, action_right, right_cond, size):
@@ -197,4 +197,4 @@ def step_transition(state, action_right, right_cond, size):
         state["column"] - 1, 0, size - 1
     ) + action_right * state["column"]
     row = state["row"] + 1
-    return column, row, bad_episode
+    return column.squeeze(), row.squeeze(), bad_episode.squeeze()

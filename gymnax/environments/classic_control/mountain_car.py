@@ -67,7 +67,7 @@ class MountainCar(environment.Environment):
     def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
-        state = {"position": init_state, "velocity": 0, "time": 0, "terminal": False}
+        state = {"position": init_state, "velocity": 0.0, "time": 0, "terminal": False}
         return self.get_obs(state), state
 
     def get_obs(self, state: dict) -> Array:

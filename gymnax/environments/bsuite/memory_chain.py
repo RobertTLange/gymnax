@@ -41,10 +41,10 @@ class MemoryChain(environment.Environment):
 
         # Update episode loggers
         state = {
-            "context": state["context"],
-            "query": state["query"],
+            "context": jnp.int32(state["context"]),
+            "query": jnp.int32(state["query"]),
             "total_perfect": state["total_perfect"] + mem_correct,
-            "total_regret": state["total_regret"] + 2 * mem_wrong,
+            "total_regret": jnp.float32(state["total_regret"] + 2 * mem_wrong),
             "time": state["time"] + 1,
         }
 
@@ -60,10 +60,10 @@ class MemoryChain(environment.Environment):
         context = jax.random.bernoulli(key_context, p=0.5, shape=(self.num_bits,))
         query = jax.random.randint(key_query, minval=0, maxval=self.num_bits, shape=())
         state = {
-            "context": context,
-            "query": query,
+            "context": jnp.int32(context),
+            "query": jnp.int32(query),
             "total_perfect": 0,
-            "total_regret": 0,
+            "total_regret": jnp.float32(0),
             "time": 0,
             "terminal": False,
         }
