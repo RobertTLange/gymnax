@@ -9,14 +9,17 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 - Classic Open AI gym wrapper including `gymnax.make`, `env.reset`, `env.step`:
 
 ```python
-import jax, gymnax
+import jax
+import gymnax
 
-rng, env = gymnax.make("Pendulum-v0")
-rng, key_reset, key_step = jax.random.split(rng, 3)
+rng = jax.random.PRNGKey(0)
+rng, key_reset, key_policy, key_step = jax.random.split(rng, 4)
 
-obs, state = env.reset(key_reset)
-action = your_jax_policy(policy_params, obs)
-n_obs, n_state, reward, done, _ = env.step(key_step, state, action)
+env, env_params = gymnax.make("Pendulum-v1")
+
+obs, state = env.reset(key_reset, env_params)
+action = env.action_space.sample(key_policy)
+n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
 - Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):

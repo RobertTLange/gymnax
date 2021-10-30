@@ -1,6 +1,3 @@
-import jax
-
-# =============================================================================
 from gymnax.environments.classic_control import (
     Pendulum,
     CartPole,
