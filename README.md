@@ -1,6 +1,6 @@
-# Gymnax - A JAX-Based Reinforcement Learning Gym API
-[![Pyversions](https://img.shields.io/pypi/pyversions/gymnax.svg?style=flat-square)](https://pypi.python.org/pypi/gymnax)[![PyPI version](https://badge.fury.io/py/gymnax.svg)](https://badge.fury.io/py/gymnax)
-<a href="docs/gymnax_logo.png"><img src="docs/gymnax_logo.png" width="200" align="right" /></a>
+# Gymnax - Classic Gym Environments in JAX
+[![Pyversions](https://img.shields.io/pypi/pyversions/gymnax.svg?style=flat-square)](https://pypi.python.org/pypi/gymnax)[![PyPI version](https://badge.fury.io/py/gymnax.svg)](https://badge.fury.io/py/gymnax)[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/getting_started.ipynb)
+<a href="https://github.com/RobertTLange/gymnax/blob/main/docs/gymnax_logo.png?raw=true"><img src="https://github.com/RobertTLange/gymnax/blob/main/docs/gymnax_logo.png?raw=true" width="200" align="right" /></a>
 
 Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap` to classic OpenAI gym environments.
 
@@ -22,11 +22,46 @@ action = env.action_space.sample(key_policy)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
+## Episode Scanning, Auto-Vectorization & Acceleration
 - Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):
 
 ```python
-jitted_step = jax.jit(env.step)
-jitted_reset = jax.jit(env.reset)
+def rollout(rng_input, policy_params, env_params, num_env_steps):
+      """Rollout a jitted gymnax episode with lax.scan."""
+      # Reset the environment
+      rng_reset, rng_episode = jax.random.split(rng_input)
+      obs, state = env.reset(rng_reset, env_params)
+
+      def policy_step(state_input, tmp):
+          """lax.scan compatible step transition in jax env."""
+          obs, state, policy_params, rng = state_input
+          rng, rng_step, rng_net = jax.random.split(rng, 3)
+          action = network.apply({"params": policy_params}, obs, rng=rng_net)
+          next_o, next_s, reward, done, _ = env.step(
+              rng_step, state, action, env_params
+          )
+          carry = [next_o.squeeze(), next_s, policy_params, rng]
+          return carry, [reward, done]
+
+      # Scan over episode step loop
+      _, scan_out = jax.lax.scan(
+          policy_step,
+          [obs, state, policy_params, rng_episode],
+          [jnp.zeros((num_env_steps, 2))],
+      )
+      # Return masked sum of rewards accumulated by agent in episode
+      rewards, dones = scan_out[0], scan_out[1]
+      rewards = rewards.reshape(num_env_steps, 1)
+      ep_mask = (jnp.cumsum(dones) < 1).reshape(num_env_steps, 1)
+      return jnp.sum(rewards * ep_mask)
+```
+
+```python
+# Jit-Compiled Episode Rollout
+jit_rollout = jax.jit(rollout, static_argnums=3)
+
+# Vmap across random keys for Batch Rollout
+batch_rollout = jax.vmap(jit_rollout, in_axes=(0, None, None, None))
 ```
 
 - Vectorization over different environment parametrizations:
