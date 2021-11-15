@@ -53,13 +53,15 @@ class BernoulliBandit(environment.Environment):
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
         p1 = jax.random.choice(
-            key, [params["reward_prob"], 1 - params["reward_prob"]], shape=(1,)
+            key,
+            jnp.array([params["reward_prob"], 1 - params["reward_prob"]]),
+            shape=(1,),
         ).squeeze()
 
         state = {
             "last_action": 0,
             "last_reward": 0,
-            "reward_probs": [p1, 1 - p1],
+            "reward_probs": jnp.array([p1, 1 - p1]),
             "time": 0,
             "terminal": False,
         }
@@ -89,14 +91,14 @@ class BernoulliBandit(environment.Environment):
     def observation_space(self, params: dict):
         """Observation space of the environment."""
         low = jnp.array(
-            [0, 0, 0],
+            [0, 0, 0, 0],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [1, 1, params["max_steps_in_episode"]],
+            [1, 1, 1, params["max_steps_in_episode"]],
             dtype=jnp.float32,
         )
-        return spaces.Box(low, high, (3,), jnp.float32)
+        return spaces.Box(low, high, (4,), jnp.float32)
 
     def state_space(self, params: dict):
         """State space of the environment."""

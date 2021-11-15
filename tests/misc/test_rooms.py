@@ -7,7 +7,7 @@ num_episodes, num_steps, tolerance = 10, 100, 1e-04
 def test_step():
     """Test a step transition for the env."""
     rng = jax.random.PRNGKey(0)
-    env_jax, env_params = gymnax.make("BernoulliBandit-misc")
+    env_jax, env_params = gymnax.make("FourRooms-misc")
 
     # Loop over test episodes
     for ep in range(num_episodes):
@@ -27,7 +27,7 @@ def test_reset():
     """Test reset obs/state is in space of OpenAI version."""
     # env_gym = gym.make(env_name)
     rng = jax.random.PRNGKey(0)
-    env_jax, env_params = gymnax.make("BernoulliBandit-misc")
+    env_jax, env_params = gymnax.make("FourRooms-misc")
     for ep in range(num_episodes):
         rng, rng_input = jax.random.split(rng)
         obs, state = env_jax.reset(rng_input, env_params)

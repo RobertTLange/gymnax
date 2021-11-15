@@ -27,6 +27,9 @@ from gymnax.environments.minatar import (
 )
 
 # =============================================================================
+from gymnax.environments.misc import BernoulliBandit, FourRooms
+
+# =============================================================================
 
 
 def make(env_id: str, seed_id: int = 0):  # noqa:C901
@@ -70,6 +73,12 @@ def make(env_id: str, seed_id: int = 0):  # noqa:C901
         env = MinSeaquest()
     elif env_id == "SpaceInvaders-MinAtar":
         env = MinSpaceInvaders()
+
+    # 4. Miscellanoues Environments
+    elif env_id == "BernoulliBandit-misc":
+        env = BernoulliBandit()
+    elif env_id == "FourRooms-misc":
+        env = FourRooms()
     else:
         raise ValueError("Environment ID is not registered.")
 
