@@ -22,7 +22,7 @@ action = env.action_space.sample(key_policy)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
-## Episode Scanning, Auto-Vectorization & Acceleration
+## Episode Rollouts, Vectorization & Acceleration
 - Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):
 
 ```python
@@ -77,7 +77,7 @@ env.step(key_step, state, action, env_params)
 </summary>
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- |
 | `Pendulum-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 | `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
 | `MountainCar-v0` | :heavy_check_mark:  | :heavy_check_mark: |
@@ -115,6 +115,18 @@ env.step(key_step, state, action, env_params)
 | `SpaceInvaders-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
 </details>
 
+<details><summary>
+Miscellaneous Environments.
+
+</summary>
+
+| Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
+| --- | --- | --- | --- |
+| `BernoulliBandit-misc` | :heavy_check_mark:  | :heavy_check_mark: |
+| `GaussianBandit-misc` | :heavy_check_mark:  | :heavy_check_mark: |
+| `FourRooms-misc` | :heavy_check_mark:  | :heavy_check_mark: |
+</details>
+
 ## Installation :memo:
 
 `gymnax` can be directly installed from PyPi.
@@ -130,22 +142,14 @@ cd gymnax
 pip install -e .
 ```
 
-Note that by default the `gymnax` installation will install CPU-only `jaxlib`. In order to install the CUDA-supported version, simply upgrade to the right `jaxlib`. E.g. for a CUDA 10.1 driver:
-
-```
-pip install --upgrade jaxlib==0.1.57+cuda101 -f https://storage.googleapis.com/jax-releases/jax_releases.html
-```
-
-You can find more details in the official [JAX documentation](https://github.com/google/jax#installation).
-
 ## Benchmarking Details :train:
 
 ![](docs/classic_runtime_benchmark.png)
 
 ## Examples :school_satchel:
-* :notebook: [Environment API](notebooks/classic_control.ipynb) - Check out the API and accelerated control environments.
-* :notebook: [Anakin Agent](examples/catch_anakin.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
-* :notebook: [CMA-ES](examples/catch_anakin.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
+* :notebook: [Environment API](notebooks/getting_started.ipynb) - Check out the API and accelerated control environments.
+* :notebook: [Anakin Agent](examples/getting_started.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
+* :notebook: [CMA-ES](examples/pendulum_cma_es.ipynb) - CMA-ES in JAX with vectorized population evaluation.
 
 ### Acknowledgements & Citing `gymnax` :pencil2:
 
@@ -161,20 +165,18 @@ To cite this repository:
 }
 ```
 
-Much of the design of `gymnax` has been inspired by the classic OpenAI gym RL environment API. It relies on bits and pieces from DeepMind's JAX eco-system. I am grateful to the JAX team and Matteo Hessel for their support and motivating words. Finally, a big thank you goes out to the TRC team at Google for granting me TPU quota for benchmarking `gymnax`.
+Much of the design of `gymnax` has been inspired by the classic OpenAI gym RL environment API and DeepMind's JAX eco-system. I am grateful to the JAX team and Matteo Hessel for their support and motivating words. Finally, a big thank you goes out to the TRC team at Google for granting me TPU quota for benchmarking `gymnax`.
 
 ## Notes, Development & Questions :question:
 
 - If you find a bug or want a new feature, feel free to contact me [@RobertTLange](https://twitter.com/RobertTLange) or create an issue :hugs:
 - You can check out the history of release modifications in [`CHANGELOG.md`](CHANGELOG.md) (*added, changed, fixed*).
 - You can find a set of open milestones in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 <details>
-  <summary>Important design questions (control flow, random numbers, episode termination). </summary>
+  <summary>Design Notes (control flow, random numbers, episode termination). </summary>
 
-1. All random number/PRNGKey handling has to be done explicitly outside of the environment function calls. This allows for more control and less opacity.
-2. Each step transition requires you to pass a set of environment parameters `step(., env_params, .)`, which specify the transition/reward function. We do not have to `jit` over this axis and hence you are flexible to incorporate environment non-stationarities of your choosing!
-3. Episode termination has to be handled outside of the simple transition call. This could for example be done using a placeholder output in the scanned function.
-4. The estimated speed gains may depend on your hardware as well as your specific policy parametrization. In general this will also depend on how much parallelism your algorithm utilizes and the episode length through which we `scan` + `jit`.
-5. Boolean conditionals are eliminated by replacing them by weighted sums. E.g.: `r_effective = r * (1 - done) + r_term * done`
-
+1. Each step transition requires you to pass a set of environment parameters `env.step(rng, state, action, env_params)`, which specify the  'hyperparameters' of the environment. You can
+2. `gymnax` automatically resets an episode after termination. This way we can ensure that trajectory rollouts with fixed amounts of steps continue rolling out transitions.
+3. If you want calculate evaluation returns simply mask the sum using the binary discount vector.
 </details>

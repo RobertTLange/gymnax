@@ -3,7 +3,7 @@
 ### Issues
 
 ##### New environment implementations
-`gymnax` is not intended to host *every* jittable RL environment. Instead, we focus on core/classic environments, which capture many dimensions of the RL problem formulation (exploration vs. exploitation, non-stationarity, generalization) and have an experimental/educational purpose. If you believe your favourite environment fits in this category, please open an issue.
+`gymnax` focuses on core/classic environments, which capture many dimensions of the RL problem formulation (exploration vs. exploitation, non-stationarity, generalization) and have an experimental/educational purpose. If you believe your favorite environment fits in this category, please open an issue.
 
 ### Pull requests
 
@@ -22,6 +22,8 @@ You can find a couple things that need to be tackled in the [issues of this proj
     - [ ] Framestacking
     - [ ] Reward normalization
     - [ ] Sticky actions
-    - [ ] Greyscaling and observation normalization
-- [ ] Environment registration ala `gym` factory so that users can easily write their own environments and create jittable instances via `gymnax.make(<env_name>)`
-- [ ] Better documentation via sphinx, code style and PEP setup.
+    - [ ] Greyscaling
+    - [ ] Observation normalization
+- [ ] Environment registration ala `gym` factory so that users can easily write their own environments and create jittable instances via `gymnax.make(<env_name>)`. Currently this is fairly minimal.
+- [ ] Better documentation via `mkdocs`.
+- [ ] More examples for doing cool stuff with vectorized environments.
