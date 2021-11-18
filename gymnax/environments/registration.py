@@ -27,7 +27,7 @@ from gymnax.environments.minatar import (
 )
 
 # =============================================================================
-from gymnax.environments.misc import BernoulliBandit, FourRooms
+from gymnax.environments.misc import BernoulliBandit, GaussianBandit, FourRooms
 
 # =============================================================================
 
@@ -76,6 +76,8 @@ def make(env_id: str, seed_id: int = 0):  # noqa:C901
 
     # 4. Miscellanoues Environments
     elif env_id == "BernoulliBandit-misc":
+        env = BernoulliBandit()
+    elif env_id == "GaussianBandit-misc":
         env = BernoulliBandit()
     elif env_id == "FourRooms-misc":
         env = FourRooms()
