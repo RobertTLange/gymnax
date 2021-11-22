@@ -43,7 +43,7 @@ class MinSpaceInvaders(environment.Environment):
             "shot_cool_down": 5,
             "enemy_move_interval": 12,
             "enemy_shot_interval": 10,
-            "max_steps_in_episode": 100,
+            "max_steps_in_episode": 1000,
         }
 
     def step_env(

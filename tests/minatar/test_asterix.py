@@ -1,24 +1,22 @@
 import jax
 import gymnax
-from gymnax.utils import (np_state_to_jax,
-                          minatar_action_map,
-                          assert_correct_transit,
-                          assert_correct_state)
+from gymnax.utils import (
+    np_state_to_jax,
+    minatar_action_map,
+    assert_correct_transit,
+    assert_correct_state,
+)
 
 from minatar.environment import Environment
-from gymnax.environments.minatar.asterix import (step_agent,
-                                                 step_entities,
-                                                 step_timers)
-from asterix_helpers import (step_agent_numpy,
-                             step_entities_numpy,
-                             step_timers_numpy)
+from gymnax.environments.minatar.asterix import step_agent, step_entities, step_timers
+from asterix_helpers import step_agent_numpy, step_entities_numpy, step_timers_numpy
 
-num_episodes, num_steps, tolerance = 10, 100, 1e-04
-env_name_gym, env_name_jax = 'asterix', 'Asterix-MinAtar'
+num_episodes, num_steps, tolerance = 10, 1000, 1e-04
+env_name_gym, env_name_jax = "asterix", "Asterix-MinAtar"
 
 
 def test_sub_steps():
-    """ Test a step transition for the env. """
+    """Test a step transition for the env."""
     rng = jax.random.PRNGKey(0)
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
     env_jax, env_params = gymnax.make(env_name_jax)
@@ -35,25 +33,22 @@ def test_sub_steps():
 
             step_agent_numpy(env_gym, action_gym)
             state_jax_a = step_agent(state, action)
-            assert_correct_state(env_gym, env_name_jax, state_jax_a,
-                                 tolerance)
+            assert_correct_state(env_gym, env_name_jax, state_jax_a, tolerance)
 
             r = step_entities_numpy(env_gym)
             state_jax_b, reward, done = step_entities(state_jax_a)
-            assert_correct_state(env_gym, env_name_jax, state_jax_b,
-                                 tolerance)
+            assert_correct_state(env_gym, env_name_jax, state_jax_b, tolerance)
 
             step_timers_numpy(env_gym)
             state_jax_c = step_timers(state_jax_b, env_params)
-            assert_correct_state(env_gym, env_name_jax, state_jax_c,
-                                 tolerance)
+            assert_correct_state(env_gym, env_name_jax, state_jax_c, tolerance)
             if env_gym.env.terminal:
                 break
 
 
 def test_reset():
-    """ Test reset obs/state is in space of NumPy version. """
-    #env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
+    """Test reset obs/state is in space of NumPy version."""
+    # env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
     rng = jax.random.PRNGKey(0)
     env_jax, env_params = gymnax.make(env_name_jax)
     for ep in range(num_episodes):
@@ -65,7 +60,7 @@ def test_reset():
 
 
 def test_get_obs():
-    """ Test observation function. """
+    """Test observation function."""
     rng = jax.random.PRNGKey(0)
     env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
     env_jax, env_params = gymnax.make(env_name_jax)
@@ -82,7 +77,7 @@ def test_get_obs():
             _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()
             state = np_state_to_jax(env_gym, env_name_jax)
-            obs_jax = env_jax.get_obs(state)
+            obs_jax = jax.jit(env_jax.get_obs)(state)
             # Check for correctness of observations
             assert (obs_gym == obs_jax).all()
             done_gym = env_gym.env.terminal

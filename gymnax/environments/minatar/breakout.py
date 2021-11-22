@@ -36,7 +36,7 @@ class MinBreakout(environment.Environment):
     @property
     def default_params(self):
         # Default environment parameters
-        return {"max_steps_in_episode": 100}
+        return {"max_steps_in_episode": 1000}
 
     def step_env(
         self,

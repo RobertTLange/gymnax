@@ -22,14 +22,14 @@ class MinAsterix(environment.Environment):
     - Termination occurs if the player makes contact with an enemy.
     - Enemy and treasure direction are indicated by a trail channel.
     - Difficulty periodically increases: the speed/spawn rate of enemies/treasure.
-    - Channels are encoded as follows: 'player':0, 'enemy':1, 'trail':2, 'gold':3
+    - Channels are encoded as: 'player':0, 'enemy':1, 'trail':2, 'gold':3
     - Observation has dimensionality (10, 10, 4)
-    - Actions are encoded as follows: ['n', 'l', 'u', 'r', 'd']
+    - Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
     """
 
     def __init__(self):
         super().__init__()
-        self.obs_shape = (10, 10, 5)
+        self.obs_shape = (10, 10, 4)
 
     @property
     def default_params(self):
@@ -40,7 +40,7 @@ class MinAsterix(environment.Environment):
             "init_spawn_speed": 10,
             "init_move_interval": 5,
             "shot_cool_down": 5,
-            "max_steps_in_episode": 2000,
+            "max_steps_in_episode": 1000,
         }
 
     def step_env(
@@ -101,7 +101,7 @@ class MinAsterix(environment.Environment):
     def get_obs(self, state: dict) -> Array:
         """Return observation from raw state trafo."""
         # Add a 5th channel to help with not used entities
-        obs = jnp.zeros(self.obs_shape, dtype=bool)
+        obs = jnp.zeros((10, 10, 5), dtype=bool)
         # Set the position of the agent in the grid
         obs = jax.ops.index_update(
             obs, jax.ops.index[state["player_y"], state["player_x"], 0], 1

@@ -39,8 +39,7 @@ class MinFreeway(environment.Environment):
         # Default environment parameters
         return {
             "player_speed": 3,
-            "time_limit": 2500,
-            "max_steps_in_episode": 100,
+            "max_steps_in_episode": 2500,
         }
 
     def step_env(
@@ -92,7 +91,6 @@ class MinFreeway(environment.Environment):
                 speeds, directions, jnp.zeros((8, 4), dtype=int), True
             ),
             "move_timer": params["player_speed"],
-            "terminate_timer": params["time_limit"],
             "time": 0,
             "terminal": False,
         }
@@ -152,7 +150,6 @@ class MinFreeway(environment.Environment):
                 "pos": spaces.Discrete(10),
                 "cars": spaces.Box(0, 1, jnp.zeros((8, 4)), dtype=jnp.int_),
                 "move_timer": spaces.Discrete(params["player_speed"]),
-                "terminate_timer": spaces.Discrete(params["time_limit"]),
                 "time": spaces.Discrete(params["max_steps_in_episode"]),
                 "terminal": spaces.Discrete(2),
             }
@@ -238,7 +235,6 @@ def step_cars(state: dict):
         )
     # 4. Update various timers
     state["move_timer"] -= state["move_timer"] > 0
-    state["terminate_timer"] -= 1
     return state
 
 

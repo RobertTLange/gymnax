@@ -1,10 +1,10 @@
-# Gymnax - Classic Gym Environments in JAX
+# Classic Gym Environments in JAX 🏎️
 [![Pyversions](https://img.shields.io/pypi/pyversions/gymnax.svg?style=flat-square)](https://pypi.python.org/pypi/gymnax)[![PyPI version](https://badge.fury.io/py/gymnax.svg)](https://badge.fury.io/py/gymnax)[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/getting_started.ipynb)
 <a href="https://github.com/RobertTLange/gymnax/blob/main/docs/gymnax_logo.png?raw=true"><img src="https://github.com/RobertTLange/gymnax/blob/main/docs/gymnax_logo.png?raw=true" width="200" align="right" /></a>
 
 Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap` to classic OpenAI gym environments.
 
-## Basic `gymnax` API Usage :stew:
+## Basic `gymnax` API Usage 🍲
 
 - Classic Open AI gym wrapper including `gymnax.make`, `env.reset`, `env.step`:
 
@@ -22,7 +22,7 @@ action = env.action_space(env_params).sample(key_policy)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
-## Episode Rollouts, Vectorization & Acceleration
+## Episode Rollouts, Vectorization & Acceleration 🏍️
 - Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):
 
 ```python
@@ -70,7 +70,7 @@ batch_rollout = jax.vmap(jit_rollout, in_axes=(0, None, None, None))
 env.step(key_step, state, action, env_params)
 ```
 
-## Implemented Accelerated Environments :earth_africa:
+## Implemented Accelerated Environments 🌍
 <details><summary>
 <a href="https://github.com/openai/gym/">Classic Control OpenAI gym</a> environments.
 
@@ -78,11 +78,11 @@ env.step(key_step, state, action, env_params)
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
 | --- | --- | --- | --- |
-| `Pendulum-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| `CartPole-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| `MountainCar-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| `MountainCarContinuous-v0` | :heavy_check_mark:  | :heavy_check_mark: |
-| `Acrobot-v1` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Pendulum-v0` | ✅  | ✅ |
+| `CartPole-v0` | ✅  | ✅ |
+| `MountainCar-v0` | ✅  | ✅ |
+| `MountainCarContinuous-v0` | ✅  | ✅ |
+| `Acrobot-v1` | ✅  | ✅ |
 </details>
 
 <details><summary>
@@ -92,13 +92,13 @@ env.step(key_step, state, action, env_params)
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
 | --- | --- | --- | --- |
-| `Catch-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
-| `DeepSea-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
-| `MemoryChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
-| `UmbrellaChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
-| `DiscountingChain-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
-| `MNISTBandit-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
-| `SimpleBandit-bsuite` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Catch-bsuite` | ✅  | ✅ |
+| `DeepSea-bsuite` | ✅  | ✅ |
+| `MemoryChain-bsuite` | ✅  | ✅ |
+| `UmbrellaChain-bsuite` | ✅  | ✅ |
+| `DiscountingChain-bsuite` | ✅  | ✅ |
+| `MNISTBandit-bsuite` | ✅  | ✅ |
+| `SimpleBandit-bsuite` | ✅  | ✅ |
 </details>
 
 <details><summary>
@@ -108,11 +108,11 @@ env.step(key_step, state, action, env_params)
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
 | --- | --- | --- | --- |
-| `Asterix-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
-| `Breakout-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
-| `Freeway-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
-| `Seaquest-MinAtar` | :x:  | :x: |
-| `SpaceInvaders-MinAtar` | :heavy_check_mark:  | :heavy_check_mark: |
+| `Asterix-MinAtar` | ✅  | ✅ |
+| `Breakout-MinAtar` | ✅  | ✅ |
+| `Freeway-MinAtar` | ✅  | ✅ |
+| `Seaquest-MinAtar` | ❌  | ❌ |
+| `SpaceInvaders-MinAtar` | ✅  | ✅ |
 </details>
 
 <details><summary>
@@ -122,12 +122,12 @@ Miscellaneous Environments.
 
 | Environment Name | Implemented | Tested | Single Step Speed Gain (JAX vs. NumPy) |
 | --- | --- | --- | --- |
-| `BernoulliBandit-misc` | :heavy_check_mark:  | :heavy_check_mark: |
-| `GaussianBandit-misc` | :heavy_check_mark:  | :heavy_check_mark: |
-| `FourRooms-misc` | :heavy_check_mark:  | :heavy_check_mark: |
+| `BernoulliBandit-misc` | ✅  | ✅ |
+| `GaussianBandit-misc` | ✅  | ✅ |
+| `FourRooms-misc` | ✅  | ✅ |
 </details>
 
-## Installation :memo:
+## Installation 📝
 
 `gymnax` can be directly installed from PyPi.
 
@@ -142,7 +142,7 @@ cd gymnax
 pip install -e .
 ```
 
-## Benchmarking Details :train:
+## Benchmarking Details 🚋
 
 ![](docs/classic_runtime_benchmark.png)
 
@@ -151,7 +151,7 @@ pip install -e .
 * :notebook: [Anakin Agent](examples/getting_started.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
 * :notebook: [CMA-ES](examples/pendulum_cma_es.ipynb) - CMA-ES in JAX with vectorized population evaluation.
 
-### Acknowledgements & Citing `gymnax` :pencil2:
+### Acknowledgements & Citing `gymnax` ✏️
 
 To cite this repository:
 
@@ -167,7 +167,7 @@ To cite this repository:
 
 Much of the design of `gymnax` has been inspired by the classic OpenAI gym RL environment API and DeepMind's JAX eco-system. I am grateful to the JAX team and Matteo Hessel for their support and motivating words. Finally, a big thank you goes out to the TRC team at Google for granting me TPU quota for benchmarking `gymnax`.
 
-## Notes, Development & Questions :question:
+## Notes, Development & Questions ❓
 
 - If you find a bug or want a new feature, feel free to contact me [@RobertTLange](https://twitter.com/RobertTLange) or create an issue :hugs:
 - You can check out the history of release modifications in [`CHANGELOG.md`](CHANGELOG.md) (*added, changed, fixed*).

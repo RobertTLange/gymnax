@@ -61,7 +61,7 @@ class MinSeaquest(environment.Environment):
             "enemy_move_interval": 5,
             "diver_move_interval": 5,
             "ramping": 1,
-            "max_steps_in_episode": 100,
+            "max_steps_in_episode": 1000,
         }
 
     def step_env(

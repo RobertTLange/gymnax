@@ -189,7 +189,6 @@ def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar"):  # noqa: C901
             "pos": env.env.pos,
             "cars": jnp.array(env.env.cars),
             "move_timer": env.env.move_timer,
-            "terminate_timer": env.env.terminate_timer,
             "time": 0,
             "terminal": 0,
         }
