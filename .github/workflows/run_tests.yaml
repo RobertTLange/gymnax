@@ -25,7 +25,7 @@ jobs:
     - name: Install testing and linting dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pytest-timeout
+        pip install pytest pytest-timeout pytest-cov
         pip install flake8 black
         pip install -e .
         pip install gym bsuite
@@ -44,7 +44,10 @@ jobs:
         flake8 ./gymnax --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run unit/integration tests
       run: |
-        python -m pytest tests/classic_control/ --all -vv
-        python -m pytest tests/bsuite/ -vv --all
-        # python -m pytest tests/minatar/ -vv
-        python -m pytest tests/misc/ --all -vv
+        python -m pytest --all -vv --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml --ignore=tests/minatar/
+    - name: "Upload coverage to Codecov"
+      uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+        fail_ci_if_error: true # optional (default = false)
+        verbose: true # optional (default = false)

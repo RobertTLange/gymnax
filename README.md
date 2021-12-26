@@ -1,5 +1,9 @@
 # Classic Gym Environments in JAX 🏎️
-[![Pyversions](https://img.shields.io/pypi/pyversions/gymnax.svg?style=flat-square)](https://pypi.python.org/pypi/gymnax)[![PyPI version](https://badge.fury.io/py/gymnax.svg)](https://badge.fury.io/py/gymnax)[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/getting_started.ipynb)
+[![Pyversions](https://img.shields.io/pypi/pyversions/gymnax.svg?style=flat-square)](https://pypi.python.org/pypi/gymnax)
+[![PyPI version](https://badge.fury.io/py/gymnax.svg)](https://badge.fury.io/py/evosax)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![codecov](https://codecov.io/gh/RobertTLange/gymnax/branch/main/graph/badge.svg?token=OKKPDRIQJR)](https://codecov.io/gh/RobertTLange/gymnax)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/getting_started.ipynb)
 <a href="https://github.com/RobertTLange/gymnax/blob/main/docs/gymnax_logo.png?raw=true"><img src="https://github.com/RobertTLange/gymnax/blob/main/docs/gymnax_logo.png?raw=true" width="200" align="right" /></a>
 
 Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap` to classic OpenAI gym environments.
