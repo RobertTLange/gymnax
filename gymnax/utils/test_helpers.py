@@ -4,29 +4,38 @@ import numpy as np
 from .state_translate import np_state_to_jax
 
 
-def assert_correct_state(env_gym, env_name: str, state_jax: dict, atol: float = 1e-4):
+def assert_correct_state(
+    env_gym, env_name: str, state_jax: dict, atol: float = 1e-4
+):
     """Check that numpy-based env state is same as JAX dict."""
     state_gym = np_state_to_jax(env_gym, env_name)
     # Loop over keys and assert that individual entries are same/close
     for k in state_gym.keys():
+        jax_value = getattr(state_jax, k)
         if k not in ["time", "terminal"]:
-            if type(state_jax[k]) in [
+            if type(jax_value) in [
                 jax.interpreters.xla._DeviceArray,
                 jaxlib.xla_extension.Buffer,
                 np.ndarray,
             ]:
-                assert np.allclose(state_jax[k], state_gym[k], atol=atol)
+                assert np.allclose(jax_value, state_gym[k], atol=atol)
             else:
                 # print(k, state_gym[k], state_jax[k])
                 # Exclude extra time and terminal state from assertion
                 if type(state_gym[k]) in [float, np.float64]:
-                    np.allclose(state_gym[k], state_jax[k], atol=atol)
+                    np.allclose(state_gym[k], jax_value, atol=atol)
                 else:
-                    assert state_gym[k] == state_jax[k]
+                    assert state_gym[k] == jax_value
 
 
 def assert_correct_transit(
-    obs_gym, reward_gym, done_gym, obs_jax, reward_jax, done_jax, atol: float = 1e-4
+    obs_gym,
+    reward_gym,
+    done_gym,
+    obs_jax,
+    reward_jax,
+    done_jax,
+    atol: float = 1e-4,
 ):
     """Check that obs, reward, done transition outputs are correct."""
     if not done_gym:

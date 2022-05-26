@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 
 
-def np_state_to_jax(env, env_name: str = "Pendulum-v1"):
+def np_state_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
     """Helper that collects env state into dict for JAX `step`."""
     if env_name in [
         "Pendulum-v1",
@@ -12,7 +12,7 @@ def np_state_to_jax(env, env_name: str = "Pendulum-v1"):
         "MountainCarContinuous-v0",
         "Acrobot-v1",
     ]:
-        state_gym_to_jax = control_np_to_jax(env, env_name)
+        state_gym_to_jax = control_np_to_jax(env, env_name, get_jax)
     elif env_name in [
         "Catch-bsuite",
         "DeepSea-bsuite",
@@ -32,19 +32,26 @@ def np_state_to_jax(env, env_name: str = "Pendulum-v1"):
     ]:
         state_gym_to_jax = minatar_np_to_jax(env, env_name)
     else:
-        raise ValueError(f"{env_name} is not in set of implemented" " environments.")
+        raise ValueError(
+            f"{env_name} is not in set of implemented environments."
+        )
     return state_gym_to_jax
 
 
-def control_np_to_jax(env, env_name: str = "Pendulum-v1"):
+def control_np_to_jax(
+    env, env_name: str = "Pendulum-v1", get_jax: bool = False
+):
     """Collects env state of classic_control into dict for JAX `step`."""
     if env_name == "Pendulum-v1":
         state_gym_to_jax = {
             "theta": env.state[0],
             "theta_dot": env.state[1],
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.classic_control.pendulum import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "CartPole-v1":
         state_gym_to_jax = {
             "x": env.state[0],
@@ -52,22 +59,35 @@ def control_np_to_jax(env, env_name: str = "Pendulum-v1"):
             "theta": env.state[2],
             "theta_dot": env.state[3],
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.classic_control.cartpole import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "MountainCar-v0":
         state_gym_to_jax = {
             "position": env.state[0],
             "velocity": env.state[1],
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.classic_control.mountain_car import (
+                EnvState,
+            )
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "MountainCarContinuous-v0":
         state_gym_to_jax = {
             "position": env.state[0],
             "velocity": env.state[1],
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.classic_control.continuous_mountain_car import (
+                EnvState,
+            )
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "Acrobot-v1":
         state_gym_to_jax = {
             "joint_angle1": env.state[0],
@@ -75,8 +95,11 @@ def control_np_to_jax(env, env_name: str = "Pendulum-v1"):
             "velocity_1": env.state[2],
             "velocity_2": env.state[3],
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.classic_control.acrobot import EnvState
+
+            return EnvState(**state_gym_to_jax)
     return state_gym_to_jax
 
 

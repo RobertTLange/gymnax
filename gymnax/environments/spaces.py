@@ -16,21 +16,21 @@ class Discrete(object):
 
     def __init__(self, num_categories: int):
         assert num_categories >= 0
-        self.num_categories = num_categories
+        self.n = num_categories
         self.shape = ()
         self.dtype = jnp.int_
 
     def sample(self, rng: PRNGKey) -> Array:
         """Sample random action uniformly from set of categorical choices."""
         return jax.random.randint(
-            rng, shape=self.shape, minval=0, maxval=self.num_categories - 1
+            rng, shape=self.shape, minval=0, maxval=self.n - 1
         ).astype(self.dtype)
 
     def contains(self, x: jnp.int_) -> bool:
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
-        range_cond = jnp.logical_and(x >= 0, x < self.num_categories)
+        range_cond = jnp.logical_and(x >= 0, x < self.n)
         return range_cond
 
 
@@ -41,7 +41,11 @@ class Box(object):
     """
 
     def __init__(
-        self, low: float, high: float, shape: Tuple[int], dtype: jnp.dtype = jnp.float32
+        self,
+        low: float,
+        high: float,
+        shape: Tuple[int],
+        dtype: jnp.dtype = jnp.float32,
     ):
         self.low = low
         self.high = high
@@ -58,7 +62,9 @@ class Box(object):
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
-        range_cond = jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
+        range_cond = jnp.logical_and(
+            jnp.all(x >= self.low), jnp.all(x <= self.high)
+        )
         return range_cond
 
 
@@ -86,7 +92,7 @@ class Dict(object):
         # Check for each space individually
         out_of_space = 0
         for k, space in self.spaces.items():
-            out_of_space += 1 - space.contains(x[k])
+            out_of_space += 1 - space.contains(getattr(x, k))
         return out_of_space == 0
 
 
@@ -101,7 +107,10 @@ class Tuple(object):
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
         return tuple(
-            [self.spaces[k].sample(key_split[i]) for i, k in enumerate(self.spaces)]
+            [
+                self.spaces[k].sample(key_split[i])
+                for i, k in enumerate(self.spaces)
+            ]
         )
 
     def contains(self, x: jnp.int_) -> bool:
