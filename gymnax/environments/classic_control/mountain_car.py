@@ -2,12 +2,28 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-
 from typing import Tuple
 import chex
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    position: float
+    velocity: float
+    time: int
+
+
+@struct.dataclass
+class EnvParams:
+    min_position: float = -1.2
+    max_position: float = 0.6
+    max_speed: float = 0.07
+    goal_position: float = 0.5
+    goal_velocity: float = 0.0
+    force: float = 0.001
+    gravity: float = 0.0025
+    max_steps_in_episode: int = 200
 
 
 class MountainCar(environment.Environment):
@@ -20,41 +36,31 @@ class MountainCar(environment.Environment):
         super().__init__()
 
     @property
-    def default_params(self):
+    def default_params(self) -> EnvParams:
         # Default environment parameters
-        return {
-            "min_position": -1.2,
-            "max_position": 0.6,
-            "max_speed": 0.07,
-            "goal_position": 0.5,
-            "goal_velocity": 0.0,
-            "force": 0.001,
-            "gravity": 0.0025,
-            "max_steps_in_episode": 200,
-        }
+        return EnvParams()
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: int, params: dict
-    ) -> Tuple[Array, dict, float, bool, dict]:
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
         velocity = (
-            state["velocity"]
-            + (action - 1) * params["force"]
-            - jnp.cos(3 * state["position"]) * params["gravity"]
+            state.velocity
+            + (action - 1) * params.force
+            - jnp.cos(3 * state.position) * params.gravity
         )
-        velocity = jnp.clip(velocity, -params["max_speed"], params["max_speed"])
-        position = state["position"] + velocity
-        position = jnp.clip(position, params["min_position"], params["max_position"])
+        velocity = jnp.clip(velocity, -params.max_speed, params.max_speed)
+        position = state.position + velocity
+        position = jnp.clip(position, params.min_position, params.max_position)
         velocity = velocity * (
-            1 - (position == params["min_position"]) * (velocity < 0)
+            1 - (position == params.min_position) * (velocity < 0)
         )
 
         reward = -1.0
 
         # Update state dict and evaluate termination conditions
-        state = {"position": position, "velocity": velocity, "time": state["time"] + 1}
+        state = EnvState(position, velocity, state.time + 1)
         done = self.is_terminal(state, params)
-        state["terminal"] = done
 
         return (
             lax.stop_gradient(self.get_obs(state)),
@@ -64,24 +70,26 @@ class MountainCar(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
-        state = {"position": init_state, "velocity": 0.0, "time": 0, "terminal": False}
+        state = EnvState(position=init_state, velocity=0.0, time=0)
         return self.get_obs(state), state
 
-    def get_obs(self, state: dict) -> Array:
+    def get_obs(self, state: EnvState) -> chex.Array:
         """Return observation from raw state trafo."""
-        return jnp.array([state["position"], state["velocity"]])
+        return jnp.array([state.position, state.velocity])
 
-    def is_terminal(self, state: dict, params: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done1 = (state["position"] >= params["goal_position"]) * (
-            state["velocity"] >= params["goal_velocity"]
+        done1 = (state.position >= params.goal_position) * (
+            state.velocity >= params.goal_velocity
         )
 
         # Check number of steps in episode termination condition
-        done_steps = state["time"] > params["max_steps_in_episode"]
+        done_steps = state.time > params.max_steps_in_episode
         done = jnp.logical_or(done1, done_steps)
         return done
 
@@ -91,30 +99,30 @@ class MountainCar(environment.Environment):
         return "MountainCar-v0"
 
     @property
-    def action_space(self):
+    def action_space(self) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 
-    def observation_space(self, params: dict):
+    def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         low = jnp.array(
-            [params["min_position"], -params["max_speed"]],
+            [params.min_position, -params.max_speed],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [params["max_position"], params["max_speed"]],
+            [params.max_position, params.max_speed],
             dtype=jnp.float32,
         )
         return spaces.Box(low, high, (2,), dtype=jnp.float32)
 
-    def state_space(self, params: dict):
+    def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
         low = jnp.array(
-            [params["min_position"], -params["max_speed"]],
+            [params.min_position, -params.max_speed],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [params["max_position"], params["max_speed"]],
+            [params.max_position, params.max_speed],
             dtype=jnp.float32,
         )
 
@@ -122,7 +130,6 @@ class MountainCar(environment.Environment):
             {
                 "position": spaces.Box(low[0], high[0], (), dtype=jnp.float32),
                 "velocity": spaces.Box(low[1], high[1], (), dtype=jnp.float32),
-                "time": spaces.Discrete(params["max_steps_in_episode"]),
-                "terminal": spaces.Discrete(2),
+                "time": spaces.Discrete(params.max_steps_in_episode),
             }
         )
