@@ -16,4 +16,4 @@ def pytest_generate_tests(metafunc):
                 ],
             )
         else:
-            metafunc.parametrize("env_name", ["CartPole-v1"])
+            metafunc.parametrize("env_name", ["Acrobot-v1"])
