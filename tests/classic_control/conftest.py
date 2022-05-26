@@ -16,4 +16,4 @@ def pytest_generate_tests(metafunc):
                 ],
             )
         else:
-            metafunc.parametrize("env_name", ["MountainCar-v0"])
+            metafunc.parametrize("env_name", ["MountainCarContinuous-v0"])

@@ -130,7 +130,7 @@ class CartPole(environment.Environment):
         return "CartPole-v1"
 
     @property
-    def action_space(self):
+    def action_space(self) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 
