@@ -5,12 +5,17 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     if "env_name" in metafunc.fixturenames:
         if metafunc.config.getoption("all"):
-            metafunc.parametrize("env_name", ["Catch-bsuite",
-                                              "DeepSea-bsuite",
-                                              "DiscountingChain-bsuite",
-                                              "MemoryChain-bsuite",
-                                              "UmbrellaChain-bsuite",
-                                              "MNISTBandit-bsuite",
-                                              "SimpleBandit-bsuite"])
+            metafunc.parametrize(
+                "env_name",
+                [
+                    "Catch-bsuite",
+                    "DeepSea-bsuite",
+                    "DiscountingChain-bsuite",
+                    "MemoryChain-bsuite",
+                    "UmbrellaChain-bsuite",
+                    "MNISTBandit-bsuite",
+                    "SimpleBandit-bsuite",
+                ],
+            )
         else:
-            metafunc.parametrize("env_name", ["SimpleBandit-bsuite"])
+            metafunc.parametrize("env_name", ["Catch-bsuite"])
