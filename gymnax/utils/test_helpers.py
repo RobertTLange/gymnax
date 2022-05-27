@@ -9,6 +9,7 @@ def assert_correct_state(
 ):
     """Check that numpy-based env state is same as JAX dict."""
     state_gym = np_state_to_jax(env_gym, env_name)
+    print(state_gym)
     # Loop over keys and assert that individual entries are same/close
     for k in state_gym.keys():
         jax_value = getattr(state_jax, k)

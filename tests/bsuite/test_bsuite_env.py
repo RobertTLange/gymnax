@@ -1,6 +1,10 @@
 import jax
 import gymnax
-from gymnax.utils import np_state_to_jax, assert_correct_transit, assert_correct_state
+from gymnax.utils import (
+    np_state_to_jax,
+    assert_correct_transit,
+    assert_correct_state,
+)
 
 from bsuite.environments import (
     catch,
@@ -28,7 +32,7 @@ def test_step(env_name: str):
         for s in range(num_steps):
             rng, key_action, key_step = jax.random.split(rng, 3)
             action = env_jax.action_space.sample(key_step)
-            state = np_state_to_jax(env_bsuite, env_name)
+            state = np_state_to_jax(env_bsuite, env_name, get_jax=True)
             timestep = env_bsuite.step(action)
             obs_bsuite, reward_bsuite, done_bsuite = (
                 timestep.observation,

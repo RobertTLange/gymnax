@@ -22,7 +22,7 @@ def np_state_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
         "MNISTBandit-bsuite",
         "SimpleBandit-bsuite",
     ]:
-        state_gym_to_jax = bsuite_np_to_jax(env, env_name)
+        state_gym_to_jax = bsuite_np_to_jax(env, env_name, get_jax)
     elif env_name in [
         "Asterix-MinAtar",
         "Breakout-MinAtar",
@@ -30,7 +30,8 @@ def np_state_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
         "Seaquest-MinAtar",
         "SpaceInvaders-MinAtar",
     ]:
-        state_gym_to_jax = minatar_np_to_jax(env, env_name)
+        state_gym_to_jax = minatar_np_to_jax(env, env_name, get_jax)
+    # TODO: Add misc/meta-learning environment testing
     else:
         raise ValueError(
             f"{env_name} is not in set of implemented environments."
@@ -103,7 +104,9 @@ def control_np_to_jax(
     return state_gym_to_jax
 
 
-def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite"):
+def bsuite_np_to_jax(
+    env, env_name: str = "Catch-bsuite", get_jax: bool = False
+):
     """Collects env state of bsuite into dict for JAX `step`."""
     if env_name == "Catch-bsuite":
         state_gym_to_jax = {
@@ -113,8 +116,11 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite"):
             "paddle_y": env._paddle_y,
             "prev_done": env._reset_next_step,
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.catch import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "DeepSea-bsuite":
         state_gym_to_jax = {
             "row": env._row,
@@ -125,15 +131,21 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite"):
             "optimal_return": env._optimal_return,
             "action_mapping": env._action_mapping,
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.deep_sea import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "DiscountingChain-bsuite":
         state_gym_to_jax = {
             "rewards": env._rewards,
             "context": env._context,
             "time": env._timestep,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.discounting_chain import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "MemoryChain-bsuite":
         state_gym_to_jax = {
             "context": env._context,
@@ -141,34 +153,48 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite"):
             "total_perfect": env._total_perfect,
             "total_regret": env._total_regret,
             "time": env._timestep,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.memory_chain import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "UmbrellaChain-bsuite":
         state_gym_to_jax = {
             "need_umbrella": env._need_umbrella,
             "has_umbrella": env._has_umbrella,
             "total_regret": env._total_regret,
             "time": env._timestep,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.umbrella_chain import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "MNISTBandit-bsuite":
         state_gym_to_jax = {
             "correct_label": env._correct_label,
             "regret": env._total_regret,
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.mnist import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "SimpleBandit-bsuite":
         state_gym_to_jax = {
             "rewards": env._rewards,
             "total_regret": env._total_regret,
             "time": 0,
-            "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.bsuite.bandit import EnvState
+
+            return EnvState(**state_gym_to_jax)
     return state_gym_to_jax
 
 
-def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar"):  # noqa: C901
+def minatar_np_to_jax(
+    env, env_name: str = "Asterix-MinAtar", get_jax: bool = False
+):
     """Collects env state of MinAtar into dict for JAX `step`."""
     if env_name == "Asterix-MinAtar":
         entities_array = jnp.zeros((8, 5), dtype=jnp.int32)
