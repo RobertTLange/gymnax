@@ -2,12 +2,23 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-
 from typing import Tuple
 import chex
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    need_umbrella: jnp.int32
+    has_umbrella: jnp.int32
+    total_regret: jnp.int32
+    time: int
+
+
+@struct.dataclass
+class EnvParams:
+    chain_length: int = 10
+    max_steps_in_episode: int = 100
 
 
 class UmbrellaChain(environment.Environment):
@@ -21,25 +32,24 @@ class UmbrellaChain(environment.Environment):
         self.n_distractor = n_distractor
 
     @property
-    def default_params(self):
+    def default_params(self) -> EnvParams:
         # Default environment parameters
-        return {
-            "chain_length": 10,
-            "max_steps_in_episode": 100,
-        }
+        return EnvParams()
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: int, params: dict
-    ) -> Tuple[Array, dict, float, bool, dict]:
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        has_umbrella = lax.select(state["time"] + 1 == 1, action, state["has_umbrella"])
+        has_umbrella = lax.select(
+            state.time + 1 == 1, action, state.has_umbrella
+        )
         reward = 0
         # Check if chain is full/up
-        chain_full = state["time"] + 1 == params["chain_length"]
-        has_need = has_umbrella == state["need_umbrella"]
+        chain_full = state.time + 1 == params.chain_length
+        has_need = has_umbrella == state.need_umbrella
         reward += jnp.logical_and(chain_full, has_need)
         reward -= jnp.logical_and(chain_full, 1 - has_need)
-        total_regret = state["total_regret"] + 2 * jnp.logical_and(
+        total_regret = state.total_regret + 2 * jnp.logical_and(
             chain_full, 1 - has_need
         )
 
@@ -48,15 +58,14 @@ class UmbrellaChain(environment.Environment):
         random_rew = 2 * jax.random.bernoulli(key_reward, p=0.5, shape=()) - 1
         reward += (1 - chain_full) * random_rew
 
-        state = {
-            "need_umbrella": jnp.int32(state["need_umbrella"]),
-            "has_umbrella": jnp.int32(has_umbrella),
-            "total_regret": jnp.int32(total_regret),
-            "time": state["time"] + 1,
-        }
+        state = EnvState(
+            jnp.int32(state.need_umbrella),
+            jnp.int32(has_umbrella),
+            jnp.int32(total_regret),
+            state.time + 1,
+        )
         # Check game condition & no. steps for termination condition
         done = self.is_terminal(state, params)
-        state["terminal"] = done
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state, key_distractor, params)),
@@ -66,29 +75,31 @@ class UmbrellaChain(environment.Environment):
             info,
         )
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         key_need, key_has, key_distractor = jax.random.split(key, 3)
-        need_umbrella = jnp.int32(jax.random.bernoulli(key_need, p=0.5, shape=()))
+        need_umbrella = jnp.int32(
+            jax.random.bernoulli(key_need, p=0.5, shape=())
+        )
         has_umbrella = jnp.int32(jax.random.bernoulli(key_has, p=0.5, shape=()))
-        state = {
-            "need_umbrella": need_umbrella,
-            "has_umbrella": has_umbrella,
-            "total_regret": 0,
-            "time": 0,
-            "terminal": False,
-        }
+        state = EnvState(need_umbrella, has_umbrella, 0, 0)
         return self.get_obs(state, key_distractor, params), state
 
-    def get_obs(self, state: dict, key: PRNGKey, params: dict) -> Array:
+    def get_obs(
+        self, state: EnvState, key: chex.PRNGKey, params: EnvParams
+    ) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(shape=(1, 3 + self.n_distractor), dtype=jnp.float32)
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 0], state["need_umbrella"])
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 1], state["has_umbrella"])
+        obs = jax.ops.index_update(
+            obs, jax.ops.index[0, 0], state.need_umbrella
+        )
+        obs = jax.ops.index_update(obs, jax.ops.index[0, 1], state.has_umbrella)
         obs = jax.ops.index_update(
             obs,
             jax.ops.index[0, 2],
-            1 - state["time"] / params["chain_length"],
+            1 - state.time / params.chain_length,
         )
         obs = jax.ops.index_update(
             obs,
@@ -97,10 +108,10 @@ class UmbrellaChain(environment.Environment):
         )
         return obs
 
-    def is_terminal(self, state: dict, params: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > params["max_steps_in_episode"]
-        done_chain = state["time"] == params["chain_length"]
+        done_steps = state.time > params.max_steps_in_episode
+        done_chain = state.time == params.chain_length
         return jnp.logical_or(done_steps, done_chain)
 
     @property
@@ -109,22 +120,21 @@ class UmbrellaChain(environment.Environment):
         return "UmbrellaChain-bsuite"
 
     @property
-    def action_space(self):
+    def action_space(self) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 
-    def observation_space(self, params: dict):
+    def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         return spaces.Box(0, 1, (1, 3 + self.n_distractor))
 
-    def state_space(self, params: dict):
+    def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
         return spaces.Dict(
             {
                 "need_umbrella": spaces.Discrete(2),
                 "has_umbrella": spaces.Discrete(2),
                 "total_regret": spaces.Discrete(1000),
-                "time": spaces.Discrete(params["max_steps_in_episode"]),
-                "terminal": spaces.Discrete(2),
+                "time": spaces.Discrete(params.max_steps_in_episode),
             }
         )
