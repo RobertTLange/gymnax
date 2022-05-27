@@ -1,11 +1,18 @@
 import jax
 import chex
-
 from typing import Tuple, Union
 from functools import partial
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    time: int
+
+
+@struct.dataclass
+class EnvParams:
+    max_steps_in_episode: int
 
 
 class Environment(object):
@@ -13,11 +20,17 @@ class Environment(object):
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
-        self, key: PRNGKey, state: dict, action: Union[int, float], params: dict
-    ) -> Tuple[Array, dict, float, bool]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, float, bool]:
         """Performs step transitions in the environment."""
         key, key_reset = jax.random.split(key)
-        obs_st, state_st, reward, done, info = self.step_env(key, state, action, params)
+        obs_st, state_st, reward, done, info = self.step_env(
+            key, state, action, params
+        )
         obs_re, state_re = self.reset_env(key_reset, params)
         # Auto-reset environment based on termination
         state = jax.tree_multimap(
@@ -27,30 +40,38 @@ class Environment(object):
         return obs, state, reward, done, info
 
     @partial(jax.jit, static_argnums=(0,))
-    def reset(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
         obs, state = self.reset_env(key, params)
         return obs, state
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: Union[int, float], params: dict
-    ) -> Tuple[Array, dict, float, bool]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Environment-specific step transition."""
         raise NotImplementedError
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Environment-specific reset."""
         raise NotImplementedError
 
-    def get_obs(self, state: dict) -> Array:
+    def get_obs(self, state: EnvState) -> chex.Array:
         """Applies observation function to state."""
         raise NotImplementedError
 
-    def is_terminal(self, state: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state transition is terminal."""
         raise NotImplementedError
 
-    def discount(self, state: dict, params: dict) -> float:
+    def discount(self, state: EnvState, params: EnvParams) -> float:
         """Return a discount of zero if the episode has terminated."""
         return jax.lax.select(self.is_terminal(state, params), 0.0, 1.0)
 

@@ -18,4 +18,4 @@ def pytest_generate_tests(metafunc):
                 ],
             )
         else:
-            metafunc.parametrize("env_name", ["Catch-bsuite"])
+            metafunc.parametrize("env_name", ["DiscountingChain-bsuite"])
