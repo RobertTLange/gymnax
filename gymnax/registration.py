@@ -1,4 +1,4 @@
-from gymnax.environments.classic_control import (
+from .environments.classic_control import (
     Pendulum,
     CartPole,
     MountainCar,
@@ -7,7 +7,7 @@ from gymnax.environments.classic_control import (
 )
 
 # =============================================================================
-from gymnax.environments.bsuite import (
+from .environments.bsuite import (
     Catch,
     DeepSea,
     DiscountingChain,
@@ -18,7 +18,7 @@ from gymnax.environments.bsuite import (
 )
 
 # =============================================================================
-from gymnax.environments.minatar import (
+from .environments.minatar import (
     MinAsterix,
     MinBreakout,
     MinFreeway,
@@ -27,7 +27,7 @@ from gymnax.environments.minatar import (
 )
 
 # =============================================================================
-from gymnax.environments.misc import BernoulliBandit, GaussianBandit, FourRooms
+from .environments.misc import BernoulliBandit, GaussianBandit, FourRooms
 
 # =============================================================================
 
@@ -78,7 +78,7 @@ def make(env_id: str, seed_id: int = 0):  # noqa:C901
     elif env_id == "BernoulliBandit-misc":
         env = BernoulliBandit()
     elif env_id == "GaussianBandit-misc":
-        env = BernoulliBandit()
+        env = GaussianBandit()
     elif env_id == "FourRooms-misc":
         env = FourRooms()
     else:
