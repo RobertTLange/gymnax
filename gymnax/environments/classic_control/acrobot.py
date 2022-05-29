@@ -150,8 +150,7 @@ class Acrobot(environment.Environment):
         """Environment name."""
         return "Acrobot-v1"
 
-    @property
-    def action_space(self):
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 

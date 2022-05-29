@@ -80,17 +80,14 @@ class Environment(object):
         """Environment name."""
         return type(self).__name__
 
-    @property
-    def action_space(self):
+    def action_space(self, params: EnvParams):
         """Action space of the environment."""
         raise NotImplementedError
 
-    @property
-    def observation_space(self):
+    def observation_space(self, params: EnvParams):
         """Observation space of the environment."""
         raise NotImplementedError
 
-    @property
-    def state_space(self):
+    def state_space(self, params: EnvParams):
         """State space of the environment."""
         raise NotImplementedError

@@ -98,8 +98,7 @@ class MountainCar(environment.Environment):
         """Environment name."""
         return "MountainCar-v0"
 
-    @property
-    def action_space(self) -> spaces.Discrete:
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 

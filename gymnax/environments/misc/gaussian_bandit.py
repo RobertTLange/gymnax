@@ -97,8 +97,7 @@ class GaussianBandit(environment.Environment):
         """Environment name."""
         return "GaussianBandit-misc"
 
-    @property
-    def action_space(self) -> spaces.Discrete:
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 
