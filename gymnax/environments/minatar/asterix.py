@@ -10,6 +10,9 @@ Array = chex.Array
 PRNGKey = chex.PRNGKey
 
 
+# TODO: EnvParams, EnvState, num_actions
+
+
 class MinAsterix(environment.Environment):
     """
     JAX Compatible version of Asterix MinAtar environment. Source:

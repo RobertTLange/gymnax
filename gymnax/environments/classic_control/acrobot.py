@@ -150,6 +150,11 @@ class Acrobot(environment.Environment):
         """Environment name."""
         return "Acrobot-v1"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 3
+
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)

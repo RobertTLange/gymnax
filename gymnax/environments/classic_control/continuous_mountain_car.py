@@ -106,6 +106,11 @@ class ContinuousMountainCar(environment.Environment):
         """Environment name."""
         return "ContinuousMountainCar-v0"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 1
+
     def action_space(self, params: EnvParams) -> spaces.Box:
         """Action space of the environment."""
         return spaces.Box(

@@ -120,6 +120,11 @@ class MemoryChain(environment.Environment):
         """Environment name."""
         return "MemoryChain-bsuite"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 2
+
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)

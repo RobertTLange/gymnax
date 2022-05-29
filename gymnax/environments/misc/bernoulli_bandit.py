@@ -13,7 +13,7 @@ class EnvState:
     last_reward: int
     exp_reward_best: float
     reward_probs: chex.Array
-    time: int
+    time: float
 
 
 @struct.dataclass
@@ -98,9 +98,14 @@ class BernoulliBandit(environment.Environment):
         """Environment name."""
         return "BernoulliBandit-misc"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 2
+
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
-        return spaces.Discrete(2)
+        return spaces.Discrete(self.num_actions)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
@@ -109,7 +114,7 @@ class BernoulliBandit(environment.Environment):
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [1, 1, 1, params.max_steps_in_episode],
+            [self.num_actions, 1, 1, params.max_steps_in_episode],
             dtype=jnp.float32,
         )
         return spaces.Box(low, high, (4,), jnp.float32)
@@ -118,7 +123,7 @@ class BernoulliBandit(environment.Environment):
         """State space of the environment."""
         return spaces.Dict(
             {
-                "last_action": spaces.Discrete(2),
+                "last_action": spaces.Discrete(self.num_actions),
                 "last_reward": spaces.Discrete(2),
                 "exp_reward_best": spaces.Box(0, 1, (2,), jnp.float32),
                 "reward_probs": spaces.Box(0, 1, (2,), jnp.float32),
@@ -128,7 +133,7 @@ class BernoulliBandit(environment.Environment):
 
 
 def time_normalization(
-    t: int, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
+    t: float, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
 ) -> float:
     """Normalize time integer into range given max time."""
     return (max_lim - min_lim) * t / t_max + min_lim

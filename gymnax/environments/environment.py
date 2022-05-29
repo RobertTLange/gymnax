@@ -80,6 +80,11 @@ class Environment(object):
         """Environment name."""
         return type(self).__name__
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        raise NotImplementedError
+
     def action_space(self, params: EnvParams):
         """Action space of the environment."""
         raise NotImplementedError

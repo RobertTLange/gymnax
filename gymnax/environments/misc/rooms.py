@@ -80,7 +80,7 @@ class FourRooms(environment.Environment):
             jax.random.uniform(key_random, ()) < params.fail_prob * 4 / 3
         )
         action = jax.lax.select(
-            choose_random, self.action_space.sample(key_action), action
+            choose_random, self.action_space(params).sample(key_action), action
         )
 
         p = state.pos + self.directions[action]
@@ -139,6 +139,11 @@ class FourRooms(environment.Environment):
     def name(self) -> str:
         """Environment name."""
         return "FourRooms-misc"
+
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 4
 
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""

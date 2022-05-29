@@ -27,7 +27,12 @@ from .environments.minatar import (
 )
 
 # =============================================================================
-from .environments.misc import BernoulliBandit, GaussianBandit, FourRooms
+from .environments.misc import (
+    BernoulliBandit,
+    GaussianBandit,
+    FourRooms,
+    MetaMaze,
+)
 
 # =============================================================================
 
@@ -81,6 +86,8 @@ def make(env_id: str, env_kwargs: dict = {}):
         env = GaussianBandit(**env_kwargs)
     elif env_id == "FourRooms-misc":
         env = FourRooms(**env_kwargs)
+    elif env_id == "MetaMaze-misc":
+        env = MetaMaze(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 

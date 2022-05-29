@@ -12,8 +12,7 @@ class EnvState:
     last_action: int
     last_reward: float
     mu: float
-    reward_probs: chex.Array
-    time: int
+    time: float
 
 
 @struct.dataclass
@@ -47,7 +46,7 @@ class GaussianBandit(environment.Environment):
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Sample bernoulli reward, increase counter, construct input."""
         # Reparametrization sampling of reward
-        reward_arm_1 = 0
+        reward_arm_1 = 0.0
         reward_arm_2 = (
             state.mu
             + jax.random.normal(key, ()).astype(jnp.float32) * params.sigma_l
@@ -55,10 +54,10 @@ class GaussianBandit(environment.Environment):
         reward = jax.lax.select(action == 0, reward_arm_1, reward_arm_2)
 
         # Update state dict and evaluate termination conditions
-        state = EnvState(action, reward, mu, state.time + 1)
+        state = EnvState(action, reward, state.mu, state.time + 1)
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state)),
+            lax.stop_gradient(self.get_obs(state, params)),
             lax.stop_gradient(state),
             reward,
             done,
@@ -75,12 +74,14 @@ class GaussianBandit(environment.Environment):
             + jax.random.normal(key, ()).astype(jnp.float32) * params.sigma_p
         )
 
-        state = EnvState(0, 0.0, mu, 0)
-        return self.get_obs(state), state
+        state = EnvState(0, 0.0, mu, 0.0)
+        return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Concatenate reward, one-hot action and time stamp."""
-        action_one_hot = jax.nn.one_hot(state.last_action, 2).squeeze()
+        action_one_hot = jax.nn.one_hot(
+            state.last_action, self.num_actions
+        ).squeeze()
         time_rep = jax.lax.select(
             params.normalize_time, time_normalization(state.time), state.time
         )
@@ -97,6 +98,11 @@ class GaussianBandit(environment.Environment):
         """Environment name."""
         return "GaussianBandit-misc"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 2
+
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
@@ -108,7 +114,7 @@ class GaussianBandit(environment.Environment):
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [1, 1, 1, params.max_steps_in_episode],
+            [self.num_actions, 1, 1, params.max_steps_in_episode],
             dtype=jnp.float32,
         )
         return spaces.Box(low, high, (4,), jnp.float32)
@@ -117,8 +123,13 @@ class GaussianBandit(environment.Environment):
         """State space of the environment."""
         return spaces.Dict(
             {
-                "last_action": spaces.Discrete(2),
-                "last_reward": spaces.Discrete(2),
+                "last_action": spaces.Discrete(self.num_actions),
+                "last_reward": spaces.Box(
+                    -jnp.finfo(jnp.float32).max,
+                    jnp.finfo(jnp.float32).max,
+                    (),
+                    jnp.float32,
+                ),
                 "mu": spaces.Box(
                     -jnp.finfo(jnp.float32).max,
                     jnp.finfo(jnp.float32).max,
@@ -131,7 +142,7 @@ class GaussianBandit(environment.Environment):
 
 
 def time_normalization(
-    t: int, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
+    t: float, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
 ) -> float:
     """Normalize time integer into range given max time."""
     return (max_lim - min_lim) * t / t_max + min_lim

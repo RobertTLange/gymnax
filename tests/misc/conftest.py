@@ -7,7 +7,12 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.getoption("all"):
             metafunc.parametrize(
                 "env_name",
-                ["BernoulliBandit-misc", "GaussianBandit-misc", "FourRooms-misc"],
+                [
+                    "BernoulliBandit-misc",
+                    "GaussianBandit-misc",
+                    "FourRooms-misc",
+                    "MetaMaze-misc",
+                ],
             )
         else:
-            metafunc.parametrize("env_name", ["BernoulliBandit-misc"])
+            metafunc.parametrize("env_name", ["MetaMaze-misc"])

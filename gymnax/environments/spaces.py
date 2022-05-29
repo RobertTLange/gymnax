@@ -4,8 +4,8 @@ import chex
 import jax
 import jax.numpy as jnp
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+# TODO: Add abstract class for general space (2 methods - sample, contains)
 
 
 class Discrete(object):
@@ -20,7 +20,7 @@ class Discrete(object):
         self.shape = ()
         self.dtype = jnp.int_
 
-    def sample(self, rng: PRNGKey) -> Array:
+    def sample(self, rng: chex.PRNGKey) -> chex.Array:
         """Sample random action uniformly from set of categorical choices."""
         return jax.random.randint(
             rng, shape=self.shape, minval=0, maxval=self.n - 1
@@ -52,7 +52,7 @@ class Box(object):
         self.shape = shape
         self.dtype = dtype
 
-    def sample(self, rng: PRNGKey) -> Array:
+    def sample(self, rng: chex.PRNGKey) -> chex.Array:
         """Sample random action uniformly from 1D continuous range."""
         return jax.random.uniform(
             rng, shape=self.shape, minval=self.low, maxval=self.high
@@ -75,7 +75,7 @@ class Dict(object):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
-    def sample(self, rng: PRNGKey) -> dict:
+    def sample(self, rng: chex.PRNGKey) -> dict:
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
         return OrderedDict(
@@ -103,7 +103,7 @@ class Tuple(object):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
-    def sample(self, rng: PRNGKey) -> Tuple[Array]:
+    def sample(self, rng: chex.PRNGKey) -> Tuple[chex.Array]:
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
         return tuple(

@@ -97,6 +97,11 @@ class DiscountingChain(environment.Environment):
         """Environment name."""
         return "DiscountingChain-v0"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return self.n_actions
+
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(self.n_actions)
