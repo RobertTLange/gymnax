@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-from typing import Tuple, List
+from typing import Tuple
 import chex
 from flax import struct
 
@@ -18,10 +18,11 @@ class EnvState:
 
 @struct.dataclass
 class EnvParams:
-    reward: float = 1.0
-    punishment: float = 1.0
+    # github.com/uber-research/backpropamine/blob/180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431
+    reward: float = 10.0
+    punishment: float = 0.0
     normalize_time: bool = False
-    max_steps_in_episode: int = 500
+    max_steps_in_episode: int = 200
 
 
 def generate_maze_layout(maze_size: int, rf_size: int) -> chex.Array:
@@ -69,9 +70,12 @@ class MetaMaze(environment.Environment):
         assert rf_size % 2 != 0 and rf_size > 1
         self.maze_size = maze_size
         self.rf_size = rf_size
+        # Offset of walls top/bottom and left/right
         self.rf_off = jnp.int32((self.rf_size - 1) / 2)
         # Generate the maze layout
         self.env_map = generate_maze_layout(maze_size, rf_size)
+        center = jnp.int32((self.env_map.shape[0] - 1) / 2 + self.rf_off - 1)
+        self.center_position = jnp.array([center, center])
         self.wall_map = 1 - self.env_map
         coords = []
         # Get all walkable positions or positions that can be goals
@@ -105,15 +109,11 @@ class MetaMaze(environment.Environment):
             + (1 - in_map) * params.punishment  # Add punishment for wall
         )
 
-        # Sample a new starting position and goal
-        rng_goal, rng_pos = jax.random.split(key, 2)
-        goal_sampled = reset_goal(rng_goal, self.available_goals, params)
-        pos_sampled = reset_pos(rng_pos, self.coords, goal_sampled)
-
-        new_goal = jax.lax.select(goal_reached, goal_sampled, state.goal)
+        # Sample a new starting position for case when goal is reached
+        pos_sampled = reset_pos(key, self.coords)
         new_pos = jax.lax.select(goal_reached, pos_sampled, new_pos)
         # Update state dict and evaluate termination conditions
-        state = EnvState(action, reward, new_pos, new_goal, state.time + 1)
+        state = EnvState(action, reward, new_pos, state.goal, state.time + 1)
         done = self.is_terminal(state, params)
         return (
             lax.stop_gradient(self.get_obs(state, params)),
@@ -128,15 +128,14 @@ class MetaMaze(environment.Environment):
     ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Reset both the agents position and the goal location
-        rng_goal, rng_pos = jax.random.split(key, 2)
-        goal = reset_goal(rng_goal, self.available_goals, params)
-        pos = reset_pos(rng_pos, self.coords, goal)
-        state = EnvState(0, 0.0, pos, goal, 0.0)
+        goal = reset_goal(key, self.available_goals, params)
+        # Initialize agent always at fixed center position of maze
+        state = EnvState(0, 0.0, self.center_position, goal, 0.0)
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Return observation from raw state trafo."""
-        rf_obs = rf_obs = jax.lax.dynamic_slice(
+        rf_obs = jax.lax.dynamic_slice(
             self.wall_map,
             (state.pos[0] - self.rf_off, state.pos[1] - self.rf_off),
             (self.rf_size, self.rf_size),
@@ -250,15 +249,9 @@ def reset_goal(
     return goal
 
 
-def reset_pos(
-    rng: chex.PRNGKey, coords: chex.Array, goal: chex.Array
-) -> chex.Array:
+def reset_pos(rng: chex.PRNGKey, coords: chex.Array) -> chex.Array:
     """Reset the position of the agent."""
-    pos_index = jax.random.randint(rng, (), 0, coords.shape[0] - 1)
-    collision = jnp.logical_and(
-        coords[pos_index][0] == goal[0], coords[pos_index][1] == goal[1]
-    )
-    pos_index = jax.lax.select(collision, coords.shape[0] - 1, pos_index)
+    pos_index = jax.random.randint(rng, (), 0, coords.shape[0])
     return coords[pos_index][:]
 
 
