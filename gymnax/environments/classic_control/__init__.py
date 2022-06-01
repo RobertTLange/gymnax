@@ -7,4 +7,10 @@ from gymnax.environments.classic_control.continuous_mountain_car import (
 from gymnax.environments.classic_control.acrobot import Acrobot
 
 
-__all__ = ["Pendulum", "CartPole", "MountainCar", "ContinuousMountainCar", "Acrobot"]
+__all__ = [
+    "Pendulum",
+    "CartPole",
+    "MountainCar",
+    "ContinuousMountainCar",
+    "Acrobot",
+]

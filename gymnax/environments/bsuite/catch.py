@@ -2,12 +2,24 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-
 from typing import Tuple
 import chex
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    ball_x: int
+    ball_y: int
+    paddle_x: int
+    paddle_y: int
+    prev_done: bool
+    time: int
+
+
+@struct.dataclass
+class EnvParams:
+    max_steps_in_episode: int = 100000000
 
 
 class Catch(environment.Environment):
@@ -22,47 +34,41 @@ class Catch(environment.Environment):
         self.columns = columns
 
     @property
-    def default_params(self):
+    def default_params(self) -> EnvParams:
         # Default environment parameters
-        return {"max_steps_in_episode": 100000000}
+        return EnvParams()
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: int, params: dict
-    ) -> Tuple[Array, dict, float, bool, dict]:
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
         # Sample new init state each step & use if there was a reset!
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
             key, self.rows, self.columns
         )
-        prev_done = state["prev_done"]
+        prev_done = state.prev_done
 
         # Move the paddle + drop the ball.
         dx = action - 1  # [-1, 0, 1] = Left, no-op, right.
         paddle_x = (
-            jnp.clip(state["paddle_x"] + dx, 0, self.columns - 1) * (1 - prev_done)
+            jnp.clip(state.paddle_x + dx, 0, self.columns - 1) * (1 - prev_done)
             + paddle_x * prev_done
         )
-        ball_y = (state["ball_y"] + 1) * (1 - prev_done) + ball_y * prev_done
-        ball_x = state["ball_x"] * (1 - prev_done) + ball_x * prev_done
-        paddle_y = state["paddle_y"] * (1 - prev_done) + paddle_y * prev_done
+        ball_y = (state.ball_y + 1) * (1 - prev_done) + ball_y * prev_done
+        ball_x = state.ball_x * (1 - prev_done) + ball_x * prev_done
+        paddle_y = state.paddle_y * (1 - prev_done) + paddle_y * prev_done
 
         # Rewrite reward as boolean multiplication
         prev_done = ball_y == paddle_y
         catched = paddle_x == ball_x
         reward = prev_done * (1.0 * catched + -1.0 * (1 - catched))
 
-        state = {
-            "ball_x": ball_x,
-            "ball_y": ball_y,
-            "paddle_x": paddle_x,
-            "paddle_y": paddle_y,
-            "prev_done": prev_done,
-            "time": state["time"] + 1,
-        }
+        state = EnvState(
+            ball_x, ball_y, paddle_x, paddle_y, prev_done, state.time + 1
+        )
 
         # Check number of steps in episode termination condition
         done = self.is_terminal(state, params)
-        state["terminal"] = done
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
@@ -71,38 +77,32 @@ class Catch(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
             key, self.rows, self.columns
         )
         # Last two state vector correspond to timestep and done
-        state = {
-            "ball_x": ball_x,
-            "ball_y": ball_y,
-            "paddle_x": paddle_x,
-            "paddle_y": paddle_y,
-            "prev_done": False,
-            "time": 0,
-            "terminal": False,
-        }
+        state = EnvState(ball_x, ball_y, paddle_x, paddle_y, False, 0)
         return self.get_obs(state), state
 
-    def get_obs(self, state: dict) -> Array:
+    def get_obs(self, state: EnvState) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((self.rows, self.columns))
         obs = jax.ops.index_update(
-            obs, jax.ops.index[state["ball_y"], state["ball_x"]], 1.0
+            obs, jax.ops.index[state.ball_y, state.ball_x], 1.0
         )
         obs = jax.ops.index_update(
-            obs, jax.ops.index[state["paddle_y"], state["paddle_x"]], 1.0
+            obs, jax.ops.index[state.paddle_y, state.paddle_x], 1.0
         )
         return obs
 
-    def is_terminal(self, state: dict, params: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done_loose = state["ball_y"] == self.rows - 1
-        done_steps = state["time"] > params["max_steps_in_episode"]
+        done_loose = state.ball_y == self.rows - 1
+        done_steps = state.time > params.max_steps_in_episode
         done = jnp.logical_or(done_loose, done_steps)
         return done
 
@@ -112,15 +112,19 @@ class Catch(environment.Environment):
         return "Catch-bsuite"
 
     @property
-    def action_space(self):
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 3
+
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 
-    def observation_space(self, params: dict):
+    def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         return spaces.Box(0, 1, (self.rows, self.columns), dtype=jnp.int_)
 
-    def state_space(self, params: dict):
+    def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
         return spaces.Dict(
             {
@@ -129,13 +133,14 @@ class Catch(environment.Environment):
                 "paddle_x": spaces.Discrete(self.columns),
                 "paddle_y": spaces.Discrete(self.rows),
                 "prev_done": spaces.Discrete(2),
-                "time": spaces.Discrete(params["max_steps_in_episode"]),
-                "terminal": spaces.Discrete(2),
+                "time": spaces.Discrete(params.max_steps_in_episode),
             }
         )
 
 
-def sample_init_state(key, rows: int, columns: int):
+def sample_init_state(
+    key: chex.PRNGKey, rows: int, columns: int
+) -> Tuple[int, int, int, int]:
     """Sample a new initial state."""
     # high = jnp.zeros((params["rows"], params["columns"]))
     ball_x = jax.random.randint(key, shape=(), minval=0, maxval=columns)

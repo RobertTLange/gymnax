@@ -1,4 +1,4 @@
-from gymnax.environments import make
+from .registration import make
 
 
 __all__ = [

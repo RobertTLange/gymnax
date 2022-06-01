@@ -2,12 +2,30 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-
 from typing import Tuple
 import chex
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    position: float
+    velocity: float
+    time: int
+
+
+@struct.dataclass
+class EnvParams:
+    min_action: float = -1.0
+    max_action: float = 1.0
+    min_position: float = -1.2
+    max_position: float = 0.6
+    max_speed: float = 0.07
+    goal_position: float = 0.45
+    goal_velocity: float = 0.0
+    power: float = 0.0015
+    gravity: float = 0.0025
+    max_steps_in_episode: int = 999
 
 
 class ContinuousMountainCar(environment.Environment):
@@ -20,51 +38,39 @@ class ContinuousMountainCar(environment.Environment):
         super().__init__()
 
     @property
-    def default_params(self):
+    def default_params(self) -> EnvParams:
         # Default environment parameters
-        return {
-            "min_action": -1.0,
-            "max_action": 1,
-            "min_position": -1.2,
-            "max_position": 0.6,
-            "max_speed": 0.07,
-            "goal_position": 0.45,
-            "goal_velocity": 0.0,
-            "power": 0.0015,
-            "gravity": 0.0025,
-            "max_steps_in_episode": 999,
-        }
+        return EnvParams()
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: float, params: dict
-    ) -> Tuple[Array, dict, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: float,
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        force = jnp.clip(action, params["min_action"], params["max_action"])
+        force = jnp.clip(action, params.min_action, params.max_action)
         velocity = (
-            state["velocity"]
-            + force * params["power"]
-            - jnp.cos(3 * state["position"]) * params["gravity"]
+            state.velocity
+            + force * params.power
+            - jnp.cos(3 * state.position) * params.gravity
         )
-        velocity = jnp.clip(velocity, -params["max_speed"], params["max_speed"])
-        position = state["position"] + velocity
-        position = jnp.clip(position, params["min_position"], params["max_position"])
+        velocity = jnp.clip(velocity, -params.max_speed, params.max_speed)
+        position = state.position + velocity
+        position = jnp.clip(position, params.min_position, params.max_position)
         velocity = velocity * (
-            1 - (position >= params["goal_position"]) * (velocity < 0)
+            1 - (position >= params.goal_position) * (velocity < 0)
         )
 
         reward = -0.1 * action ** 2 + 100 * (
-            (position >= params["goal_position"])
-            * (velocity >= params["goal_velocity"])
+            (position >= params.goal_position)
+            * (velocity >= params.goal_velocity)
         )
 
         # Update state dict and evaluate termination conditions
-        state = {
-            "position": position.squeeze(),
-            "velocity": velocity.squeeze(),
-            "time": state["time"] + 1,
-        }
+        state = EnvState(position.squeeze(), velocity.squeeze(), state.time + 1)
         done = self.is_terminal(state, params)
-        state["terminal"] = done
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
@@ -73,23 +79,25 @@ class ContinuousMountainCar(environment.Environment):
             {"discount": self.discount(state, params)},
         )
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
-        state = {"position": init_state, "velocity": 0.0, "time": 0, "terminal": False}
+        state = EnvState(position=init_state, velocity=0.0, time=0)
         return self.get_obs(state), state
 
-    def get_obs(self, state: dict) -> Array:
+    def get_obs(self, state: EnvState) -> chex.Array:
         """Return observation from raw state trafo."""
-        return jnp.array([state["position"], state["velocity"]]).squeeze()
+        return jnp.array([state.position, state.velocity]).squeeze()
 
-    def is_terminal(self, state: dict, params: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done1 = (state["position"] >= params["goal_position"]) * (
-            state["velocity"] >= params["goal_velocity"]
+        done1 = (state.position >= params.goal_position) * (
+            state.velocity >= params.goal_velocity
         )
         # Check number of steps in episode termination condition
-        done_steps = state["time"] > params["max_steps_in_episode"]
+        done_steps = state.time > params.max_steps_in_episode
         done = jnp.logical_or(done1, done_steps)
         return done.squeeze()
 
@@ -99,41 +107,44 @@ class ContinuousMountainCar(environment.Environment):
         return "ContinuousMountainCar-v0"
 
     @property
-    def action_space(self, params: dict):
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 1
+
+    def action_space(self, params: EnvParams) -> spaces.Box:
         """Action space of the environment."""
         return spaces.Box(
-            low=params["min_action"],
-            high=params["max_action"],
+            low=params.min_action,
+            high=params.max_action,
             shape=(),
         )
 
-    def observation_space(self, params: dict):
+    def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         low = jnp.array(
-            [params["min_position"], -params["max_speed"]],
+            [params.min_position, -params.max_speed],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [params["max_position"], params["max_speed"]],
+            [params.max_position, params.max_speed],
             dtype=jnp.float32,
         )
         return spaces.Box(low, high, shape=(2,), dtype=jnp.float32)
 
-    def state_space(self, params: dict):
+    def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
         low = jnp.array(
-            [params["min_position"], -params["max_speed"]],
+            [params.min_position, -params.max_speed],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [params["max_position"], params["max_speed"]],
+            [params.max_position, params.max_speed],
             dtype=jnp.float32,
         )
         return spaces.Dict(
             {
                 "position": spaces.Box(low[0], high[0], (), dtype=jnp.float32),
                 "velocity": spaces.Box(low[1], high[1], (), dtype=jnp.float32),
-                "time": spaces.Discrete(params["max_steps_in_episode"]),
-                "terminal": spaces.Discrete(2),
+                "time": spaces.Discrete(params.max_steps_in_episode),
             }
         )

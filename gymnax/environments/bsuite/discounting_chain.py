@@ -2,12 +2,23 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-
 from typing import Tuple
 import chex
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    rewards: chex.Array
+    context: int
+    time: int
+
+
+@struct.dataclass
+class EnvParams:
+    reward_timestep: chex.Array = jnp.array([1, 3, 10, 30, 100])
+    optimal_return: float = 1.1
+    max_steps_in_episode: int = 100
 
 
 class DiscountingChain(environment.Environment):
@@ -28,32 +39,27 @@ class DiscountingChain(environment.Environment):
         )
 
     @property
-    def default_params(self):
+    def default_params(self) -> EnvParams:
         # Default environment parameters
-        return {
-            "max_steps_in_episode": 100,
-            "reward_timestep": jnp.array([1, 3, 10, 30, 100]),
-            "optimal_return": 1.1,
-        }
+        return EnvParams()
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: int, params: dict
-    ) -> Tuple[Array, dict, float, bool, dict]:
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        state = {
-            "rewards": state["rewards"],
-            "context": lax.select(state["time"] == 0, action, state["context"]),
-            "time": state["time"] + 1,
-        }
+        state = EnvState(
+            state.rewards,
+            lax.select(state.time == 0, action, state.context),
+            state.time + 1,
+        )
         reward = lax.select(
-            state["time"] == params["reward_timestep"][state["context"]],
-            state["rewards"][state["context"]],
+            state.time == params.reward_timestep[state.context],
+            state.rewards[state.context],
             0.0,
         )
 
         # Check game condition & no. steps for termination condition
         done = self.is_terminal(state, params)
-        state["terminal"] = done
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state, params)),
@@ -63,30 +69,27 @@ class DiscountingChain(environment.Environment):
             info,
         )
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
-        state = {
-            "rewards": self.reward,
-            "context": -1,
-            "time": 0,
-            "terminal": False,
-        }
+        state = EnvState(self.reward, -1, 0)
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: dict, params: dict) -> Array:
+    def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(shape=(1, 2), dtype=jnp.float32)
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 0], state["context"])
+        obs = jax.ops.index_update(obs, jax.ops.index[0, 0], state.context)
         obs = jax.ops.index_update(
             obs,
             jax.ops.index[0, 1],
-            state["time"] / params["max_steps_in_episode"],
+            state.time / params.max_steps_in_episode,
         )
         return obs
 
-    def is_terminal(self, state: dict, params: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done = state["time"] == params["max_steps_in_episode"]
+        done = state.time == params.max_steps_in_episode
         return done
 
     @property
@@ -95,21 +98,28 @@ class DiscountingChain(environment.Environment):
         return "DiscountingChain-v0"
 
     @property
-    def action_space(self):
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return self.n_actions
+
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(self.n_actions)
 
-    def observation_space(self, params: dict):
+    def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         return spaces.Box(-1, self.n_actions, (1, 2), dtype=jnp.float32)
 
-    def state_space(self, params: dict):
+    def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
         return spaces.Dict(
             {
-                "rewards": spaces.Box(1, 1.1, (self.n_actions,), dtype=jnp.float32),
-                "context": spaces.Box(-1, self.n_actions, (), dtype=jnp.float32),
-                "time": spaces.Discrete(params["max_steps_in_episode"]),
-                "terminal": spaces.Discrete(2),
+                "rewards": spaces.Box(
+                    1, 1.1, (self.n_actions,), dtype=jnp.float32
+                ),
+                "context": spaces.Box(
+                    -1, self.n_actions, (), dtype=jnp.float32
+                ),
+                "time": spaces.Discrete(params.max_steps_in_episode),
             }
         )

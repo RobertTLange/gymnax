@@ -10,6 +10,9 @@ Array = chex.Array
 PRNGKey = chex.PRNGKey
 
 
+# TODO: EnvParams, EnvState, num_actions
+
+
 class MinAsterix(environment.Environment):
     """
     JAX Compatible version of Asterix MinAtar environment. Source:
@@ -52,11 +55,15 @@ class MinAsterix(environment.Environment):
         entity, slot = spawn_entity(key, state)
         state["entities"] = lax.select(
             state["spawn_timer"] <= 0,
-            jax.ops.index_update(state["entities"], jax.ops.index[slot], entity),
+            jax.ops.index_update(
+                state["entities"], jax.ops.index[slot], entity
+            ),
             state["entities"],
         )
         state["spawn_timer"] = lax.select(
-            state["spawn_timer"] <= 0, state["spawn_speed"], state["spawn_timer"]
+            state["spawn_timer"] <= 0,
+            state["spawn_speed"],
+            state["spawn_timer"],
         )
 
         # Update state of the players
@@ -252,7 +259,8 @@ def step_entities(state):
     # Loop over entities and move them in direction
     time_to_move = state["move_timer"] == 0
     state["move_timer"] = (
-        time_to_move * state["move_speed"] + (1 - time_to_move) * state["move_timer"]
+        time_to_move * state["move_speed"]
+        + (1 - time_to_move) * state["move_timer"]
     )
     for i in range(8):
         x = state["entities"][i]
@@ -262,7 +270,10 @@ def step_entities(state):
         x = jax.ops.index_update(
             x,
             0,
-            (slot_filled * (x[0] + 1 * lr - 1 * (1 - lr)) + (1 - slot_filled) * x[0]),
+            (
+                slot_filled * (x[0] + 1 * lr - 1 * (1 - lr))
+                + (1 - slot_filled) * x[0]
+            ),
         )
 
         # Update if entity moves out of the frame - reset everything to zeros

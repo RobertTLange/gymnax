@@ -22,7 +22,7 @@ rng, key_reset, key_policy, key_step = jax.random.split(rng, 4)
 env, env_params = gymnax.make("Pendulum-v1")
 
 obs, state = env.reset(key_reset, env_params)
-action = env.action_space(env_params).sample(key_policy)
+action = env.action_space.sample(key_policy)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 

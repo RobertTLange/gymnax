@@ -15,7 +15,7 @@ def test_step(env_name: str):
         obs, state = env_jax.reset(rng_input, env_params)
         # Loop over test episode steps
         for s in range(num_steps):
-            action = env_jax.action_space.sample(rng_input)
+            action = env_jax.action_space(env_params).sample(rng_input)
             obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
                 rng_input, state, action, env_params
             )

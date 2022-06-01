@@ -50,7 +50,7 @@ class EnvRollout(object):
             """lax.scan compatible step transition in jax env."""
             obs, state, policy_params, rng = state_input
             rng, rng_step, rng_net = jax.random.split(rng, 3)
-            action = self.model_forward({"params": policy_params}, obs, rng=rng_net)
+            action = self.model_forward(policy_params, obs, rng=rng_net)
             next_o, next_s, reward, done, _ = self.env.step(
                 rng_step, state, action, self.env_params
             )

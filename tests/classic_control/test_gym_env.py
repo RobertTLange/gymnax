@@ -1,7 +1,11 @@
 import jax
 import gym
 import gymnax
-from gymnax.utils import np_state_to_jax, assert_correct_transit, assert_correct_state
+from gymnax.utils import (
+    np_state_to_jax,
+    assert_correct_transit,
+    assert_correct_state,
+)
 
 num_episodes, num_steps, tolerance = 10, 150, 1e-04
 
@@ -18,7 +22,7 @@ def test_step(env_name):
         # Loop over test episode steps
         for s in range(num_steps):
             action = env_gym.action_space.sample()
-            state = np_state_to_jax(env_gym, env_name)
+            state = np_state_to_jax(env_gym, env_name, get_jax=True)
             obs_gym, reward_gym, done_gym, _ = env_gym.step(action)
 
             rng, rng_input = jax.random.split(rng)
@@ -27,7 +31,13 @@ def test_step(env_name):
             )
             # Check correctness of transition
             assert_correct_transit(
-                obs_gym, reward_gym, done_gym, obs_jax, reward_jax, done_jax, tolerance
+                obs_gym,
+                reward_gym,
+                done_gym,
+                obs_jax,
+                reward_jax,
+                done_jax,
+                tolerance,
             )
 
             # Check that post-transition states are equal
