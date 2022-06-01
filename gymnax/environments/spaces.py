@@ -23,7 +23,7 @@ class Discrete(object):
     def sample(self, rng: chex.PRNGKey) -> chex.Array:
         """Sample random action uniformly from set of categorical choices."""
         return jax.random.randint(
-            rng, shape=self.shape, minval=0, maxval=self.n - 1
+            rng, shape=self.shape, minval=0, maxval=self.n
         ).astype(self.dtype)
 
     def contains(self, x: jnp.int_) -> bool:
