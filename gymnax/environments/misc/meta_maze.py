@@ -160,7 +160,7 @@ class MetaMaze(environment.Environment):
         done = jnp.logical_or(done_goal, done_steps)
         return done
 
-    def render(self, state: EnvState):
+    def render(self, state: EnvState, params: EnvParams):
         """Small utility for plotting the agent's state."""
         import matplotlib.pyplot as plt
 
@@ -185,7 +185,7 @@ class MetaMaze(environment.Environment):
     @property
     def name(self) -> str:
         """Environment name."""
-        return "MetaGrid-misc"
+        return "MetaMaze-misc"
 
     @property
     def num_actions(self) -> int:

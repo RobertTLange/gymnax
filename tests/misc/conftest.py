@@ -12,7 +12,8 @@ def pytest_generate_tests(metafunc):
                     "GaussianBandit-misc",
                     "FourRooms-misc",
                     "MetaMaze-misc",
+                    "PointRobot-misc",
                 ],
             )
         else:
-            metafunc.parametrize("env_name", ["MetaMaze-misc"])
+            metafunc.parametrize("env_name", ["PointRobot-misc"])

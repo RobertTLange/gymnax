@@ -32,6 +32,7 @@ from .environments.misc import (
     GaussianBandit,
     FourRooms,
     MetaMaze,
+    PointRobot,
 )
 
 # =============================================================================
@@ -88,6 +89,8 @@ def make(env_id: str, env_kwargs: dict = {}):
         env = FourRooms(**env_kwargs)
     elif env_id == "MetaMaze-misc":
         env = MetaMaze(**env_kwargs)
+    elif env_id == "PointRobot-misc":
+        env = PointRobot(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 
