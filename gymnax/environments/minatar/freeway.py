@@ -2,12 +2,24 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-
 from typing import Tuple
 import chex
+from flax import struct
 
-Array = chex.Array
-PRNGKey = chex.PRNGKey
+
+@struct.dataclass
+class EnvState:
+    pos: int
+    cars: chex.Array
+    move_timer: int
+    time: int
+    terminal: bool
+
+
+@struct.dataclass
+class EnvParams:
+    player_speed: int = 3
+    max_steps_in_episode: int = 2500
 
 
 class MinFreeway(environment.Environment):
@@ -35,16 +47,13 @@ class MinFreeway(environment.Environment):
         self.obs_shape = (10, 10, 7)
 
     @property
-    def default_params(self):
+    def default_params(self) -> EnvParams:
         # Default environment parameters
-        return {
-            "player_speed": 3,
-            "max_steps_in_episode": 2500,
-        }
+        return EnvParams()
 
     def step_env(
-        self, key: PRNGKey, state: dict, action: int, params: dict
-    ) -> Tuple[Array, dict, float, bool, dict]:
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
         # 1. Update position of agent only if timer condition is met!
         state, reward, win_cond = step_agent(action, state, params)
@@ -55,20 +64,18 @@ class MinFreeway(environment.Environment):
         key_speed, key_dirs = jax.random.split(key)
         speeds = jax.random.randint(key_speed, shape=(8,), minval=1, maxval=6)
         directions = jax.random.choice(key_dirs, jnp.array([-1, 1]), shape=(8,))
-        win_cars = randomize_cars(speeds, directions, state["cars"], False)
-        state["cars"] = jax.ops.index_update(
-            state["cars"],
-            jax.ops.index[:, :],
-            win_cars * win_cond + state["cars"] * (1 - win_cond),
+        win_cars = randomize_cars(speeds, directions, state.cars, False)
+        state = state.replace(
+            cars=jax.lax.select(win_cond, win_cars, state.cars)
         )
 
         # 3. Update cars and check for collisions! - respawn agent at bottom
         state = step_cars(state)
 
         # Check game condition & no. steps for termination condition
-        state["time"] += 1
+        state = state.replace(time=state.time + 1)
         done = self.is_terminal(state, params)
-        state["terminal"] = done
+        state = state.replace(terminal=done)
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state)),
@@ -78,34 +85,37 @@ class MinFreeway(environment.Environment):
             info,
         )
 
-    def reset_env(self, key: PRNGKey, params: dict) -> Tuple[Array, dict]:
+    def reset_env(
+        self, key: chex.PRNGKey, params: EnvParams
+    ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample the initial speeds and directions of the cars
         key_speed, key_dirs = jax.random.split(key)
         speeds = jax.random.randint(key_speed, shape=(8,), minval=1, maxval=6)
         directions = jax.random.choice(key_dirs, jnp.array([-1, 1]), shape=(8,))
-
-        state = {
-            "pos": 9,
-            "cars": randomize_cars(
+        state = EnvState(
+            pos=9,
+            cars=randomize_cars(
                 speeds, directions, jnp.zeros((8, 4), dtype=int), True
             ),
-            "move_timer": params["player_speed"],
-            "time": 0,
-            "terminal": False,
-        }
+            move_timer=params.player_speed,
+            time=0,
+            terminal=False,
+        )
         return self.get_obs(state), state
 
-    def get_obs(self, state: dict) -> Array:
+    def get_obs(self, state: EnvState) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the chicken agent, cars, and trails
-        obs = jax.ops.index_update(obs, jax.ops.index[state["pos"], 4, 0], 1)
+        obs = obs.at[state.pos, 4, 0].set(1)
         for car_id in range(8):
-            car = state["cars"][car_id]
-            obs = jax.ops.index_update(obs, jax.ops.index[car[1], car[0], 1], 1)
+            car = state.cars[car_id]
+            obs = obs.at[car[1], car[0], 1].set(1)
             # Boundary conditions for cars
-            back_x = (car[3] > 0) * (car[0] - 1) + (1 - (car[3] > 0)) * (car[0] + 1)
+            back_x = (car[3] > 0) * (car[0] - 1) + (1 - (car[3] > 0)) * (
+                car[0] + 1
+            )
             left_out = back_x < 0
             right_out = back_x > 9
             back_x = left_out * 9 + (1 - left_out) * back_x
@@ -118,127 +128,121 @@ class MinFreeway(environment.Environment):
                 + 5 * (jnp.abs(car[3]) == 4)
                 + 6 * (jnp.abs(car[3]) == 5)
             )
-            obs = jax.ops.index_update(
-                obs, jax.ops.index[car[1], back_x, trail_channel], 1
-            )
+            obs = obs.at[car[1], back_x, trail_channel].set(1)
         return obs
 
-    def is_terminal(self, state: dict, params: dict) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > params["max_steps_in_episode"]
-        done_timer = state["terminate_timer"] < 0
-        return jnp.logical_or(done_steps, done_timer)
+        done_steps = state.time > params.max_steps_in_episode
+        return done_steps
 
     @property
     def name(self) -> str:
         """Environment name."""
         return "Freeway-MinAtar"
 
-    @property
-    def action_space(self):
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 
-    def observation_space(self, params: dict):
+    def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         return spaces.Box(0, 1, self.obs_shape)
 
-    def state_space(self, params: dict):
+    def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
         return spaces.Dict(
             {
                 "pos": spaces.Discrete(10),
                 "cars": spaces.Box(0, 1, jnp.zeros((8, 4)), dtype=jnp.int_),
-                "move_timer": spaces.Discrete(params["player_speed"]),
-                "time": spaces.Discrete(params["max_steps_in_episode"]),
+                "move_timer": spaces.Discrete(params.player_speed),
+                "time": spaces.Discrete(params.max_steps_in_episode),
                 "terminal": spaces.Discrete(2),
             }
         )
 
 
-def step_agent(action: int, state: dict, params: dict):
+def step_agent(
+    action: int, state: EnvState, params: EnvParams
+) -> Tuple[EnvState, float, bool]:
     """Perform 1st part of step transition for agent."""
-    cond_up = jnp.logical_and(action == 1, state["move_timer"] == 0)
-    cond_down = jnp.logical_and(action == 2, state["move_timer"] == 0)
+    cond_up = jnp.logical_and(action == 1, state.move_timer == 0)
+    cond_down = jnp.logical_and(action == 2, state.move_timer == 0)
     any_cond = jnp.logical_or(cond_up, cond_down)
-    state_up = jnp.maximum(0, state["pos"] - 1)
-    state_down = jnp.minimum(9, state["pos"] + 1)
-    state["pos"] = (
-        (1 - any_cond) * state["pos"] + cond_up * state_up + cond_down * state_down
+    state_up = jnp.maximum(0, state.pos - 1)
+    state_down = jnp.minimum(9, state.pos + 1)
+    pos = (
+        (1 - any_cond) * state.pos + cond_up * state_up + cond_down * state_down
     )
-    state["move_timer"] = (1 - any_cond) * state["move_timer"] + any_cond * params[
-        "player_speed"
-    ]
+    move_timer = jax.lax.select(any_cond, params.player_speed, state.move_timer)
     # Check win cond. - increase reward, randomize cars, reset agent position
-    win_cond = state["pos"] == 0
-    reward = win_cond
-    state["pos"] = 9 * win_cond + state["pos"] * (1 - win_cond)
-    return state, reward, win_cond
+    win_cond = pos == 0
+    reward = win_cond * 1.0
+    pos = jax.lax.select(win_cond, 9, pos)
+    return state.replace(pos=pos, move_timer=move_timer), reward, win_cond
 
 
-def step_cars(state: dict):
+def step_cars(state: EnvState) -> EnvState:
     """Perform 3rd part of step transition for car."""
     # Update cars and check for collisions! - respawn agent at bottom
     for car_id in range(8):
         # Check for agent collision with car and if so reset agent
         collision_cond = jnp.logical_and(
-            state["cars"][car_id][0] == 4, state["cars"][car_id][1] == state["pos"]
+            state.cars[car_id][0] == 4,
+            state.cars[car_id][1] == state.pos,
         )
-        state["pos"] = 9 * collision_cond + state["pos"] * (1 - collision_cond)
+
+        pos = jax.lax.select(collision_cond, 9, state.pos)
 
         # Check for exiting frame, reset car and then check collision again
-        car_cond = state["cars"][car_id][2] == 0
-        upd_2 = (
-            car_cond * jnp.abs(state["cars"][car_id][3])
-            + (1 - car_cond) * state["cars"][car_id][2]
-        )
-        state["cars"] = jax.ops.index_update(
-            state["cars"], jax.ops.index[car_id, 2], upd_2
-        )
-        upd_0 = (
-            car_cond
-            * (
-                state["cars"][car_id][0]
-                + 1 * (state["cars"][car_id][3] > 0)
-                - 1 * (1 - (state["cars"][car_id][3] > 0))
-            )
-            + (1 - car_cond) * state["cars"][car_id][0]
-        )
-        state["cars"] = jax.ops.index_update(
-            state["cars"], jax.ops.index[car_id, 0], upd_0
+        car_cond = state.cars[car_id][2] == 0
+        upd_2 = jax.lax.select(
+            car_cond, jnp.abs(state.cars[car_id][3]), state.cars[car_id][2]
         )
 
-        cond_sm_0 = jnp.logical_and(car_cond, state["cars"][car_id][0] < 0)
-        upd_0_sm = cond_sm_0 * 9 + (1 - cond_sm_0) * state["cars"][car_id][0]
-        state["cars"] = jax.ops.index_update(
-            state["cars"], jax.ops.index[car_id, 0], upd_0_sm
+        cars = state.cars.at[car_id, 2].set(upd_2)
+        upd_0 = jax.lax.select(
+            car_cond,
+            (
+                cars[car_id][0]
+                + 1 * (cars[car_id][3] > 0)
+                - 1 * (1 - (cars[car_id][3] > 0))
+            ),
+            cars[car_id][0],
         )
-        cond_gr_9 = jnp.logical_and(car_cond, state["cars"][car_id][0] > 9)
-        upd_0_gr = cond_gr_9 * 0 + (1 - cond_gr_9) * state["cars"][car_id][0]
-        state["cars"] = jax.ops.index_update(
-            state["cars"], jax.ops.index[car_id, 0], upd_0_gr
-        )
+        cars = cars.at[car_id, 0].set(upd_0)
+
+        cond_sm_0 = jnp.logical_and(car_cond, cars[car_id][0] < 0)
+        upd_0_sm = jax.lax.select(cond_sm_0, 9, cars[car_id][0])
+        cars = cars.at[car_id, 0].set(upd_0_sm)
+        cond_gr_9 = jnp.logical_and(car_cond, cars[car_id][0] > 9)
+        upd_0_gr = jax.lax.select(cond_gr_9, 0, cars[car_id][0])
+        cars = cars.at[car_id, 0].set(upd_0_gr)
 
         # Check collision after car position update - respawn agent
         # Note: Need to reevaluate collision condition since cars change!
         collision_cond = jnp.logical_and(
-            state["cars"][car_id][0] == 4, state["cars"][car_id][1] == state["pos"]
+            cars[car_id][0] == 4,
+            cars[car_id][1] == pos,
         )
         cond_pos = jnp.logical_and(car_cond, collision_cond)
-        state["pos"] = cond_pos * 9 + (1 - cond_pos) * state["pos"]
+        pos = jax.lax.select(cond_pos, 9, pos)
         # Move car if no previous car_cond update
-        alt_upd_2 = car_cond * state["cars"][car_id][2] + (1 - car_cond) * (
-            state["cars"][car_id][2] - 1
+        alt_upd_2 = jax.lax.select(
+            car_cond, cars[car_id][2], cars[car_id][2] - 1
         )
-        state["cars"] = jax.ops.index_update(
-            state["cars"], jax.ops.index[car_id, 2], alt_upd_2
-        )
+        cars = cars.at[car_id, 2].set(alt_upd_2)
     # 4. Update various timers
-    state["move_timer"] -= state["move_timer"] > 0
-    return state
+    move_timer = state.move_timer - (state.move_timer > 0)
+    return state.replace(pos=pos, cars=cars, move_timer=move_timer)
 
 
-def randomize_cars(speeds, directions, old_cars, initialize=0):
+def randomize_cars(
+    speeds: chex.Array,
+    directions: chex.Array,
+    old_cars: chex.Array,
+    initialize: bool,
+) -> chex.Array:
     """Randomize car speeds & directions. Reset position if initialize."""
     speeds_new = directions * speeds
     new_cars = jnp.zeros((8, 4), dtype=int)
@@ -253,7 +257,9 @@ def randomize_cars(speeds, directions, old_cars, initialize=0):
         )
         # Reset only speeds and directions
         old_cars = jax.ops.index_update(
-            old_cars, jax.ops.index[i, 2:4], [jnp.abs(speeds_new[i]), speeds_new[i]]
+            old_cars,
+            jax.ops.index[i, 2:4],
+            [jnp.abs(speeds_new[i]), speeds_new[i]],
         )
 
     # Mask the car array manipulation according to initialize

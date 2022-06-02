@@ -1,5 +1,4 @@
 import numpy as np
-import jax
 import jax.numpy as jnp
 
 
@@ -200,12 +199,10 @@ def minatar_np_to_jax(
         entities_array = jnp.zeros((8, 5), dtype=jnp.int32)
         for i in range(8):
             if env.env.entities[i] is not None:
-                entities_array = jax.ops.index_update(
-                    entities_array, jax.ops.index[i, 0:4], env.env.entities[i]
+                entities_array = entities_array.at[i, 0:4].set(
+                    env.env.entities[i]
                 )
-                entities_array = jax.ops.index_update(
-                    entities_array, jax.ops.index[i, 4], 1
-                )
+                entities_array = entities_array.at[i, 4].set(1)
         state_gym_to_jax = {
             "player_x": env.env.player_x,
             "player_y": env.env.player_y,
@@ -220,6 +217,10 @@ def minatar_np_to_jax(
             "time": 0,
             "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.minatar.asterix import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "Breakout-MinAtar":
         state_gym_to_jax = {
             "ball_y": env.env.ball_y,
@@ -233,6 +234,10 @@ def minatar_np_to_jax(
             "time": 0,
             "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.minatar.breakout import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "Freeway-MinAtar":
         state_gym_to_jax = {
             "pos": env.env.pos,
@@ -241,6 +246,10 @@ def minatar_np_to_jax(
             "time": 0,
             "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.minatar.freeway import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "Seaquest-MinAtar":
         f_bullets = np.zeros((100, 3))
         for i, f_b in enumerate(env.env.f_bullets):
@@ -283,12 +292,16 @@ def minatar_np_to_jax(
             "time": 0,
             "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.minatar.seaquest import EnvState
+
+            return EnvState(**state_gym_to_jax)
     elif env_name == "SpaceInvaders-MinAtar":
         state_gym_to_jax = {
             "pos": env.env.pos,
-            "f_bullet_map": env.env.f_bullet_map,
-            "e_bullet_map": env.env.e_bullet_map,
-            "alien_map": env.env.alien_map,
+            "f_bullet_map": jnp.array(env.env.f_bullet_map),
+            "e_bullet_map": jnp.array(env.env.e_bullet_map),
+            "alien_map": jnp.array(env.env.alien_map),
             "alien_dir": env.env.alien_dir,
             "enemy_move_interval": env.env.enemy_move_interval,
             "alien_move_timer": env.env.alien_move_timer,
@@ -299,4 +312,8 @@ def minatar_np_to_jax(
             "time": 0,
             "terminal": 0,
         }
+        if get_jax:
+            from gymnax.environments.minatar.space_invaders import EnvState
+
+            return EnvState(**state_gym_to_jax)
     return state_gym_to_jax
