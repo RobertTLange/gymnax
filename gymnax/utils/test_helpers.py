@@ -13,7 +13,7 @@ def assert_correct_state(
     # Loop over keys and assert that individual entries are same/close
     for k in state_gym.keys():
         jax_value = getattr(state_jax, k)
-        print(k)
+        # print(k)
         if k not in ["time", "terminal"]:
             if type(jax_value) in [
                 jax.interpreters.xla._DeviceArray,

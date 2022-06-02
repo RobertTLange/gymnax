@@ -1,10 +1,12 @@
 def pytest_addoption(parser):
-    parser.addoption("--all", action="store_true", help="run all combinations")
+    parser.addoption(
+        "--all_control", action="store_true", help="run all combinations"
+    )
 
 
 def pytest_generate_tests(metafunc):
     if "env_name" in metafunc.fixturenames:
-        if metafunc.config.getoption("all"):
+        if metafunc.config.getoption("all_control"):
             metafunc.parametrize(
                 "env_name",
                 [
