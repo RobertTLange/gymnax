@@ -44,7 +44,7 @@ jobs:
         flake8 ./gymnax --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run unit/integration tests
       run: |
-        python -m pytest -vv --all_control --all_bsuite --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml --ignore=tests/minatar/
+        python -m pytest -vv --all --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml --ignore=tests/minatar/
     - name: "Upload coverage to Codecov"
       uses: codecov/codecov-action@v2
       with:

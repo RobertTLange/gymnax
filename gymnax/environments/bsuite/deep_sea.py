@@ -11,7 +11,7 @@ from flax import struct
 class EnvState:
     row: int
     column: int
-    bad_episode: int
+    bad_episode: bool
     total_bad_episodes: int
     denoised_return: int
     optimal_return: float
@@ -50,9 +50,9 @@ class DeepSea(environment.Environment):
         """Perform single timestep state transition."""
         # Pull out randomness for easier testing
         rng_reward, rng_trans = jax.random.split(key)
-        rand_reward = jax.random.normal(rng_reward, shape=(1,))
+        rand_reward = jax.random.normal(rng_reward, shape=())
         rand_trans_cond = (
-            jax.random.uniform(rng_trans, shape=(1,), minval=0, maxval=1)
+            jax.random.uniform(rng_trans, shape=(), minval=0, maxval=1)
             > 1 / self.size
         )
 
@@ -66,28 +66,19 @@ class DeepSea(environment.Environment):
         column, row, bad_episode = step_transition(
             state, action_right, right_cond, self.size
         )
-        state = EnvState(
-            row,
-            column,
-            bad_episode,
-            state.total_bad_episodes,
-            denoised_return,
-            state.optimal_return,
-            state.action_mapping,
-            state.time + 1,
+        state = state.replace(
+            row=row,
+            column=column,
+            bad_episode=bad_episode,
+            denoised_return=denoised_return,
+            time=state.time + 1,
         )
 
         # Check row condition & no. steps for termination condition
         done = self.is_terminal(state, params)
-        state = EnvState(
-            row,
-            column,
-            bad_episode,
-            state.total_bad_episodes + done * state.bad_episode,
-            denoised_return,
-            state.optimal_return,
-            state.action_mapping,
-            state.time,
+        state = state.replace(
+            total_bad_episodes=state.total_bad_episodes
+            + done * state.bad_episode
         )
         info = {"discount": self.discount(state, params)}
         return (
@@ -123,17 +114,15 @@ class DeepSea(environment.Environment):
             + old_a_map_cond * self.action_mapping
         )
 
-        state = EnvState(0, 0, 0, 0, 0, optimal_return, action_mapping, 0)
+        state = EnvState(0, 0, False, 0, 0, optimal_return, action_mapping, 0)
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState) -> chex.Array:
         """Return observation from raw state trafo."""
         obs_end = jnp.zeros(shape=(self.size, self.size), dtype=jnp.float32)
         end_cond = state.row >= self.size
-        obs_upd = jax.ops.index_update(
-            obs_end, jax.ops.index[state.row, state.column], 1.0
-        )
-        return end_cond * obs_end + (1 - end_cond) * obs_upd
+        obs_upd = obs_end.at[state.row, state.column].set(1.0)
+        return jax.lax.select(end_cond, obs_end, obs_upd)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
@@ -202,7 +191,7 @@ def step_reward(
     det_chain_end = jnp.logical_and(chain_end, params.deterministic)
     reward += rand_reward * det_chain_end * (1 - params.deterministic)
     reward -= right_cond * params.unscaled_move_cost / size
-    return reward.squeeze(), denoised_return.squeeze()
+    return reward, denoised_return
 
 
 def step_transition(
@@ -210,17 +199,15 @@ def step_transition(
 ) -> Tuple[int, int, int]:
     """Get the state transition for the selected action."""
     # Standard right path transition
-    column = (1 - right_cond) * state.column + right_cond * jnp.clip(
-        state.column + 1, 0, size - 1
+    column = jax.lax.select(
+        right_cond, jnp.clip(state.column + 1, 0, size - 1), state.column
     )
 
     # You were on the right path and went wrong
     right_wrong_cond = jnp.logical_and(1 - action_right, state.row == column)
-    bad_episode = (
-        1 - right_wrong_cond
-    ) * state.bad_episode + right_wrong_cond * 1
-    column = (1 - action_right) * jnp.clip(
-        state.column - 1, 0, size - 1
-    ) + action_right * state.column
+    bad_episode = jax.lax.select(right_wrong_cond, True, state.bad_episode)
+    column = jax.lax.select(
+        action_right, column, jnp.clip(state.column - 1, 0, size - 1)
+    )
     row = state.row + 1
-    return column.squeeze(), row.squeeze(), bad_episode.squeeze()
+    return column, row, bad_episode

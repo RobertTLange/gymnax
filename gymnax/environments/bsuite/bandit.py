@@ -28,7 +28,7 @@ class SimpleBandit(environment.Environment):
 
     def __init__(self, num_actions: int = 11):
         super().__init__()
-        self.num_actions = num_actions
+        self.n_actions = num_actions
 
     @property
     def default_params(self) -> EnvParams:
@@ -85,6 +85,11 @@ class SimpleBandit(environment.Environment):
     def name(self) -> str:
         """Environment name."""
         return "SimpleBandit-bsuite"
+
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return self.n_actions
 
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
