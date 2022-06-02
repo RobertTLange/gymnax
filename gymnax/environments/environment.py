@@ -18,7 +18,7 @@ class EnvParams:
 class Environment(object):
     """Jittable abstract base class for all gymnax Environments."""
 
-    @partial(jax.jit, static_argnums=(0,))
+    # @partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,

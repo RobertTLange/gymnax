@@ -10,7 +10,7 @@ class Visualizer(object):
         self.env_params = env_params
         self.state_seq = state_seq
         self.fig, self.ax = plt.subplots(1, 1, figsize=(6, 5))
-        self.interval = 150
+        self.interval = 500
 
     def animate(
         self,

@@ -40,6 +40,9 @@ def test_step():
             obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
                 key_step, state, action, env_params
             )
+            # Doesnt make sense to compare since jax resamples state
+            if done_gym and done_gym == done_jax:
+                break
 
             # Check correctness of transition
             assert_correct_transit(
@@ -54,9 +57,6 @@ def test_step():
 
             # Check that post-transition states are equal
             assert_correct_state(env_gym, env_name_jax, state_jax, tolerance)
-
-            if done_gym:
-                break
 
 
 def test_sub_steps():
