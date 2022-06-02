@@ -8,8 +8,16 @@ from gymnax.utils import (
 )
 
 from minatar.environment import Environment
-from gymnax.environments.minatar.asterix import step_agent, step_entities, step_timers
-from asterix_helpers import step_agent_numpy, step_entities_numpy, step_timers_numpy
+from gymnax.environments.minatar.asterix import (
+    step_agent,
+    step_entities,
+    step_timers,
+)
+from asterix_helpers import (
+    step_agent_numpy,
+    step_entities_numpy,
+    step_timers_numpy,
+)
 
 num_episodes, num_steps, tolerance = 10, 1000, 1e-04
 env_name_gym, env_name_jax = "asterix", "Asterix-MinAtar"
@@ -27,8 +35,8 @@ def test_sub_steps():
         # Loop over test episode steps
         for s in range(num_steps):
             rng, key_step, key_action = jax.random.split(rng, 3)
-            state = np_state_to_jax(env_gym, env_name_jax)
-            action = env_jax.action_space.sample(key_action)
+            state = np_state_to_jax(env_gym, env_name_jax, get_jax=True)
+            action = env_jax.action_space(env_params).sample(key_action)
             action_gym = minatar_action_map(action, env_name_jax)
 
             step_agent_numpy(env_gym, action_gym)
@@ -71,12 +79,12 @@ def test_get_obs():
         # Loop over test episode steps
         for s in range(num_steps):
             rng, key_step, key_action = jax.random.split(rng, 3)
-            action = env_jax.action_space.sample(key_action)
+            action = env_jax.action_space(env_params).sample(key_action)
             action_gym = minatar_action_map(action, env_name_jax)
             # Step gym environment get state and trafo in jax dict
             _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()
-            state = np_state_to_jax(env_gym, env_name_jax)
+            state = np_state_to_jax(env_gym, env_name_jax, get_jax=True)
             obs_jax = jax.jit(env_jax.get_obs)(state)
             # Check for correctness of observations
             assert (obs_gym == obs_jax).all()

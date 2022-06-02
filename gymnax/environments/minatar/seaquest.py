@@ -249,6 +249,11 @@ class MinSeaquest(environment.Environment):
         return 6
 
     @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 6
+
+    @property
     def action_space(self):
         """Action space of the environment."""
         return spaces.Discrete(6)
