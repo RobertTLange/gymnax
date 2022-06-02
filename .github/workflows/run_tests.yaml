@@ -43,8 +43,10 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 ./gymnax --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run unit/integration tests
-      run: |
-        python -m pytest --all -vv --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml --ignore=tests/minatar/
+      run: run: |
+        python -m pytest --all -vv --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml
+        # python -m pytest --all -vv tests/classic_control/
+        # python -m pytest --all -vv --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml --ignore=tests/minatar/
     - name: "Upload coverage to Codecov"
       uses: codecov/codecov-action@v2
       with:
