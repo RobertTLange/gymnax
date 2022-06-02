@@ -223,14 +223,14 @@ def minatar_np_to_jax(
             return EnvState(**state_gym_to_jax)
     elif env_name == "Breakout-MinAtar":
         state_gym_to_jax = {
-            "ball_y": env.env.ball_y,
-            "ball_x": env.env.ball_x,
+            "ball_y": jnp.array(env.env.ball_y),
+            "ball_x": jnp.array(env.env.ball_x),
             "ball_dir": env.env.ball_dir,
             "pos": env.env.pos,
-            "brick_map": env.env.brick_map,
+            "brick_map": jnp.array(env.env.brick_map),
             "strike": env.env.strike,
-            "last_y": env.env.last_y,
-            "last_x": env.env.last_x,
+            "last_y": jnp.array(env.env.last_y),
+            "last_x": jnp.array(env.env.last_x),
             "time": 0,
             "terminal": 0,
         }

@@ -141,6 +141,11 @@ class MinFreeway(environment.Environment):
         """Environment name."""
         return "Freeway-MinAtar"
 
+    @property
+    def num_actions(self) -> int:
+        """Number of actions possible in environment."""
+        return 3
+
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
@@ -250,18 +255,14 @@ def randomize_cars(
     # Loop over all 8 cars and set their data
     for i in range(8):
         # Reset both speeds, directions and positions
-        new_cars = jax.ops.index_update(
-            new_cars,
-            jax.ops.index[i, :],
+        new_cars = new_cars.at[i, :].set(
             [0, i + 1, jnp.abs(speeds_new[i]), speeds_new[i]],
         )
         # Reset only speeds and directions
-        old_cars = jax.ops.index_update(
-            old_cars,
-            jax.ops.index[i, 2:4],
+        old_cars = old_cars.at[i, 2:4].set(
             [jnp.abs(speeds_new[i]), speeds_new[i]],
         )
 
     # Mask the car array manipulation according to initialize
-    cars = initialize * new_cars + (1 - initialize) * old_cars
+    cars = jax.lax.select(initialize, new_cars, old_cars)
     return jnp.array(cars, dtype=jnp.int_)
