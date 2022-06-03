@@ -47,7 +47,6 @@ setup(
     url="https://github.com/RobertTLange/gymnax",
     download_url=git_tar,
     classifiers=[
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

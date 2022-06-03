@@ -92,18 +92,10 @@ class UmbrellaChain(environment.Environment):
     ) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(shape=(1, 3 + self.n_distractor), dtype=jnp.float32)
-        obs = jax.ops.index_update(
-            obs, jax.ops.index[0, 0], state.need_umbrella
-        )
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 1], state.has_umbrella)
-        obs = jax.ops.index_update(
-            obs,
-            jax.ops.index[0, 2],
-            1 - state.time / params.chain_length,
-        )
-        obs = jax.ops.index_update(
-            obs,
-            jax.ops.index[0, 3:],
+        obs = obs.at[0, 0].set(state.need_umbrella)
+        obs = obs.at[0, 1].set(state.has_umbrella)
+        obs = obs.at[0, 2].set(1 - state.time / params.chain_length)
+        obs = obs.at[0, 3:].set(
             jax.random.bernoulli(key, p=0.5, shape=(self.n_distractor,)),
         )
         return obs

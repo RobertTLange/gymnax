@@ -33,10 +33,7 @@ class DiscountingChain(environment.Environment):
         self.mapping_seed = mapping_seed
 
         # Setup reward fct fron mapping seed - random sampling outside of env
-        reward = jnp.ones(self.n_actions)
-        self.reward = jax.ops.index_update(
-            reward, jax.ops.index[self.mapping_seed], 1.1
-        )
+        self.reward = jnp.ones(self.n_actions).at[self.mapping_seed].set(1.1)
 
     @property
     def default_params(self) -> EnvParams:
@@ -79,10 +76,8 @@ class DiscountingChain(environment.Environment):
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(shape=(1, 2), dtype=jnp.float32)
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 0], state.context)
-        obs = jax.ops.index_update(
-            obs,
-            jax.ops.index[0, 1],
+        obs = obs.at[0, 0].set(state.context)
+        obs = obs.at[0, 1].set(
             state.time / params.max_steps_in_episode,
         )
         return obs

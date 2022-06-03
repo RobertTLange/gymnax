@@ -50,18 +50,19 @@ class Catch(environment.Environment):
 
         # Move the paddle + drop the ball.
         dx = action - 1  # [-1, 0, 1] = Left, no-op, right.
-        paddle_x = (
-            jnp.clip(state.paddle_x + dx, 0, self.columns - 1) * (1 - prev_done)
-            + paddle_x * prev_done
+        paddle_x = jax.lax.select(
+            prev_done,
+            paddle_x,
+            jnp.clip(state.paddle_x + dx, 0, self.columns - 1),
         )
-        ball_y = (state.ball_y + 1) * (1 - prev_done) + ball_y * prev_done
-        ball_x = state.ball_x * (1 - prev_done) + ball_x * prev_done
-        paddle_y = state.paddle_y * (1 - prev_done) + paddle_y * prev_done
+        ball_y = jax.lax.select(prev_done, ball_y, state.ball_y + 1)
+        ball_x = jax.lax.select(prev_done, ball_x, state.ball_x)
+        paddle_y = jax.lax.select(prev_done, paddle_y, state.paddle_y)
 
         # Rewrite reward as boolean multiplication
         prev_done = ball_y == paddle_y
         catched = paddle_x == ball_x
-        reward = prev_done * (1.0 * catched + -1.0 * (1 - catched))
+        reward = prev_done * jax.lax.select(catched, 1.0, -1.0)
 
         state = EnvState(
             ball_x, ball_y, paddle_x, paddle_y, prev_done, state.time + 1
@@ -91,12 +92,8 @@ class Catch(environment.Environment):
     def get_obs(self, state: EnvState) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((self.rows, self.columns))
-        obs = jax.ops.index_update(
-            obs, jax.ops.index[state.ball_y, state.ball_x], 1.0
-        )
-        obs = jax.ops.index_update(
-            obs, jax.ops.index[state.paddle_y, state.paddle_x], 1.0
-        )
+        obs = obs.at[state.ball_y, state.ball_x].set(1.0)
+        obs = obs.at[state.paddle_y, state.paddle_x].set(1.0)
         return obs
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:

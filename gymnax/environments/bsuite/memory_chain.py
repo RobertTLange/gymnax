@@ -92,21 +92,19 @@ class MemoryChain(environment.Environment):
         # Obs: [time remaining, query, num_bits of context]
         obs = jnp.zeros(shape=(1, self.num_bits + 2), dtype=jnp.float32)
         # Show time remaining - every step.
-        obs = jax.ops.index_update(
-            obs,
-            jax.ops.index[0, 0],
+        obs = obs.at[0, 0].set(
             1 - state.time / params.memory_length,
         )
         # Show query - only last step.
         query_val = lax.select(
             state.time == params.memory_length - 1, state.query, 0
         )
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 1], query_val)
+        obs = obs.at[0, 1].set(query_val)
         # Show context - only first step.
         context_val = lax.select(
             state.time == 0, (2 * state.context - 1).squeeze(), 0
         )
-        obs = jax.ops.index_update(obs, jax.ops.index[0, 2:], context_val)
+        obs = obs.at[0, 2:].set(context_val)
         return obs
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
