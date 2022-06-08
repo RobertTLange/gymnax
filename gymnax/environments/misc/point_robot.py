@@ -13,11 +13,13 @@ class EnvState:
     last_reward: float
     pos: chex.Array
     goal: chex.Array
+    goals_reached: int
     time: float
 
 
 @struct.dataclass
 class EnvParams:
+    max_force: float = 0.1  # Max action (+/-)
     circle_radius: float = 1.0  # Radius of semi-circle
     dense_reward: bool = False  # Distance reward at each timestep
     goal_radius: float = 0.2  # Radius for success
@@ -48,7 +50,8 @@ class PointRobot(environment.Environment):
         params: EnvParams,
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Sample bernoulli reward, increase counter, construct input."""
-        pos = state.pos + action
+        a = jnp.clip(action, -params.max_force, params.max_force)
+        pos = state.pos + a
         goal_distance = jnp.linalg.norm(state.goal - state.pos)
         goal_reached = goal_distance <= params.goal_radius
         # Dense reward - distance to goal, sparse reward - 1 if in radius
@@ -65,6 +68,7 @@ class PointRobot(environment.Environment):
             reward,
             new_pos,
             state.goal,
+            state.goals_reached + goal_reached,
             state.time + 1,
         )
 
@@ -96,6 +100,7 @@ class PointRobot(environment.Environment):
             0.0,
             sampled_pos,
             goal,
+            0,
             0.0,
         )
         return self.get_obs(state, params), state
@@ -127,8 +132,12 @@ class PointRobot(environment.Environment):
 
     def action_space(self, params: EnvParams) -> spaces.Box:
         """Action space of the environment."""
-        low = jnp.array([-0.1, -0.1], dtype=jnp.float32)
-        high = jnp.array([0.1, 0.1], dtype=jnp.float32)
+        low = jnp.array(
+            [-params.max_force, -params.max_force], dtype=jnp.float32
+        )
+        high = jnp.array(
+            [params.max_force, params.max_force], dtype=jnp.float32
+        )
         return spaces.Box(low, high, (2,), jnp.float32)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:

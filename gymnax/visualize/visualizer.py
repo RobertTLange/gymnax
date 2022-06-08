@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from typing import Optional
 from .vis_minatar import init_minatar, update_minatar
+from .vis_circle import init_circle, update_circle
+from .vis_maze import init_maze, update_maze
 
 
 class Visualizer(object):
@@ -45,6 +47,14 @@ class Visualizer(object):
             "SpaceInvaders-MinAtar",
         ]:
             self.im = init_minatar(self.ax, self.env, self.state_seq[0])
+        elif self.env.name == "PointRobot-misc":
+            self.im = init_circle(
+                self.ax, self.env, self.state_seq[0], self.env_params
+            )
+        elif self.env.name == "MetaMaze-misc":
+            self.im = init_maze(
+                self.ax, self.env, self.state_seq[0], self.env_params
+            )
         self.fig.tight_layout(rect=[0.02, 0.03, 1.0, 0.95])
 
     def update(self, frame):
@@ -56,4 +66,8 @@ class Visualizer(object):
             "SpaceInvaders-MinAtar",
         ]:
             update_minatar(self.im, self.env, self.state_seq[frame])
+        elif self.env.name == "PointRobot-misc":
+            self.im = update_circle(self.im, self.env, self.state_seq[frame])
+        elif self.env.name == "MetaMaze-misc":
+            self.im = update_maze(self.im, self.env, self.state_seq[frame])
         self.ax.set_title(f"{self.env.name} - Time Step {frame + 1}")

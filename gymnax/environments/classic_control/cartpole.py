@@ -28,7 +28,7 @@ class EnvParams:
     tau: float = 0.02
     theta_threshold_radians: float = 12 * 2 * jnp.pi / 360
     x_threshold: float = 2.4
-    max_steps_in_episode: int = 200
+    max_steps_in_episode: int = 500  # v0 had only 200 steps!
 
 
 class CartPole(environment.Environment):

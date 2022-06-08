@@ -4,7 +4,6 @@ import numpy as np
 def init_minatar(ax, env, state):
     import seaborn as sns
     import matplotlib.colors as colors
-    import numpy as np
 
     obs = env.get_obs(state)
     n_channels = env.obs_shape[-1]
@@ -18,6 +17,8 @@ def init_minatar(ax, env, state):
         np.amax(obs * np.reshape(np.arange(n_channels) + 1, (1, 1, -1)), 2)
         + 0.5
     )
+    ax.set_xticks([])
+    ax.set_yticks([])
     return ax.imshow(
         numerical_state, cmap=cmap, norm=norm, interpolation="none"
     )
