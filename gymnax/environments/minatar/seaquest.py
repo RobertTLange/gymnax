@@ -47,9 +47,9 @@ class MinSeaquest(environment.Environment):
         super().__init__()
         self.obs_shape = (10, 10, 10)
         # Full action set: ['n','l','u','r','d','f']
-        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        self.full_action_set = jnp.array([0, 1, 2, 3, 4, 5])
         # Minimal action set: ['n','l','u','r','d','f']
-        self.minimal_action_set = [0, 1, 2, 3, 4, 5]
+        self.minimal_action_set = jnp.array([0, 1, 2, 3, 4, 5])
         # Set active action set for environment
         # If minimal map to integer in full action set
         if use_minimal_action_set:
@@ -259,7 +259,7 @@ class MinSeaquest(environment.Environment):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(self, params: EnvParams) -> spaces.Discrete:
+    def action_space(self, params) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 

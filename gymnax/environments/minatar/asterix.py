@@ -54,9 +54,9 @@ class MinAsterix(environment.Environment):
         super().__init__()
         self.obs_shape = (10, 10, 4)
         # Full action set: ['n','l','u','r','d','f']
-        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        self.full_action_set = jnp.array([0, 1, 2, 3, 4, 5])
         # Minimal action set: ['n', 'l', 'u', 'r', 'd']
-        self.minimal_action_set = [0, 1, 2, 3, 4]
+        self.minimal_action_set = jnp.array([0, 1, 2, 3, 4])
         # Set active action set for environment
         # If minimal map to integer in full action set
         if use_minimal_action_set:

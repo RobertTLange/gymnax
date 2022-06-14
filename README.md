@@ -1,6 +1,6 @@
-<p style="text-align:center;"><img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="200" alt="Logo"></p>
-
 <h1 align="center">
+  <a href="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png">
+    <img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="200" /></a>
   <b>Classic Gym Environments in JAX 🏎️</b><br>
 </h1>
 
@@ -39,32 +39,30 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ## Implemented Accelerated Environments 🌍
 
 
-| Environment Name | Implemented | Tested | Speed Up (vs. NumPy) |
+| Environment Name | Reference | Source | Speed Up (vs. NumPy) |
 | --- | --- | --- | --- |
-| `Pendulum-v0` | ✅  | ✅ |
-| `CartPole-v1` | ✅  | ✅ |
-| `MountainCar-v0` | ✅  | ✅ |
-| `MountainCarContinuous-v0` | ✅  | ✅ |
-| `Acrobot-v1` | ✅  | ✅ |
-| --- | --- | --- | --- |
-| `Catch-bsuite` | ✅  | ✅ |
-| `DeepSea-bsuite` | ✅  | ✅ |
-| `MemoryChain-bsuite` | ✅  | ✅ |
-| `UmbrellaChain-bsuite` | ✅  | ✅ |
-| `DiscountingChain-bsuite` | ✅  | ✅ |
-| `MNISTBandit-bsuite` | ✅  | ✅ |
-| `SimpleBandit-bsuite` | ✅  | ✅ |
-| --- | --- | --- | --- |
-| `Asterix-MinAtar` | ✅  | ❌ |
-| `Breakout-MinAtar` | ✅  | ✅ |
-| `Freeway-MinAtar` | ✅  | ❌ |
-| `Seaquest-MinAtar` | ❌  | ❌ |
-| `SpaceInvaders-MinAtar` | ✅  | ❌ |
-| --- | --- | --- | --- |
-| `BernoulliBandit-misc` | ✅  | ✅ |
-| `GaussianBandit-misc` | ✅  | ✅ |
-| `FourRooms-misc` | ✅  | ✅ |
-
+| [`Pendulum-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/pendulum.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) | ~`?`x
+| [`CartPole-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/cartpole.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) | ~`?`x
+| [`MountainCar-v0`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/mountain_car.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540) | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) | ~`?`x
+| [`MountainCarContinuous-v0`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/continuous_mountain_car.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py) | ~`?`x
+| [`Acrobot-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/acrobot.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py) | ~`?`x
+| [`Catch-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/catch.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py) | ~`?`x
+| [`DeepSea-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/deep_sea.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/deep_sea.py)  | ~`?`x
+| [`MemoryChain-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/memory_chain.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/memory_chain.py)  | ~`?`x
+| [`UmbrellaChain-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/umbrella_chain.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py)  | ~`?`x
+| [`DiscountingChain-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/discounting_chain.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/discounting_chain.py)  | ~`?`x
+| [`MNISTBandit-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/mnist.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/mnist.py)  | ~`?`x
+| [`SimpleBandit-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/bandit.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/bandit.py)  | ~`?`x
+| [`Asterix-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/asterix.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py) | ~`?`x
+| [`Breakout-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/breakout.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py) | ~`?`x
+| [`Freeway-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/freeway.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py) | ~`?`x
+| [`Seaquest-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/seaquest.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py) | ~`?`x
+| [`SpaceInvaders-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/space_invaders.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py) | ~`?`x
+| [`FourRooms-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/rooms.py) | [Sutton et al. (1999)](https://people.cs.umass.edu/~barto/courses/cs687/Sutton-Precup-Singh-AIJ99.pdf) | [Click](https://github.com/howardh/gym-fourrooms) | ~`?`x
+| [`MetaMaze-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/meta_maze.py) | [Micconi et al. (2020)](https://arxiv.org/abs/2002.10585)  | [Click](https://github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py) | ~`?`x
+| [`PointRobot-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/point_robot.py) | [Dorfman et al. (2021)](https://openreview.net/pdf?id=IBdEfhLveS) | [Click](https://github.com/Rondorf/BOReL/blob/main/environments/toy_navigation/point_robot.py) | ~`?`x
+| [`BernoulliBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/bernoulli_bandit.py) | [Wang et al. (2017)](https://arxiv.org/abs/1611.05763) | - | -
+| [`GaussianBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/gaussian_bandit.py) | [Lange & Sprekeler (2022)](https://arxiv.org/abs/2010.04466) | - | -
 
 ## Installation ⏳
 
@@ -147,12 +145,12 @@ def rollout(rng_input, policy_params, env_params, num_env_steps):
 If you use `gymnax` in your research, please cite it as follows:
 
 ```
-@software{gymnax2021github,
+@software{gymnax2022github,
   author = {Robert Tjarko Lange},
   title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
   url = {http://github.com/RobertTLange/gymnax},
-  version = {0.0.1},
-  year = {2021},
+  version = {0.0.2},
+  year = {2022},
 }
 ```
 

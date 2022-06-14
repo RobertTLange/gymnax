@@ -38,7 +38,7 @@ from .environments.misc import (
 # =============================================================================
 
 
-def make(env_id: str, env_kwargs: dict = {}):
+def make(env_id: str, **env_kwargs):
     """A JAX-version of OpenAI's infamous env.make(env_name)"""
     # 1. Classic OpenAI Control Tasks
     if env_id == "Pendulum-v1":
