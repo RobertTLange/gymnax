@@ -54,9 +54,19 @@ class MinSpaceInvaders(environment.Environment):
     - Actions are encoded as follows: ['n','l','r','f']
     """
 
-    def __init__(self):
+    def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
         self.obs_shape = (10, 10, 6)
+        # Full action set: ['n','l','u','r','d','f']
+        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        # Minimal action set: ['n','l','r','f']
+        self.minimal_action_set = [0, 1, 3, 5]
+        # Set active action set for environment
+        # If minimal map to integer in full action set
+        if use_minimal_action_set:
+            self.action_set = self.minimal_action_set
+        else:
+            self.action_set = self.full_action_set
 
     @property
     def default_params(self) -> EnvParams:
@@ -68,7 +78,8 @@ class MinSpaceInvaders(environment.Environment):
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
         # Resolve player action - fire, left, right.
-        state = step_agent(action, state, params)
+        a = self.action_set[action]
+        state = step_agent(a, state, params)
         # Update aliens - border and collision check.
         state = step_aliens(state)
         # Update aliens - shooting check and calculate rewards.
@@ -165,11 +176,11 @@ class MinSpaceInvaders(environment.Environment):
     @property
     def num_actions(self) -> int:
         """Number of actions possible in environment."""
-        return 4
+        return len(self.action_set)
 
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
-        return spaces.Discrete(4)
+        return spaces.Discrete(len(self.action_set))
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
@@ -200,8 +211,8 @@ class MinSpaceInvaders(environment.Environment):
 
 def step_agent(action: int, state: EnvState, params: EnvParams) -> EnvState:
     """Resolve player action - fire, left, right."""
-    fire_cond = jnp.logical_and(action == 3, state.shot_timer == 0)
-    left_cond, right_cond = (action == 1), (action == 2)
+    fire_cond = jnp.logical_and(action == 5, state.shot_timer == 0)
+    left_cond, right_cond = (action == 1), (action == 3)
     f_bullet_map = jax.lax.select(
         fire_cond,
         state.f_bullet_map.at[9, state.pos].set(1),

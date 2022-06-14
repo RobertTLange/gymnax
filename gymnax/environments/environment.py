@@ -1,6 +1,6 @@
 import jax
 import chex
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 from functools import partial
 from flax import struct
 
@@ -18,15 +18,22 @@ class EnvParams:
 class Environment(object):
     """Jittable abstract base class for all gymnax Environments."""
 
+    @property
+    def default_params(self) -> EnvParams:
+        return EnvParams()
+
     @partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,
         state: EnvState,
         action: Union[int, float],
-        params: EnvParams,
+        params: Optional[EnvParams] = None,
     ) -> Tuple[chex.Array, EnvState, float, bool]:
         """Performs step transitions in the environment."""
+        # Use default env parameters if no others specified
+        if params is None:
+            params = self.default_params
         key, key_reset = jax.random.split(key)
         obs_st, state_st, reward, done, info = self.step_env(
             key, state, action, params
@@ -41,9 +48,12 @@ class Environment(object):
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(
-        self, key: chex.PRNGKey, params: EnvParams
+        self, key: chex.PRNGKey, params: Optional[EnvParams] = None
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
+        # Use default env parameters if no others specified
+        if params is None:
+            params = self.default_params
         obs, state = self.reset_env(key, params)
         return obs, state
 

@@ -50,9 +50,19 @@ class MinAsterix(environment.Environment):
     - Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
     """
 
-    def __init__(self):
+    def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
         self.obs_shape = (10, 10, 4)
+        # Full action set: ['n','l','u','r','d','f']
+        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        # Minimal action set: ['n', 'l', 'u', 'r', 'd']
+        self.minimal_action_set = [0, 1, 2, 3, 4]
+        # Set active action set for environment
+        # If minimal map to integer in full action set
+        if use_minimal_action_set:
+            self.action_set = self.minimal_action_set
+        else:
+            self.action_set = self.full_action_set
 
     @property
     def default_params(self) -> EnvParams:
@@ -77,7 +87,8 @@ class MinAsterix(environment.Environment):
         state.replace(entities=entities, spawn_timer=spawn_timer)
 
         # Update state of the players
-        state = step_agent(state, action)
+        a = self.action_set[action]
+        state = step_agent(state, a)
         # Update entities, get reward and figure out termination
         state, reward, done = step_entities(state)
         # Update timers and ramping condition check
@@ -149,11 +160,11 @@ class MinAsterix(environment.Environment):
     @property
     def num_actions(self) -> int:
         """Number of actions possible in environment."""
-        return 5
+        return len(self.action_set)
 
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
-        return spaces.Discrete(5)
+        return spaces.Discrete(len(self.action_set))
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""

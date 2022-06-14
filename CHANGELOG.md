@@ -1,4 +1,12 @@
-### v0.0.1 - Unreleased
+### [v0.0.2] - [TBC]
+
+##### Added
+
+##### Changed
+
+##### Fixed
+
+### [v0.0.1] - 22/11/2021
 
 ##### Added
 - Adds main `gym`-like infrastructure that is `jit`, `vmap` & `pmap` compatible:

@@ -45,9 +45,19 @@ class MinBreakout(environment.Environment):
     - Actions are encoded as follows: ['n','l','r']
     """
 
-    def __init__(self):
+    def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
         self.obs_shape = (10, 10, 4)
+        # Full action set: ['n','l','u','r','d','f']
+        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        # Minimal action set: ['n', 'l', 'r']
+        self.minimal_action_set = [0, 1, 3]
+        # Set active action set for environment
+        # If minimal map to integer in full action set
+        if use_minimal_action_set:
+            self.action_set = self.minimal_action_set
+        else:
+            self.action_set = self.full_action_set
 
     @property
     def default_params(self) -> EnvParams:
@@ -62,7 +72,8 @@ class MinBreakout(environment.Environment):
         params: EnvParams,
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        state, new_x, new_y = step_agent(state, action)
+        a = self.action_set[action]
+        state, new_x, new_y = step_agent(state, a)
         state, reward = step_ball_brick(state, new_x, new_y)
 
         # Check game condition & no. steps for termination condition
@@ -120,11 +131,11 @@ class MinBreakout(environment.Environment):
     @property
     def num_actions(self) -> int:
         """Number of actions possible in environment."""
-        return 3
+        return len(self.action_set)
 
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
-        return spaces.Discrete(3)
+        return spaces.Discrete(len(self.action_set))
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
@@ -152,8 +163,8 @@ def step_agent(state: EnvState, action: int) -> Tuple[EnvState, int, int]:
     """Helper that steps the agent and checks boundary conditions."""
     pos = (
         jnp.maximum(0, state.pos - 1) * (action == 1)
-        + jnp.minimum(9, state.pos + 1) * (action == 2)
-        + state.pos * jnp.logical_and(action != 1, action != 2)
+        + jnp.minimum(9, state.pos + 1) * (action == 3)
+        + state.pos * jnp.logical_and(action != 1, action != 3)
     )
 
     # Update ball position

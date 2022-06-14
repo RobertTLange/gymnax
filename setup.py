@@ -41,7 +41,7 @@ setup(
     version=verstr,
     author="Robert Tjarko Lange",
     author_email="robertlange0@gmail.com",
-    description="JAX-compatible version of Open AI's gym",
+    description="JAX-compatible version of Open AI's gym environments",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/RobertTLange/gymnax",
@@ -58,7 +58,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms="any",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=requires,
     tests_require=test_requires,
 )

@@ -42,9 +42,19 @@ class MinFreeway(environment.Environment):
     - Actions are encoded as follows: ['n', 'u', 'd']
     """
 
-    def __init__(self):
+    def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
         self.obs_shape = (10, 10, 7)
+        # Full action set: ['n','l','u','r','d','f']
+        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        # Minimal action set: ['n', 'u', 'd']
+        self.minimal_action_set = [0, 2, 4]
+        # Set active action set for environment
+        # If minimal map to integer in full action set
+        if use_minimal_action_set:
+            self.action_set = self.minimal_action_set
+        else:
+            self.action_set = self.full_action_set
 
     @property
     def default_params(self) -> EnvParams:
@@ -56,7 +66,8 @@ class MinFreeway(environment.Environment):
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
         # 1. Update position of agent only if timer condition is met!
-        state, reward, win_cond = step_agent(action, state, params)
+        a = self.action_set[action]
+        state, reward, win_cond = step_agent(a, state, params)
 
         # 2. Sample a new configuration for the cars if agent 'won'
         # Note: At each step we are sampling speed and dir to avoid if cond
@@ -144,11 +155,11 @@ class MinFreeway(environment.Environment):
     @property
     def num_actions(self) -> int:
         """Number of actions possible in environment."""
-        return 3
+        return len(self.action_set)
 
     def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
-        return spaces.Discrete(3)
+        return spaces.Discrete(len(self.action_set))
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
@@ -171,8 +182,8 @@ def step_agent(
     action: int, state: EnvState, params: EnvParams
 ) -> Tuple[EnvState, float, bool]:
     """Perform 1st part of step transition for agent."""
-    cond_up = jnp.logical_and(action == 1, state.move_timer == 0)
-    cond_down = jnp.logical_and(action == 2, state.move_timer == 0)
+    cond_up = jnp.logical_and(action == 2, state.move_timer == 0)
+    cond_down = jnp.logical_and(action == 4, state.move_timer == 0)
     any_cond = jnp.logical_or(cond_up, cond_down)
     state_up = jnp.maximum(0, state.pos - 1)
     state_down = jnp.minimum(9, state.pos + 1)

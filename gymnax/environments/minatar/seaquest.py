@@ -43,9 +43,19 @@ class MinSeaquest(environment.Environment):
     - Actions are encoded as follows: ['n','l','u','r','d','f']
     """
 
-    def __init__(self):
+    def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
         self.obs_shape = (10, 10, 10)
+        # Full action set: ['n','l','u','r','d','f']
+        self.full_action_set = [0, 1, 2, 3, 4, 5]
+        # Minimal action set: ['n','l','u','r','d','f']
+        self.minimal_action_set = [0, 1, 2, 3, 4, 5]
+        # Set active action set for environment
+        # If minimal map to integer in full action set
+        if use_minimal_action_set:
+            self.action_set = self.minimal_action_set
+        else:
+            self.action_set = self.full_action_set
 
     @property
     def default_params(self):
@@ -83,7 +93,8 @@ class MinSeaquest(environment.Environment):
         )
 
         # Sequentially go through substate and update the state
-        state = step_agent(state, action, self.env_params)
+        a = self.action_set[action]
+        state = step_agent(state, a, self.env_params)
         reward = step_bullets(state)
         state = step_divers(state)
         state, reward = step_e_subs(state, reward)
@@ -246,17 +257,11 @@ class MinSeaquest(environment.Environment):
     @property
     def num_actions(self) -> int:
         """Number of actions possible in environment."""
-        return 6
+        return len(self.action_set)
 
-    @property
-    def num_actions(self) -> int:
-        """Number of actions possible in environment."""
-        return 6
-
-    @property
-    def action_space(self):
+    def action_space(self, params: EnvParams) -> spaces.Discrete:
         """Action space of the environment."""
-        return spaces.Discrete(6)
+        return spaces.Discrete(len(self.action_set))
 
     def observation_space(self, params: dict):
         """Observation space of the environment."""
