@@ -39,7 +39,7 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ## Implemented Accelerated Environments 🏎️
 
 
-| Environment Name | Reference | Source | Speed Up vs `np` | Trained 🤖 (Avg Return) |
+| Environment Name | Reference | Source | `np` Speed Up | 🤖 ckpt (Return) |
 | --- | --- | --- | --- | --- |
 | [`Pendulum-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/pendulum.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
 | [`CartPole-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/cartpole.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
@@ -80,8 +80,8 @@ pip install git+https://github.com/RobertTLange/gymnax.git@main
 In order to use JAX on your accelerators, you can find more details in the [JAX documentation](https://github.com/google/jax#installation).
 
 ## Examples 📖
-* 📓 [Environment API](notebooks/getting_started.ipynb) - Check out the API, how to train an Anakin agent on `Catch-bsuite`
-* 📓 [ES with `gymnax`](examples/es_in_gymnax.ipynb) - Using CMA-ES in JAX with vectorized population evaluations powered by `gymnax`.
+* 📓 [Environment API](notebooks/getting_started.ipynb) - Check out the API, how to train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `Catch-bsuite`
+* 📓 [ES with `gymnax`](examples/es_in_gymnax.ipynb) - Using CMA-ES ([`evosax`](https://github.com/RobertTLange/evosax)) with vectorized population evaluations powered by `gymnax`.
 * 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents in `gymnax-blines`.
 
 ## Key Selling Points 💵
@@ -155,7 +155,7 @@ If you use `gymnax` in your research, please cite it as follows:
 ```
 
 We acknowledge financial support the [Google TRC](https://sites.research.google/trc/about/) and the Deutsche
-Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excellence Strategy - EXC 2002/1 "Science of Intelligence" - project number 390523135.
+Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excellence Strategy - EXC 2002/1 ["Science of Intelligence"](https://www.scienceofintelligence.de/) - project number 390523135.
 
 ## Development 👷
 

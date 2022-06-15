@@ -1,13 +1,9 @@
-from .environments.classic_control import (
+from .environments import (
     Pendulum,
     CartPole,
     MountainCar,
     ContinuousMountainCar,
     Acrobot,
-)
-
-# =============================================================================
-from .environments.bsuite import (
     Catch,
     DeepSea,
     DiscountingChain,
@@ -15,19 +11,11 @@ from .environments.bsuite import (
     UmbrellaChain,
     MNISTBandit,
     SimpleBandit,
-)
-
-# =============================================================================
-from .environments.minatar import (
     MinAsterix,
     MinBreakout,
     MinFreeway,
     MinSeaquest,
     MinSpaceInvaders,
-)
-
-# =============================================================================
-from .environments.misc import (
     BernoulliBandit,
     GaussianBandit,
     FourRooms,

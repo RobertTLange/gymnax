@@ -1,10 +1,19 @@
-### [v0.0.2] - [TBC]
+### [v0.0.3] - 15/06/2022
+##### Fixed
+
+- Fix import structure.
+
+### [v0.0.2] - 15/06/2022
 
 ##### Added
 
+- Fully functional API using flax-style `EnvState` and `EnvParams` for calling `env.step`. 
+- MinAtar environments are not operational yet.
+- Release to ensure that `evosax` 0.0.9 release can work with `GymFitness` backend in `gymnax`.
+
 ##### Changed
 
-##### Fixed
+- Basically everything :)
 
 ### [v0.0.1] - 22/11/2021
 
