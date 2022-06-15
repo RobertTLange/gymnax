@@ -1,7 +1,7 @@
 <h1 align="center">
   <a href="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png">
-    <img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="200" /></a>
-  <b>Classic Gym Environments in JAX 🏎️</b><br>
+    <img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="200" /></a><br>
+  <b>Classic Gym Environments in JAX 🌍</b><br>
 </h1>
 
 <p align="center">
@@ -18,7 +18,7 @@
 </p>
 
 
-Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It support a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control) tasks, [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic meta RL tasks. You can get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb). Finally, we provide trained checkpoints for PPO and ES in the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) repository.
+Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It support a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control) tasks, [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic meta RL tasks. Finally, we provide trained checkpoints for PPO and ES in the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) repository. You can get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
 
 ## Basic `gymnax` API Usage 🍲
 
@@ -36,7 +36,7 @@ action = env.action_space(env_params).sample(key_policy)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
-## Implemented Accelerated Environments 🌍
+## Implemented Accelerated Environments 🏎️
 
 
 | Environment Name | Reference | Source | Speed Up (vs. NumPy) |
@@ -81,10 +81,9 @@ pip install git+https://github.com/RobertTLange/gymnax.git@main
 In order to use JAX on your accelerators, you can find more details in the [JAX documentation](https://github.com/google/jax#installation).
 
 ## Examples 📖
-* 📓 [Environment API](notebooks/getting_started.ipynb) - Check out the API and accelerated control environments.
-* 📓 [Anakin Agent](examples/getting_started.ipynb) - Check out the DeepMind's Anakin agent with `gymnax`'s `Catch-bsuite` environment.
-* 📓 [CMA-ES](examples/pendulum_cma_es.ipynb) - CMA-ES in JAX with vectorized population evaluation.
-
+* 📓 [Environment API](notebooks/getting_started.ipynb) - Check out the API, how to train an Anakin agent on `Catch-bsuite`
+* 📓 [ES with `gymnax`](examples/es_in_gymnax.ipynb) - Using CMA-ES in JAX with vectorized population evaluations powered by `gymnax`.
+* 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents in `gymnax-blines`.
 
 ## Key Selling Points 💵
 

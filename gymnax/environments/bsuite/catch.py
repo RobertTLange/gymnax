@@ -19,7 +19,7 @@ class EnvState:
 
 @struct.dataclass
 class EnvParams:
-    max_steps_in_episode: int = 100000000
+    max_steps_in_episode: int = 1000
 
 
 class Catch(environment.Environment):
@@ -64,8 +64,13 @@ class Catch(environment.Environment):
         catched = paddle_x == ball_x
         reward = prev_done * jax.lax.select(catched, 1.0, -1.0)
 
-        state = EnvState(
-            ball_x, ball_y, paddle_x, paddle_y, prev_done, state.time + 1
+        state = state.replace(
+            ball_x=ball_x,
+            ball_y=ball_y,
+            paddle_x=paddle_x,
+            paddle_y=paddle_y,
+            prev_done=prev_done,
+            time=state.time + 1,
         )
 
         # Check number of steps in episode termination condition
@@ -139,7 +144,6 @@ def sample_init_state(
     key: chex.PRNGKey, rows: int, columns: int
 ) -> Tuple[int, int, int, int]:
     """Sample a new initial state."""
-    # high = jnp.zeros((params["rows"], params["columns"]))
     ball_x = jax.random.randint(key, shape=(), minval=0, maxval=columns)
     ball_y = 0
     paddle_x = columns // 2
