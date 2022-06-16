@@ -39,7 +39,7 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ## Implemented Accelerated Environments 🏎️
 
 
-| Environment Name | Reference | Source | `np` Speed Up | 🤖 ckpt (Return) |
+| Environment Name | Reference | Source | `np` Speed↑ (CPU/GPU) | 🤖 ckpt (Return) |
 | --- | --- | --- | --- | --- |
 | [`Pendulum-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/pendulum.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
 | [`CartPole-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/cartpole.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
@@ -63,6 +63,10 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 | [`PointRobot-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/point_robot.py) | [Dorfman et al. (2021)](https://openreview.net/pdf?id=IBdEfhLveS) | [Click](https://github.com/Rondorf/BOReL/blob/main/environments/toy_navigation/point_robot.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
 | [`BernoulliBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/bernoulli_bandit.py) | [Wang et al. (2017)](https://arxiv.org/abs/1611.05763) | - | - |[PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
 | [`GaussianBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/gaussian_bandit.py) | [Lange & Sprekeler (2022)](https://arxiv.org/abs/2010.04466) | - | - | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/ppo), [ES](https://github.com/RobertTLange/gymnax-blines/agents/gym_pendulum/es) (R: -100)
+
+\* All speed ups are estimated for single step transitions (random policy) on a Intel Xeon CPU E5-2650 v3 (2.30GHz) and a NVIDIA RTX 2080 GPU using `jit` compilation for `gymnax`. For more detailed speed comparisons, please refer to the section below and [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
+
+
 ## Installation ⏳
 
 The latest `gymnax` release can directly be installed from PyPI:

@@ -1,4 +1,4 @@
-from gymnax.visualize.visualizer import Visualizer
+from .visualizer import Visualizer
 
 
 __all__ = [

@@ -28,3 +28,4 @@ ignore:
   - "notebooks/*"
   - "examples/*"
   - "docs/"
+  - "gymnax/visualize/*"

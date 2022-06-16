@@ -1,46 +1,43 @@
 import jax
 import jax.numpy as jnp
 import gymnax
+from functools import partial
 
 
-class EnvRollout(object):
+class RolloutWrapper(object):
     def __init__(
         self,
         model_forward,
         env_name: str = "Pendulum-v1",
         num_env_steps: int = 200,
-        num_episodes: int = 20,
+        env_kwargs: dict = {},
+        env_params: dict = {},
     ):
         """Wrapper to define batch evaluation for generation parameters."""
         self.env_name = env_name
         self.num_env_steps = num_env_steps
-        self.num_episodes = num_episodes
 
         # Define the RL environment & network forward function
-        self.env, self.env_params = gymnax.make(self.env_name)
+        self.env, self.env_params = gymnax.make(self.env_name, **env_kwargs)
+        self.env_params = self.env_params.replace(**env_params)
         self.model_forward = model_forward
 
-        # Set up the generation evaluation vmap-ed function - rl/supervised/etc.
-        self.gen_evaluate = self.batch_evaluate()
-
-    def collect(self, rng_eval, policy_params):
+    @partial(jax.jit, static_argnums=(0,))
+    def population_rollout(self, rng_eval, policy_params):
         """Reshape parameter vector and evaluate the generation."""
-        # Reshape the parameters into the correct network format
-        rollout_keys = jax.random.split(rng_eval, self.num_episodes)
+        # Evaluate population of nets on gymnax task - vmap over rng & params
+        pop_rollout = jax.vmap(self.batch_rollout, in_axes=(None, 0))
+        return pop_rollout(rng_eval, policy_params)
 
-        # Evaluate generation population on pendulum task - min cost!
-        pop_trajectories = self.gen_evaluate(rollout_keys, policy_params)
-        return pop_trajectories
-
-    def batch_evaluate(self):
+    @partial(jax.jit, static_argnums=(0,))
+    def batch_rollout(self, rng_eval, policy_params):
         """Evaluate a generation of networks on RL/Supervised/etc. task."""
         # vmap over different MC fitness evaluations for single network
-        batch_rollout = jax.jit(
-            jax.vmap(self.rollout, in_axes=(0, None), out_axes=0)
-        )
-        return batch_rollout
+        batch_rollout = jax.vmap(self.single_rollout, in_axes=(0, None))
+        return batch_rollout(rng_eval, policy_params)
 
-    def rollout(self, rng_input, policy_params):
+    @partial(jax.jit, static_argnums=(0,))
+    def single_rollout(self, rng_input, policy_params):
         """Rollout a pendulum episode with lax.scan."""
         # Reset the environment
         rng_reset, rng_episode = jax.random.split(rng_input)
