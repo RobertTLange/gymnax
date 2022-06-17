@@ -116,7 +116,7 @@ class ContinuousMountainCar(environment.Environment):
         return spaces.Box(
             low=params.min_action,
             high=params.max_action,
-            shape=(),
+            shape=(1,),
         )
 
     def observation_space(self, params: EnvParams) -> spaces.Box:

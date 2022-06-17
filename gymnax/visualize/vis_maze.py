@@ -2,7 +2,7 @@ import numpy as np
 
 
 def init_maze(ax, env, state, params):
-    im = ax.imshow(env.env_map)
+    im = ax.imshow(env.env_map, cmap="Greys")
     anno_pos = ax.annotate(
         "A",
         fontsize=20,

@@ -32,7 +32,7 @@ def pytest_generate_tests(metafunc):
                 ],
             )
         else:
-            metafunc.parametrize("gym_env_name", ["MountainCarContinuous-v0"])
+            metafunc.parametrize("gym_env_name", ["Pendulum-v1"])
     elif "misc_env_name" in metafunc.fixturenames:
         if metafunc.config.getoption("all"):
             metafunc.parametrize(
@@ -46,4 +46,4 @@ def pytest_generate_tests(metafunc):
                 ],
             )
         else:
-            metafunc.parametrize("misc_env_name", ["PointRobot-misc"])
+            metafunc.parametrize("misc_env_name", ["FourRooms-misc"])

@@ -116,7 +116,7 @@ class Pendulum(environment.Environment):
         return spaces.Box(
             low=-params.max_torque,
             high=params.max_torque,
-            shape=(),
+            shape=(1,),
             dtype=jnp.float32,
         )
 

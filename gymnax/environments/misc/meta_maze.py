@@ -165,7 +165,7 @@ class MetaMaze(environment.Environment):
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
-        ax.imshow(self.env_map)
+        ax.imshow(self.env_map, cmap="Greys")
         ax.annotate(
             "A",
             fontsize=20,
@@ -180,6 +180,8 @@ class MetaMaze(environment.Environment):
             xycoords="data",
             xytext=(state.goal[1] - 0.3, state.goal[0] + 0.25),
         )
+        ax.set_xticks([])
+        ax.set_yticks([])
         return fig, ax
 
     @property
