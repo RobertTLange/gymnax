@@ -11,6 +11,7 @@ from flax import struct
 class EnvState:
     theta: float
     theta_dot: float
+    last_u: float  # Only needed for rendering
     time: int
 
 
@@ -66,7 +67,9 @@ class Pendulum(environment.Environment):
         newth = state.theta + newthdot * params.dt
 
         # Update state dict and evaluate termination conditions
-        state = EnvState(newth.squeeze(), newthdot.squeeze(), state.time + 1)
+        state = EnvState(
+            newth.squeeze(), newthdot.squeeze(), u.reshape(), state.time + 1
+        )
         done = self.is_terminal(state, params)
         return (
             lax.stop_gradient(self.get_obs(state)),
@@ -82,7 +85,7 @@ class Pendulum(environment.Environment):
         """Reset environment state by sampling theta, theta_dot."""
         high = jnp.array([jnp.pi, 1])
         state = jax.random.uniform(key, shape=(2,), minval=-high, maxval=high)
-        state = EnvState(theta=state[0], theta_dot=state[1], time=0)
+        state = EnvState(theta=state[0], theta_dot=state[1], last_u=0.0, time=0)
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState) -> chex.Array:
@@ -136,6 +139,12 @@ class Pendulum(environment.Environment):
                     jnp.float32,
                 ),
                 "theta_dot": spaces.Box(
+                    -jnp.finfo(jnp.float32).max,
+                    jnp.finfo(jnp.float32).max,
+                    (),
+                    jnp.float32,
+                ),
+                "last_u": spaces.Box(
                     -jnp.finfo(jnp.float32).max,
                     jnp.finfo(jnp.float32).max,
                     (),

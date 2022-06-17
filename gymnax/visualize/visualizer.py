@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from typing import Optional
+from .vis_gym import init_gym, update_gym
 from .vis_minatar import init_minatar, update_minatar
 from .vis_circle import init_circle, update_circle
 from .vis_maze import init_maze, update_maze
@@ -12,7 +13,16 @@ class Visualizer(object):
         self.env_params = env_params
         self.state_seq = state_seq
         self.fig, self.ax = plt.subplots(1, 1, figsize=(6, 5))
-        self.interval = 500
+        if env.name not in [
+            "Acrobot-v1",
+            "CartPole-v1",
+            "Pendulum-v1",
+            "MountainCar-v0",
+            "MountainCarContinuous-v0",
+        ]:
+            self.interval = 100
+        else:
+            self.interval = 50
 
     def animate(
         self,
@@ -40,6 +50,20 @@ class Visualizer(object):
     def init(self):
         # Plot placeholder points
         if self.env.name in [
+            "Acrobot-v1",
+            "CartPole-v1",
+            "Pendulum-v1",
+            "MountainCar-v0",
+            "MountainCarContinuous-v0",
+        ]:
+            import gym
+
+            # Animations have to use older gym version and pyglet!
+            assert gym.__version__ == "0.19.0"
+            self.im = init_gym(
+                self.ax, self.env, self.state_seq[0], self.env_params
+            )
+        elif self.env.name in [
             "Asterix-MinAtar",
             "Breakout-MinAtar",
             "Freeway-MinAtar",
@@ -59,6 +83,14 @@ class Visualizer(object):
 
     def update(self, frame):
         if self.env.name in [
+            "Acrobot-v1",
+            "CartPole-v1",
+            "Pendulum-v1",
+            "MountainCar-v0",
+            "MountainCarContinuous-v0",
+        ]:
+            self.im = update_gym(self.im, self.env, self.state_seq[frame])
+        elif self.env.name in [
             "Asterix-MinAtar",
             "Breakout-MinAtar",
             "Freeway-MinAtar",

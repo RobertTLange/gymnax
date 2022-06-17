@@ -46,6 +46,7 @@ def control_np_to_jax(
         state_gym_to_jax = {
             "theta": env.state[0],
             "theta_dot": env.state[1],
+            "last_u": env.last_u,
             "time": 0,
         }
         if get_jax:

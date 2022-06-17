@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png">
-    <img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="250" /></a><br>
+    <img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="225" /></a><br>
   <b>Classic Gym Environments in JAX 🌍</b><br>
 </h1>
 
