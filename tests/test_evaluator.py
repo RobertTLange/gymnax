@@ -31,12 +31,14 @@ def test_rollout():
     )
 
     # Test simple single episode rollout
-    obs, rewards, dones, cumreturn = manager.single_rollout(rng, policy_params)
+    obs, action, reward, next_obs, done, cum_return = manager.single_rollout(
+        rng, policy_params
+    )
     assert obs.shape == (200, 3)
 
     # Test multiple rollouts for same network (different random numbers)
     rng_batch = jax.random.split(rng, 10)
-    obs, rewards, dones, cumreturn = manager.batch_rollout(
+    obs, action, reward, next_obs, done, cum_return = manager.batch_rollout(
         rng_batch, policy_params
     )
     assert obs.shape == (10, 200, 3)
@@ -47,7 +49,12 @@ def test_rollout():
     )
     # print(jax.tree_map(lambda x: x.shape, policy_params))
     # print(jax.tree_map(lambda x: x.shape, batch_params))
-    obs, rewards, dones, cumreturn = manager.population_rollout(
-        rng_batch, batch_params
-    )
+    (
+        obs,
+        action,
+        reward,
+        next_obs,
+        done,
+        cum_return,
+    ) = manager.population_rollout(rng_batch, batch_params)
     assert obs.shape == (5, 10, 200, 3)

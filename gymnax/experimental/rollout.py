@@ -4,10 +4,15 @@ import gymnax
 from functools import partial
 
 
+# TODO: Add RNN forward with init_carry/hidden
+# TODO: Add pmap utitlities if multi-device
+# TODO: Use as backend in `GymFitness` or keep separated?
+
+
 class RolloutWrapper(object):
     def __init__(
         self,
-        model_forward,
+        model_forward=None,
         env_name: str = "Pendulum-v1",
         num_env_steps: int = 200,
         env_kwargs: dict = {},
@@ -45,27 +50,46 @@ class RolloutWrapper(object):
 
         def policy_step(state_input, tmp):
             """lax.scan compatible step transition in jax env."""
-            obs, state, policy_params, rng = state_input
+            obs, state, policy_params, rng, cum_reward, valid_mask = state_input
             rng, rng_step, rng_net = jax.random.split(rng, 3)
-            action = self.model_forward(policy_params, obs, rng=rng_net)
-            next_o, next_s, reward, done, _ = self.env.step(
+            if self.model_forward is not None:
+                action = self.model_forward(policy_params, obs, rng=rng_net)
+            else:
+                action = self.env.action_space(self.env_params).sample(rng_net)
+            next_obs, next_state, reward, done, _ = self.env.step(
                 rng_step, state, action, self.env_params
             )
-            carry = [next_o.squeeze(), next_s, policy_params, rng]
-            y = [next_o.squeeze(), reward, done]
+            new_cum_reward = cum_reward + reward * valid_mask
+            new_valid_mask = valid_mask * (1 - done)
+            carry = [
+                next_obs,
+                next_state,
+                policy_params,
+                rng,
+                new_cum_reward,
+                new_valid_mask,
+            ]
+            y = [obs, action, reward, next_obs, done]
             return carry, y
 
         # Scan over episode step loop
-        _, scan_out = jax.lax.scan(
+        carry_out, scan_out = jax.lax.scan(
             policy_step,
-            [obs, state, policy_params, rng_episode],
-            [jnp.zeros((self.num_env_steps, self.input_shape[0] + 2))],
+            [
+                obs,
+                state,
+                policy_params,
+                rng_episode,
+                jnp.array([0.0]),
+                jnp.array([1.0]),
+            ],
+            (),
+            self.env_params.max_steps_in_episode,
         )
         # Return the sum of rewards accumulated by agent in episode rollout
-        obs, rewards, dones = scan_out[0], scan_out[1], scan_out[2]
-        rewards = rewards.reshape(self.num_env_steps, 1)
-        ep_mask = (jnp.cumsum(dones) < 1).reshape(self.num_env_steps, 1)
-        return obs, rewards, dones, jnp.sum(rewards * ep_mask)
+        obs, action, reward, next_obs, done = scan_out
+        cum_return = carry_out[-2]
+        return obs, action, reward, next_obs, done, cum_return
 
     @property
     def input_shape(self):

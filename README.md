@@ -1,7 +1,7 @@
 <h1 align="center">
   <a href="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png">
     <img src="https://github.com/RobertTLange/gymnax/blob/main/docs/logo.png?raw=true" width="215" /></a><br>
-  <b>Classic Gym Environments in JAX 🌍</b><br>
+  <b>Classic Reinforcement Learning Environments in JAX 🌍</b><br>
 </h1>
 
 <p align="center">
@@ -18,7 +18,7 @@
 </p>
 
 
-Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It support a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables parallelized rollouts for different configurations (e.g. for meta RL). Finally, we provide training pipelines and checkpoints for both PPO and ES in the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) repository. Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
+Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It support a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables parallelized rollouts for different configurations (e.g. for meta RL). Finally, we provide training pipelines and checkpoints for both PPO & ES in the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) repo. Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
 
 ## Basic `gymnax` API Usage 🍲
 
@@ -67,7 +67,7 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 | [`BernoulliBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/bernoulli_bandit.py) | [Wang et al. (2017)](https://arxiv.org/abs/1611.05763) | - | - |[ES](https://github.com/RobertTLange/gymnax-blines/agents/BernoulliBandit-misc) (R: 90)
 | [`GaussianBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/gaussian_bandit.py) | [Lange & Sprekeler (2022)](https://arxiv.org/abs/2010.04466) | - | - | [ES](https://github.com/RobertTLange/gymnax-blines/agents/GaussianBandit-misc) (R: 0)
 
-\* All displayed speed ups are estimated for single step transitions (random policy) on a Intel Xeon CPU E5-2650 v3 (2.30GHz) and a NVIDIA RTX 2080 GPU using `jit` compilation for `gymnax`. For more detailed speed comparisons, please refer to the section below and [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
+\* All displayed speed ups are estimated for 1M step transitions (random policy) on a Intel Xeon CPU E5-2650 v3 (2.30GHz) using `jit` compiled episode rollouts for `gymnax`. For more detailed speed comparisons on different accelerators (RTX 2080Ti, V100s) and policies, please refer to the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
 
 
 ## Installation ⏳
@@ -112,7 +112,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 - **Scan through entire episode rollouts**: You can also `lax.scan` through entire `reset`, `step` episode loops for fast compilation:
 
   ```python
-  def rollout(rng_input, policy_params, env_params, num_env_steps):
+  def rollout(rng_input, policy_params, env_params):
         """Rollout a jitted gymnax episode with lax.scan."""
         # Reset the environment
         rng_reset, rng_episode = jax.random.split(rng_input)
@@ -122,24 +122,23 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
             """lax.scan compatible step transition in jax env."""
             obs, state, policy_params, rng = state_input
             rng, rng_step, rng_net = jax.random.split(rng, 3)
-            action = network.apply(policy_params, obs)
-            next_o, next_s, reward, done, _ = env.step(
+            action = model.apply(policy_params, obs)
+            next_obs, next_state, reward, done, _ = env.step(
                 rng_step, state, action, env_params
             )
-            carry = [next_o, next_s, policy_params, rng]
-            return carry, [reward, done]
+            carry = [next_obs, next_state, policy_params, rng]
+            return carry, [obs, action, reward, next_obs, done]
 
         # Scan over episode step loop
         _, scan_out = jax.lax.scan(
             policy_step,
             [obs, state, policy_params, rng_episode],
-            [jnp.zeros((num_env_steps, 2))],
+            (),
+            self.env_params.max_steps_in_episode
         )
         # Return masked sum of rewards accumulated by agent in episode
-        rewards, dones = scan_out[0], scan_out[1]
-        rewards = rewards.reshape(num_env_steps, 1)
-        ep_mask = (jnp.cumsum(dones) < 1).reshape(num_env_steps, 1)
-        return jnp.sum(rewards * ep_mask)
+        obs, action, reward, next_obs, done = scan_out
+        return obs, action, reward, next_obs, done
   ```
 
 - **Build-in visualization tools**: You can also smoothly generate GIF animations using the `Visualizer` tool, which covers all `classic_control`, `MinAtar` and most `misc` environments: 
@@ -159,9 +158,6 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
       reward_seq.append(reward)
       if done:
           break
-      else:
-          env_state = next_env_state
-          obs = next_obs
   
   cum_rewards = jnp.cumsum(reward_seq)
   vis = Visualizer(env, env_params, state_seq, cum_rewards)
@@ -178,11 +174,11 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   manager = RolloutWrapper(model.apply, env_name="Pendulum-v1")
 
   # Simple single episode rollout for policy
-  obs, rewards, dones, cumreturn = manager.single_rollout(rng, policy_params)
+  obs, action, reward, next_obs, done, cum_ret = manager.single_rollout(rng, policy_params)
 
   # Multiple rollouts for same network (different rng, e.g. eval)
   rng_batch = jax.random.split(rng, 10)
-  obs, rewards, dones, cumreturn = manager.batch_rollout(
+  obs, action, reward, next_obs, done, cum_ret = manager.batch_rollout(
       rng_batch, policy_params
   )
 
@@ -190,7 +186,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   batch_params = jax.tree_map(  # Stack parameters or use different
       lambda x: jnp.tile(x, (5, 1)).reshape(5, *x.shape), policy_params
   )
-  obs, rewards, dones, cumreturn = manager.population_rollout(
+  obs, action, reward, next_obs, done, cum_ret = manager.population_rollout(
       rng_batch, batch_params
   )
   ```
