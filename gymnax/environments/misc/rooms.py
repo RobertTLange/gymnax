@@ -181,7 +181,7 @@ class FourRooms(environment.Environment):
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         if self.use_visual_obs:
-            return spaces.Box(0, 1, (13, 13), jnp.float32)
+            return spaces.Box(0, 1, (13, 13, 2), jnp.float32)
         else:
             return spaces.Box(
                 jnp.min(self.coords), jnp.max(self.coords), (4,), jnp.float32

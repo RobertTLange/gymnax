@@ -18,7 +18,7 @@
 </p>
 
 
-Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It support a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables parallelized rollouts for different configurations (e.g. for meta RL). Finally, we provide training pipelines and checkpoints for both PPO and ES in the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) repository. Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
+Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It support a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables parallelized rollouts for different configurations (e.g. for meta RL). Finally, we provide training pipelines and checkpoints for both PPO and ES in the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) repository. Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
 
 ## Basic `gymnax` API Usage 🍲
 
@@ -61,13 +61,13 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 | [`Seaquest-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/seaquest.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py) | ~`? `x | [PPO, ES]() (R: ???)
 | [`SpaceInvaders-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/space_invaders.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py) | ~`?`x | [PPO, ES]() (R: ???)
 | --- | --- | --- | --- | ---
-| [`FourRooms-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/rooms.py) | [Sutton et al. (1999)](https://people.cs.umass.edu/~barto/courses/cs687/Sutton-Precup-Singh-AIJ99.pdf) | [Click](https://github.com/howardh/gym-fourrooms) | ~`?`x | [PPO, ES]() (R: ???)
-| [`MetaMaze-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/meta_maze.py) | [Micconi et al. (2020)](https://arxiv.org/abs/2002.10585)  | [Click](https://github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py) | ~`?`x | [PPO, ES]() (R: ???)
-| [`PointRobot-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/point_robot.py) | [Dorfman et al. (2021)](https://openreview.net/pdf?id=IBdEfhLveS) | [Click](https://github.com/Rondorf/BOReL/blob/main/environments/toy_navigation/point_robot.py) | ~`?`x | [PPO, ES]() (R: ???)
-| [`BernoulliBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/bernoulli_bandit.py) | [Wang et al. (2017)](https://arxiv.org/abs/1611.05763) | - | - |[PPO, ES]() (R: ???)
-| [`GaussianBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/gaussian_bandit.py) | [Lange & Sprekeler (2022)](https://arxiv.org/abs/2010.04466) | - | - | [PPO, ES]() (R: ???)
+| [`FourRooms-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/rooms.py) | [Sutton et al. (1999)](https://people.cs.umass.edu/~barto/courses/cs687/Sutton-Precup-Singh-AIJ99.pdf) | [Click](https://github.com/howardh/gym-fourrooms) | ~`?`x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/FourRooms-misc) (R: 1)
+| [`MetaMaze-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/meta_maze.py) | [Micconi et al. (2020)](https://arxiv.org/abs/2002.10585)  | [Click](https://github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py) | - | [ES](https://github.com/RobertTLange/gymnax-blines/agents/MetaMaze-misc) (R: 32)
+| [`PointRobot-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/point_robot.py) | [Dorfman et al. (2021)](https://openreview.net/pdf?id=IBdEfhLveS) | [Click](https://github.com/Rondorf/BOReL/blob/main/environments/toy_navigation/point_robot.py) | - | [ES](https://github.com/RobertTLange/gymnax-blines/agents/PointRobot-misc) (R: 10)
+| [`BernoulliBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/bernoulli_bandit.py) | [Wang et al. (2017)](https://arxiv.org/abs/1611.05763) | - | - |[ES](https://github.com/RobertTLange/gymnax-blines/agents/BernoulliBandit-misc) (R: 90)
+| [`GaussianBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/gaussian_bandit.py) | [Lange & Sprekeler (2022)](https://arxiv.org/abs/2010.04466) | - | - | [ES](https://github.com/RobertTLange/gymnax-blines/agents/GaussianBandit-misc) (R: 0)
 
-\* All speed ups are estimated for single step transitions (random policy) on a Intel Xeon CPU E5-2650 v3 (2.30GHz) and a NVIDIA RTX 2080 GPU using `jit` compilation for `gymnax`. For more detailed speed comparisons, please refer to the section below and [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
+\* All displayed speed ups are estimated for single step transitions (random policy) on a Intel Xeon CPU E5-2650 v3 (2.30GHz) and a NVIDIA RTX 2080 GPU using `jit` compilation for `gymnax`. For more detailed speed comparisons, please refer to the section below and [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
 
 
 ## Installation ⏳
@@ -95,57 +95,105 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 
 - **Environment vectorization & acceleration**: Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):
 
-```python
-# Jit-accelerated step transition
-jit_step = jax.jit(env.step)
+  ```python
+  # Jit-accelerated step transition
+  jit_step = jax.jit(env.step)
 
-# vmap across random keys for batch rollouts
-vreset_rng = jax.vmap(env.reset, in_axes=(0, None))
-vstep_rng = jax.vmap(env.step, in_axes=(0, 0, 0, None))
+  # map (vmap/pmap) across random keys for batch rollouts
+  reset_rng = jax.vmap(env.reset, in_axes=(0, None))
+  step_rng = jax.vmap(env.step, in_axes=(0, 0, 0, None))
 
-# vmap across environment parameters (e.g. for meta-learning)
-vreset_env = jax.vmap(env.reset, in_axes=(None, 0))
-vstep_env = jax.vmap(env.step, in_axes=(None, 0, 0, 0))
-```
+  # map (vmap/pmap) across env parameters (e.g. for meta-learning)
+  reset_params = jax.vmap(env.reset, in_axes=(None, 0))
+  step_params = jax.vmap(env.step, in_axes=(None, 0, 0, 0))
+  ```
+  For more speed comparisons check out [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines).
 
 - **Scan through entire episode rollouts**: You can also `lax.scan` through entire `reset`, `step` episode loops for fast compilation:
 
-```python
-def rollout(rng_input, policy_params, env_params, num_env_steps):
-      """Rollout a jitted gymnax episode with lax.scan."""
-      # Reset the environment
-      rng_reset, rng_episode = jax.random.split(rng_input)
-      obs, state = env.reset(rng_reset, env_params)
+  ```python
+  def rollout(rng_input, policy_params, env_params, num_env_steps):
+        """Rollout a jitted gymnax episode with lax.scan."""
+        # Reset the environment
+        rng_reset, rng_episode = jax.random.split(rng_input)
+        obs, state = env.reset(rng_reset, env_params)
 
-      def policy_step(state_input, tmp):
-          """lax.scan compatible step transition in jax env."""
-          obs, state, policy_params, rng = state_input
-          rng, rng_step, rng_net = jax.random.split(rng, 3)
-          action = network.apply(policy_params, obs)
-          next_o, next_s, reward, done, _ = env.step(
-              rng_step, state, action, env_params
-          )
-          carry = [next_o, next_s, policy_params, rng]
-          return carry, [reward, done]
+        def policy_step(state_input, tmp):
+            """lax.scan compatible step transition in jax env."""
+            obs, state, policy_params, rng = state_input
+            rng, rng_step, rng_net = jax.random.split(rng, 3)
+            action = network.apply(policy_params, obs)
+            next_o, next_s, reward, done, _ = env.step(
+                rng_step, state, action, env_params
+            )
+            carry = [next_o, next_s, policy_params, rng]
+            return carry, [reward, done]
 
-      # Scan over episode step loop
-      _, scan_out = jax.lax.scan(
-          policy_step,
-          [obs, state, policy_params, rng_episode],
-          [jnp.zeros((num_env_steps, 2))],
+        # Scan over episode step loop
+        _, scan_out = jax.lax.scan(
+            policy_step,
+            [obs, state, policy_params, rng_episode],
+            [jnp.zeros((num_env_steps, 2))],
+        )
+        # Return masked sum of rewards accumulated by agent in episode
+        rewards, dones = scan_out[0], scan_out[1]
+        rewards = rewards.reshape(num_env_steps, 1)
+        ep_mask = (jnp.cumsum(dones) < 1).reshape(num_env_steps, 1)
+        return jnp.sum(rewards * ep_mask)
+  ```
+
+- **Build-in visualization tools**: You can also smoothly generate GIF animations using the `Visualizer` tool, which covers all `classic_control`, `MinAtar` and most `misc` environments: 
+  ```python
+  from gymnax.visualize import Visualizer
+
+  state_seq, reward_seq = [], []
+  rng, rng_reset = jax.random.split(rng)
+  obs, env_state = env.reset(rng_reset, env_params)
+  while True:
+      state_seq.append(env_state)
+      rng, rng_act, rng_step = jax.random.split(rng, 3)
+      action = env.action_space(env_params).sample(rng_act)
+      next_obs, next_env_state, reward, done, info = env.step(
+          rng_step, env_state, action, env_params
       )
-      # Return masked sum of rewards accumulated by agent in episode
-      rewards, dones = scan_out[0], scan_out[1]
-      rewards = rewards.reshape(num_env_steps, 1)
-      ep_mask = (jnp.cumsum(dones) < 1).reshape(num_env_steps, 1)
-      return jnp.sum(rewards * ep_mask)
-```
+      reward_seq.append(reward)
+      if done:
+          break
+      else:
+          env_state = next_env_state
+          obs = next_obs
+  
+  cum_rewards = jnp.cumsum(reward_seq)
+  vis = Visualizer(env, env_params, state_seq, cum_rewards)
+  vis.animate(f"docs/anim.gif")
+  ```
 
-- **Super fast acceleration**: 
+- **Training pipelines & pretrained agents**: Check out [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) for trained agents, expert rollout visualizations and PPO/ES pipelines. The agents are minimally tuned, but can help you get up and running.
 
-![](docs/classic_runtime_benchmark.png)
+- **Simple batch agent evaluation**: 
+  ```python
+  from gymnax.experimental import RolloutWrapper
 
-- **Training pipelines & pretrained agents**: Check out [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) for trained agents and PPO/ES pipelines.
+  # Define rollout manager for pendulum env
+  manager = RolloutWrapper(model.apply, env_name="Pendulum-v1")
+
+  # Simple single episode rollout for policy
+  obs, rewards, dones, cumreturn = manager.single_rollout(rng, policy_params)
+
+  # Multiple rollouts for same network (different rng, e.g. eval)
+  rng_batch = jax.random.split(rng, 10)
+  obs, rewards, dones, cumreturn = manager.batch_rollout(
+      rng_batch, policy_params
+  )
+
+  # Multiple rollouts for different networks + rng (e.g. for ES)
+  batch_params = jax.tree_map(  # Stack parameters or use different
+      lambda x: jnp.tile(x, (5, 1)).reshape(5, *x.shape), policy_params
+  )
+  obs, rewards, dones, cumreturn = manager.population_rollout(
+      rng_batch, batch_params
+  )
+  ```
 
 ### Acknowledgements & Citing `gymnax` ✏️
 
@@ -156,7 +204,7 @@ If you use `gymnax` in your research, please cite it as follows:
   author = {Robert Tjarko Lange},
   title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
   url = {http://github.com/RobertTLange/gymnax},
-  version = {0.0.2},
+  version = {0.0.4},
   year = {2022},
 }
 ```

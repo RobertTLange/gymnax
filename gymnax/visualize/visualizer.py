@@ -5,6 +5,7 @@ from .vis_gym import init_gym, update_gym
 from .vis_minatar import init_minatar, update_minatar
 from .vis_circle import init_circle, update_circle
 from .vis_maze import init_maze, update_maze
+from .vis_catch import init_catch, update_catch
 
 
 class Visualizer(object):
@@ -64,6 +65,10 @@ class Visualizer(object):
             self.im = init_gym(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
+        elif self.env.name == "Catch-bsuite":
+            self.im = init_catch(
+                self.ax, self.env, self.state_seq[0], self.env_params
+            )
         elif self.env.name in [
             "Asterix-MinAtar",
             "Breakout-MinAtar",
@@ -91,6 +96,8 @@ class Visualizer(object):
             "MountainCarContinuous-v0",
         ]:
             self.im = update_gym(self.im, self.env, self.state_seq[frame])
+        elif self.env.name == "Catch-bsuite":
+            self.im = update_catch(self.im, self.env, self.state_seq[frame])
         elif self.env.name in [
             "Asterix-MinAtar",
             "Breakout-MinAtar",
@@ -101,7 +108,7 @@ class Visualizer(object):
             update_minatar(self.im, self.env, self.state_seq[frame])
         elif self.env.name == "PointRobot-misc":
             self.im = update_circle(self.im, self.env, self.state_seq[frame])
-        elif self.env.name == "MetaMaze-misc":
+        elif self.env.name in ["MetaMaze-misc", "FourRooms-misc"]:
             self.im = update_maze(self.im, self.env, self.state_seq[frame])
 
         if self.reward_seq is None:
