@@ -155,7 +155,7 @@ class FourRooms(environment.Environment):
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
-        done_steps = state.time > params.max_steps_in_episode
+        done_steps = state.time >= params.max_steps_in_episode
         # Check if agent has found the goal
         done_goal = jnp.logical_and(
             state.pos[0] == state.goal[0],

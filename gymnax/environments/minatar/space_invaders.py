@@ -104,6 +104,7 @@ class MinSpaceInvaders(environment.Environment):
 
         # Check game condition & no. steps for termination condition
         time = state.time + 1
+        state = state.replace(time=time)
         done = self.is_terminal(state, params)
         terminal = done
         state = state.replace(
@@ -165,7 +166,7 @@ class MinSpaceInvaders(environment.Environment):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done_steps = state.time > params.max_steps_in_episode
+        done_steps = state.time >= params.max_steps_in_episode
         return jnp.logical_or(done_steps, state.terminal)
 
     @property

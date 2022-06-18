@@ -104,7 +104,7 @@ class Catch(environment.Environment):
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
         done_loose = state.ball_y == self.rows - 1
-        done_steps = state.time > params.max_steps_in_episode
+        done_steps = state.time >= params.max_steps_in_episode
         done = jnp.logical_or(done_loose, done_steps)
         return done
 

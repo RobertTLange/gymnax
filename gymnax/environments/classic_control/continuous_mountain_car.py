@@ -97,14 +97,14 @@ class ContinuousMountainCar(environment.Environment):
             state.velocity >= params.goal_velocity
         )
         # Check number of steps in episode termination condition
-        done_steps = state.time > params.max_steps_in_episode
+        done_steps = state.time >= params.max_steps_in_episode
         done = jnp.logical_or(done1, done_steps)
         return done.squeeze()
 
     @property
     def name(self) -> str:
         """Environment name."""
-        return "ContinuousMountainCar-v0"
+        return "MountainCarContinuous-v0"
 
     @property
     def num_actions(self) -> int:

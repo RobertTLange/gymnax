@@ -84,7 +84,7 @@ class DiscountingChain(environment.Environment):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
-        done = state.time == params.max_steps_in_episode
+        done = state.time >= params.max_steps_in_episode
         return done
 
     @property

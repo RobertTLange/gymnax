@@ -246,7 +246,7 @@ class MinSeaquest(environment.Environment):
 
     def is_terminal(self, state: dict, params: dict) -> bool:
         """Check whether state is terminal."""
-        done_steps = state["time"] > params["max_steps_in_episode"]
+        done_steps = state["time"] >= params["max_steps_in_episode"]
         return jnp.logical_or(state["terminal"], done_steps)
 
     @property

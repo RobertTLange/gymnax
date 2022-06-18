@@ -141,7 +141,7 @@ class Acrobot(environment.Environment):
             > 1.0
         )
         # Check number of steps in episode termination condition
-        done_steps = state.time > params.max_steps_in_episode
+        done_steps = state.time >= params.max_steps_in_episode
         done = jnp.logical_or(done_angle, done_steps)
         return done
 

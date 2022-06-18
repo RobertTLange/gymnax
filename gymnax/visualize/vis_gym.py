@@ -56,6 +56,7 @@ def init_gym(ax, env, state, params):
     rgb_array = gym_env.render(mode="rgb_array")
     ax.set_xticks([])
     ax.set_yticks([])
+    gym_env.close()
     return ax.imshow(rgb_array)
 
 
@@ -70,4 +71,5 @@ def update_gym(im, env, state):
     gym_env.env.state = gym_state
     rgb_array = gym_env.render(mode="rgb_array")
     im.set_data(rgb_array)
+    gym_env.close()
     return im

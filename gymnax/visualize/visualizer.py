@@ -8,10 +8,11 @@ from .vis_maze import init_maze, update_maze
 
 
 class Visualizer(object):
-    def __init__(self, env, env_params, state_seq: list):
+    def __init__(self, env, env_params, state_seq, reward_seq=None):
         self.env = env
         self.env_params = env_params
         self.state_seq = state_seq
+        self.reward_seq = reward_seq
         self.fig, self.ax = plt.subplots(1, 1, figsize=(6, 5))
         if env.name not in [
             "Acrobot-v1",
@@ -75,7 +76,7 @@ class Visualizer(object):
             self.im = init_circle(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
-        elif self.env.name == "MetaMaze-misc":
+        elif self.env.name in ["MetaMaze-misc", "FourRooms-misc"]:
             self.im = init_maze(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
@@ -102,4 +103,15 @@ class Visualizer(object):
             self.im = update_circle(self.im, self.env, self.state_seq[frame])
         elif self.env.name == "MetaMaze-misc":
             self.im = update_maze(self.im, self.env, self.state_seq[frame])
-        self.ax.set_title(f"{self.env.name} - Time Step {frame + 1}")
+
+        if self.reward_seq is None:
+            self.ax.set_title(
+                f"{self.env.name} - Step {frame + 1}", fontsize=15
+            )
+        else:
+            self.ax.set_title(
+                "{}: Step {:4.0f} - Return {:7.2f}".format(
+                    self.env.name, frame + 1, self.reward_seq[frame]
+                ),
+                fontsize=15,
+            )

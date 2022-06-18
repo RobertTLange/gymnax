@@ -76,7 +76,7 @@ class MetaMaze(environment.Environment):
         self.env_map = generate_maze_layout(maze_size, rf_size)
         center = jnp.int32((self.env_map.shape[0] - 1) / 2 + self.rf_off - 1)
         self.center_position = jnp.array([center, center])
-        self.wall_map = 1 - self.env_map
+        self.occupied_map = 1 - self.env_map
         coords = []
         # Get all walkable positions or positions that can be goals
         for y in range(self.env_map.shape[0]):
@@ -136,7 +136,7 @@ class MetaMaze(environment.Environment):
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Return observation from raw state trafo."""
         rf_obs = jax.lax.dynamic_slice(
-            self.wall_map,
+            self.occupied_map,
             (state.pos[0] - self.rf_off, state.pos[1] - self.rf_off),
             (self.rf_size, self.rf_size),
         ).reshape(-1)
@@ -151,7 +151,7 @@ class MetaMaze(environment.Environment):
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
-        done_steps = state.time > params.max_steps_in_episode
+        done_steps = state.time >= params.max_steps_in_episode
         # Check if agent has found the goal
         done_goal = jnp.logical_and(
             state.pos[0] == state.goal[0],
@@ -165,7 +165,7 @@ class MetaMaze(environment.Environment):
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
-        ax.imshow(self.env_map, cmap="Greys")
+        ax.imshow(self.occupied_map, cmap="Greys")
         ax.annotate(
             "A",
             fontsize=20,
