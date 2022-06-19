@@ -76,7 +76,7 @@ def test_sub_steps():
             action_gym = minatar_action_map(action, env_name_jax)
 
             new_x, new_y = step_agent_numpy(env_gym, action_gym)
-            state_jax_a, new_x_jax, new_y_jax = step_agent(state, action)
+            state_jax_a, new_x_jax, new_y_jax = step_agent(state, action_gym)
             assert new_x == new_x_jax and new_y == new_y_jax
             assert_correct_state(env_gym, env_name_jax, state_jax_a, tolerance)
 

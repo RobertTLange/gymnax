@@ -19,7 +19,7 @@ from asterix_helpers import (
     step_timers_numpy,
 )
 
-num_episodes, num_steps, tolerance = 10, 1000, 1e-04
+num_episodes, num_steps, tolerance = 5, 20, 1e-04
 env_name_gym, env_name_jax = "asterix", "Asterix-MinAtar"
 
 
@@ -40,7 +40,7 @@ def test_sub_steps():
             action_gym = minatar_action_map(action, env_name_jax)
 
             step_agent_numpy(env_gym, action_gym)
-            state_jax_a = step_agent(state, action)
+            state_jax_a = step_agent(state, action_gym)
             assert_correct_state(env_gym, env_name_jax, state_jax_a, tolerance)
 
             r = step_entities_numpy(env_gym)

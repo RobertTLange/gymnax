@@ -161,13 +161,17 @@ class MinBreakout(environment.Environment):
 
 def step_agent(state: EnvState, action: int) -> Tuple[EnvState, int, int]:
     """Helper that steps the agent and checks boundary conditions."""
+    # Update player position
     pos = (
+        # Action left & border condition
         jnp.maximum(0, state.pos - 1) * (action == 1)
+        # Action right & border condition
         + jnp.minimum(9, state.pos + 1) * (action == 3)
+        # Don't move player if not l/r chosen
         + state.pos * jnp.logical_and(action != 1, action != 3)
     )
 
-    # Update ball position
+    # Update ball position - based on direction of movement
     last_x = state.ball_x
     last_y = state.ball_y
     new_x = (
@@ -193,7 +197,12 @@ def step_agent(state: EnvState, action: int) -> Tuple[EnvState, int, int]:
         border_cond_x, jnp.array([1, 0, 3, 2])[state.ball_dir], state.ball_dir
     )
     return (
-        state.replace(pos=pos, last_x=last_x, last_y=last_y, ball_dir=ball_dir),
+        state.replace(
+            pos=pos,
+            last_x=last_x,
+            last_y=last_y,
+            ball_dir=ball_dir,
+        ),
         new_x,
         new_y,
     )
@@ -218,6 +227,7 @@ def step_ball_brick(
     )
     strike_bool = jnp.logical_and((1 - state.strike), strike_toggle)
     reward += strike_bool * 1.0
+    strike = jax.lax.select(strike_toggle, strike_bool, False)
 
     brick_map = jax.lax.select(
         strike_bool, state.brick_map.at[new_y, new_x].set(0), state.brick_map
@@ -254,7 +264,8 @@ def step_ball_brick(
     new_y = jax.lax.select(redirect_ball2, state.last_y, new_y)
     redirect_cond = jnp.logical_and(1 - redirect_ball1, 1 - redirect_ball2)
     terminal = jnp.logical_and(brick_cond, redirect_cond)
-    strike = jax.lax.select(strike_toggle, strike_bool, False)
+
+    strike = jax.lax.select(1 - strike_toggle == 1, False, True)
     return (
         state.replace(
             ball_dir=ball_dir,

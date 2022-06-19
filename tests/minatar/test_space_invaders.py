@@ -41,7 +41,7 @@ def test_step():
             action = env_jax.action_space(env_params).sample(key_action)
             action_gym = minatar_action_map(action, env_name_jax)
 
-            reward_gym = env_gym.act(action_gym)
+            reward_gym, done = env_gym.act(action_gym)
             obs_gym = env_gym.state()
             done_gym = env_gym.env.terminal
             obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(
@@ -83,7 +83,7 @@ def test_sub_steps():
             action_gym = minatar_action_map(action, env_name_jax)
 
             terminal = step_agent_numpy(env_gym, action_gym)
-            state_jax_a = step_agent(action, state, env_params)
+            state_jax_a = step_agent(action_gym, state, env_params)
             assert_correct_state(env_gym, env_name_jax, state_jax_a, tolerance)
 
             term_cond_gym = step_aliens_numpy(env_gym)
@@ -93,7 +93,7 @@ def test_sub_steps():
             reward_gym = step_shoot_numpy(env_gym)
             state_jax_c, reward_jax = step_shoot(state_jax_b, env_params)
             assert_correct_state(env_gym, env_name_jax, state_jax_c, tolerance)
-
+            assert reward_gym == reward_jax
             if env_gym.env.terminal:
                 break
 
@@ -154,12 +154,12 @@ def test_nearest_alien():
             action_gym = minatar_action_map(action, env_name_jax)
             # Step gym environment get state and trafo in jax dict
             reward_gym = env_gym.act(action_gym)
-            state = np_state_to_jax(env_gym, env_name_jax)
+            state = np_state_to_jax(env_gym, env_name_jax, get_jax=True)
 
             # Get nearest alien for current environment state
             nearest = get_nearest_alien_numpy(env_gym)
             alien_exists, loc, id = get_nearest_alien(
-                state["pos"], state["alien_map"]
+                state.pos, state.alien_map
             )
 
             if nearest is None:

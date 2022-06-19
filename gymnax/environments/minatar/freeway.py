@@ -69,7 +69,7 @@ class MinFreeway(environment.Environment):
         a = self.action_set[action]
         state, reward, win_cond = step_agent(a, state, params)
 
-        # 2. Sample a new configuration for the cars if agent 'won'
+        # 2. Sample new config for cars if agent 'won' - bool step_agent
         # Note: At each step we are sampling speed and dir to avoid if cond
         # by masking - still faster after compilation than numpy version!
         key_speed, key_dirs = jax.random.split(key)
@@ -201,22 +201,24 @@ def step_agent(
 def step_cars(state: EnvState) -> EnvState:
     """Perform 3rd part of step transition for car."""
     # Update cars and check for collisions! - respawn agent at bottom
+    pos = state.pos
+    cars = state.cars
     for car_id in range(8):
         # Check for agent collision with car and if so reset agent
         collision_cond = jnp.logical_and(
-            state.cars[car_id][0] == 4,
-            state.cars[car_id][1] == state.pos,
+            cars[car_id][0] == 4,
+            cars[car_id][1] == pos,
         )
 
-        pos = jax.lax.select(collision_cond, 9, state.pos)
+        pos = jax.lax.select(collision_cond, 9, pos)
 
         # Check for exiting frame, reset car and then check collision again
-        car_cond = state.cars[car_id][2] == 0
+        car_cond = cars[car_id][2] == 0
         upd_2 = jax.lax.select(
-            car_cond, jnp.abs(state.cars[car_id][3]), state.cars[car_id][2]
+            car_cond, jnp.abs(cars[car_id][3]), cars[car_id][2]
         )
 
-        cars = state.cars.at[car_id, 2].set(upd_2)
+        cars = cars.at[car_id, 2].set(upd_2)
         upd_0 = jax.lax.select(
             car_cond,
             (

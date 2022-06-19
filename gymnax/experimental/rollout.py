@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 import gymnax
 from functools import partial
-
+from typing import Optional
 
 # TODO: Add RNN forward with init_carry/hidden
 # TODO: Add pmap utitlities if multi-device
@@ -14,18 +14,21 @@ class RolloutWrapper(object):
         self,
         model_forward=None,
         env_name: str = "Pendulum-v1",
-        num_env_steps: int = 200,
+        num_env_steps: Optional[int] = None,
         env_kwargs: dict = {},
         env_params: dict = {},
     ):
         """Wrapper to define batch evaluation for generation parameters."""
         self.env_name = env_name
-        self.num_env_steps = num_env_steps
-
         # Define the RL environment & network forward function
         self.env, self.env_params = gymnax.make(self.env_name, **env_kwargs)
         self.env_params = self.env_params.replace(**env_params)
         self.model_forward = model_forward
+
+        if num_env_steps is None:
+            self.num_env_steps = self.env_params.max_steps_in_episode
+        else:
+            self.num_env_steps = num_env_steps
 
     @partial(jax.jit, static_argnums=(0,))
     def population_rollout(self, rng_eval, policy_params):

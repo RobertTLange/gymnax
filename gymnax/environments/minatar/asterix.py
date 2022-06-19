@@ -25,7 +25,7 @@ class EnvState:
 
 @struct.dataclass
 class EnvParams:
-    ramping: int = 1
+    ramping: bool = True
     ramp_interval: int = 100
     init_spawn_speed: int = 10
     init_move_interval: int = 5
@@ -73,18 +73,17 @@ class MinAsterix(environment.Environment):
         self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        # Spawn enemy if timer is up - sample at each step and mask
-        # TODO: Add conditional for case when there is no free slot
+        # Spawn enemy if timer is up - sample at each step and select
         entity, slot = spawn_entity(key, state)
         entities = lax.select(
-            state.spawn_timer <= 0,
+            state.spawn_timer == 0,
             state.entities.at[slot].set(entity),
             state.entities,
         )
         spawn_timer = lax.select(
-            state.spawn_timer <= 0, state.spawn_speed, state.spawn_timer
+            state.spawn_timer == 0, state.spawn_speed, state.spawn_timer
         )
-        state.replace(entities=entities, spawn_timer=spawn_timer)
+        state = state.replace(entities=entities, spawn_timer=spawn_timer)
 
         # Update state of the players
         a = self.action_set[action]

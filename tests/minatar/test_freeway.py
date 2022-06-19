@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import gymnax
 from gymnax.utils import (
     np_state_to_jax,
@@ -21,7 +22,7 @@ from freeway_helpers import (
     step_agent_numpy,
 )
 
-num_episodes, num_steps, tolerance = 10, 100, 1e-04
+num_episodes, num_steps, tolerance = 10, 10, 1e-04
 env_name_gym, env_name_jax = "freeway", "Freeway-MinAtar"
 
 
@@ -43,7 +44,9 @@ def test_step():
 
             # Perform step transition for agent & assert correct state dict
             _ = step_agent_numpy(env_gym, action_gym)
-            state_jax_post_agent, r, w = step_agent(action, state, env_params)
+            state_jax_post_agent, r, w = step_agent(
+                action_gym, state, env_params
+            )
             assert_correct_state(
                 env_gym, env_name_jax, state_jax_post_agent, tolerance
             )
@@ -111,7 +114,9 @@ def test_randomize_cars():
         cars_gym = det_randomize_cars_numpy(
             speeds, directions, np.zeros((8, 4)), 1
         )
-        cars_jax = randomize_cars(speeds, directions, np.zeros((8, 4)), 1)
+        cars_jax = randomize_cars(
+            speeds, directions, jnp.zeros((8, 4), dtype=int), True
+        )
         assert (np.array(cars_gym) == cars_jax).all()
 
     # Test no initialization version of `randomize_cars`
@@ -119,8 +124,10 @@ def test_randomize_cars():
         speeds = np.random.randint(1, 6, 8)
         directions = np.random.choice([-1, 1], 8)
         cars_gym = det_randomize_cars_numpy(
-            speeds, directions, np.zeros((8, 4)), 1
+            speeds, directions, np.zeros((8, 4)), False
         )
-        cars_jax = randomize_cars(speeds, directions, np.zeros((8, 4)), 1)
+        cars_jax = randomize_cars(
+            speeds, directions, jnp.zeros((8, 4), dtype=int), False
+        )
         assert (np.array(cars_gym) == cars_jax).all()
     return
