@@ -91,11 +91,11 @@ class UmbrellaChain(environment.Environment):
         self, state: EnvState, key: chex.PRNGKey, params: EnvParams
     ) -> chex.Array:
         """Return observation from raw state trafo."""
-        obs = jnp.zeros(shape=(1, 3 + self.n_distractor), dtype=jnp.float32)
-        obs = obs.at[0, 0].set(state.need_umbrella)
-        obs = obs.at[0, 1].set(state.has_umbrella)
-        obs = obs.at[0, 2].set(1 - state.time / params.chain_length)
-        obs = obs.at[0, 3:].set(
+        obs = jnp.zeros(shape=(3 + self.n_distractor,), dtype=jnp.float32)
+        obs = obs.at[0].set(state.need_umbrella)
+        obs = obs.at[1].set(state.has_umbrella)
+        obs = obs.at[2].set(1 - state.time / params.chain_length)
+        obs = obs.at[3:].set(
             jax.random.bernoulli(key, p=0.5, shape=(self.n_distractor,)),
         )
         return obs
@@ -122,7 +122,7 @@ class UmbrellaChain(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 1, (1, 3 + self.n_distractor))
+        return spaces.Box(0, 1, (3 + self.n_distractor,))
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""

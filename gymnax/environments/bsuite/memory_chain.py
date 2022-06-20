@@ -90,21 +90,21 @@ class MemoryChain(environment.Environment):
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Return observation from raw state trafo."""
         # Obs: [time remaining, query, num_bits of context]
-        obs = jnp.zeros(shape=(1, self.num_bits + 2), dtype=jnp.float32)
+        obs = jnp.zeros(shape=(self.num_bits + 2,), dtype=jnp.float32)
         # Show time remaining - every step.
-        obs = obs.at[0, 0].set(
+        obs = obs.at[0].set(
             1 - state.time / params.memory_length,
         )
         # Show query - only last step.
         query_val = lax.select(
             state.time == params.memory_length - 1, state.query, 0
         )
-        obs = obs.at[0, 1].set(query_val)
+        obs = obs.at[1].set(query_val)
         # Show context - only first step.
         context_val = lax.select(
             state.time == 0, (2 * state.context - 1).squeeze(), 0
         )
-        obs = obs.at[0, 2:].set(context_val)
+        obs = obs.at[2:].set(context_val)
         return obs
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
@@ -132,7 +132,7 @@ class MemoryChain(environment.Environment):
         return spaces.Box(
             0,
             2 * self.num_bits,
-            (1, self.num_bits + 2),
+            (self.num_bits + 2,),
             jnp.float32,
         )
 

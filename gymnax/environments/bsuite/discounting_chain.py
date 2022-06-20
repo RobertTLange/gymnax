@@ -75,9 +75,9 @@ class DiscountingChain(environment.Environment):
 
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
         """Return observation from raw state trafo."""
-        obs = jnp.zeros(shape=(1, 2), dtype=jnp.float32)
-        obs = obs.at[0, 0].set(state.context)
-        obs = obs.at[0, 1].set(
+        obs = jnp.zeros(shape=(2,), dtype=jnp.float32)
+        obs = obs.at[0].set(state.context)
+        obs = obs.at[1].set(
             state.time / params.max_steps_in_episode,
         )
         return obs
@@ -103,7 +103,7 @@ class DiscountingChain(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(-1, self.n_actions, (1, 2), dtype=jnp.float32)
+        return spaces.Box(-1, self.n_actions, (2,), dtype=jnp.float32)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""

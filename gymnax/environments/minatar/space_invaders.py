@@ -350,10 +350,8 @@ def get_nearest_alien(pos: int, alien_map: chex.Array) -> Tuple[int, int, int]:
         aliens_loc = jnp.max(locations)
         results_temp = (
             aliens_exist[i]
-            * jax.ops.index_update(
-                results_temp,
-                jax.ops.index[:],
-                jnp.array([aliens_exist[i], aliens_loc, i]),
+            * results_temp.at[:].set(
+                jnp.array([aliens_exist[i], aliens_loc, i])
             )
             + (1 - aliens_exist[i]) * results_temp
         )

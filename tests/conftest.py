@@ -18,7 +18,7 @@ def pytest_generate_tests(metafunc):
                 ],
             )
         else:
-            metafunc.parametrize("bsuite_env_name", ["DeepSea-bsuite"])
+            metafunc.parametrize("bsuite_env_name", ["UmbrellaChain-bsuite"])
     elif "gym_env_name" in metafunc.fixturenames:
         if metafunc.config.getoption("all"):
             metafunc.parametrize(

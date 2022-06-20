@@ -37,7 +37,7 @@ class DeepSea(environment.Environment):
     def __init__(self, size: int = 8):
         super().__init__()
         self.size = size
-        self.action_mapping = jnp.ones([8, 8])
+        self.action_mapping = jnp.ones([size, size])
 
     @property
     def default_params(self) -> EnvParams:
