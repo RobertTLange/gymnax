@@ -73,23 +73,26 @@ class MinAsterix(environment.Environment):
         self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        # Spawn enemy if timer is up - sample at each step and select
+        # Spawn enemy if timer up - sample at each step & select based on timer
+        spawn_entities_now = state.spawn_timer == 0
         entity, slot = spawn_entity(key, state)
         entities = lax.select(
-            state.spawn_timer == 0,
+            spawn_entities_now,
             state.entities.at[slot].set(entity),
             state.entities,
         )
         spawn_timer = lax.select(
-            state.spawn_timer == 0, state.spawn_speed, state.spawn_timer
+            spawn_entities_now, state.spawn_speed, state.spawn_timer
         )
         state = state.replace(entities=entities, spawn_timer=spawn_timer)
 
         # Update state of the players
         a = self.action_set[action]
         state = step_agent(state, a)
+
         # Update entities, get reward and figure out termination
         state, reward, done = step_entities(state)
+
         # Update timers and ramping condition check
         state = step_timers(state, params)
 
@@ -132,7 +135,6 @@ class MinAsterix(environment.Environment):
         # Set the position of the agent in the grid
         obs = obs.at[state.player_y, state.player_x, 0].set(1)
         # Loop over entity identities and set entity locations
-        # TODO: Rewrite as scan?! Not too important? Only 8 entities
         for i in range(state.entities.shape[0]):
             x = state.entities[i, :]
             # Enemy channel 1, Trail channel 2, Gold channel 3, Not used 4
@@ -215,16 +217,16 @@ def spawn_entity(key: chex.PRNGKey, state: EnvState) -> Tuple[chex.Array, int]:
     is_gold = jax.random.choice(
         key_gold, jnp.array([1, 0]), p=jnp.array([1 / 3, 2 / 3])
     )
-    x = (1 - lr) * 9
+    x = (1 - lr) * 9  # l-to-r starts at 0
     # Entities are represented as 5 dimensional arrays
-    # 0: Position y, 1: Slot x, 2: lr, 3: Gold indicator
+    # 0: Position y, 1: Slot x, 2: lr (from l to r dir), 3: Gold indicator
     # 4: whether entity is filled/not an open slot
 
     # Sampling problem: Need to get rid of jnp.where due to concretization
     # Sample random order of entries to go through
     # Check if element is free with while loop and stop if position is found
     # or all elements have been checked
-    state_entities = state.entities[:, 4]
+    state_entities = state.entities[:, 4]  # Only use col 4 indicating free
     slot, free = while_sample_slots(key_slot, state_entities)
     entity = jnp.array([x, slot + 1, lr, is_gold, free])
     return entity, slot
@@ -236,7 +238,8 @@ def while_sample_slots(
     """Go through random order of slots until slot is found that is free."""
     init_val = jnp.array([0, 0])
     # Sample random order of slot entries to go through - hack around jnp.where
-    # order_to_go_through = jax.random.permutation(key, jnp.arange(8))
+    order_to_go_through = jax.random.permutation(key, jnp.arange(8))
+    perm_entities = state_entities[order_to_go_through]
 
     def condition_to_check(val):
         # Check if we haven't gone through all possible slots and whether free
@@ -246,39 +249,45 @@ def while_sample_slots(
         # Increase list counter - slot that has been checked
         val = val.at[0].set(val[0] + 1)
         # Check if slot is still free
-        free = state_entities[val[0]] == 0
+        free = perm_entities[val[0]] == 0
         val = val.at[1].set(free)
         return val
 
     id_and_free = jax.lax.while_loop(condition_to_check, update, init_val)
     # Return slot id and whether it is free
-    return id_and_free[0], id_and_free[1]
+    slot_id = order_to_go_through[id_and_free[0]]
+    free_slot = id_and_free[1]
+    return slot_id, free_slot
 
 
 def step_entities(state: EnvState) -> Tuple[EnvState, float, bool]:
     """Update positions of the entities and return reward, done."""
-    done, reward = False, 0
+    done, reward = 0, 0
     # Loop over entities and check for collisions - either gold or enemy
     entities = state.entities
     for i in range(8):
-        x = state.entities[i]
+        x = entities[i]
         slot_filled = x[4] != 0
-        collision = jnp.logical_and(
-            x[0:2] == [state.player_x, state.player_y], slot_filled
-        )
+        # Get boolean for any collision with either gold or enemy
+        coords = jnp.logical_and(x[0] == state.player_x, x[1] == state.player_y)
+        collision = jnp.logical_and(coords, slot_filled)
         # If collision with gold: empty gold and give positive reward
         collision_gold = jnp.logical_and(collision, x[3])
         reward += collision_gold
+        # Set row i to zeros if collision with gold
         entities = entities.at[i].set(x * (1 - collision_gold))
+
         # If collision with enemy: terminate the episode
         collision_enemy = jnp.logical_and(collision, 1 - x[3])
-        done = collision_enemy
+        done += collision_enemy
 
     # Loop over entities and move them in direction
     time_to_move = state.move_timer == 0
     move_timer = jax.lax.select(
         time_to_move, state.move_speed, state.move_timer
     )
+
+    old_entities = entities
     for i in range(8):
         x = entities[i]
         slot_filled = x[4] != 0
@@ -290,20 +299,31 @@ def step_entities(state: EnvState) -> Tuple[EnvState, float, bool]:
 
         # Update if entity moves out of the frame - reset everything to zeros
         outside_of_frame = jnp.logical_or(x[0] < 0, x[0] > 9)
-        entities = entities.at[i].set(x * slot_filled * (1 - outside_of_frame))
+        entities = jax.lax.select(
+            time_to_move,
+            entities.at[i].set(x * slot_filled * (1 - outside_of_frame)),
+            old_entities,
+        )
 
         # Update if entity moves into the player after its state is updated
-        collision = jnp.logical_and(
-            x[0:2] == [state.player_x, state.player_y], slot_filled
-        )
+        coords = jnp.logical_and(x[0] == state.player_x, x[1] == state.player_y)
+        collision = jnp.logical_and(coords, slot_filled)
         # If collision with gold: empty gold and give positive reward
         collision_gold = jnp.logical_and(collision, x[3])
-        reward += collision_gold
-        entities = entities.at[i].set(x * (1 - collision_gold))
+        reward += jax.lax.select(time_to_move, collision_gold, False) * 1
+        entities = jax.lax.select(
+            time_to_move,
+            entities.at[i].set(entities[i] * (1 - collision_gold)),
+            old_entities,
+        )
         # If collision with enemy: terminate the episode
         collision_enemy = jnp.logical_and(collision, 1 - x[3])
-        done = collision_enemy
-    return state.replace(entities=entities, move_timer=move_timer), reward, done
+        done += jax.lax.select(time_to_move, collision_enemy, False)
+    return (
+        state.replace(entities=entities, move_timer=move_timer),
+        reward,
+        done > 0,
+    )
 
 
 def step_timers(state: EnvState, params: EnvParams) -> EnvState:
