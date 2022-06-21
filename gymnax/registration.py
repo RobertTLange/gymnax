@@ -28,6 +28,9 @@ from .environments import (
 
 def make(env_id: str, **env_kwargs):
     """A JAX-version of OpenAI's infamous env.make(env_name)"""
+    if env_id not in registered_envs:
+        raise ValueError(f"{env_id} is not in registered gymnax environments.")
+
     # 1. Classic OpenAI Control Tasks
     if env_id == "Pendulum-v1":
         env = Pendulum(**env_kwargs)
@@ -84,3 +87,28 @@ def make(env_id: str, **env_kwargs):
 
     # Create a jax PRNG key for random seed control
     return env, env.default_params
+
+
+registered_envs = [
+    "CartPole-v1",
+    "Pendulum-v1",
+    "Acrobot-v1",
+    "MountainCar-v0",
+    "MountainCarContinuous-v0",
+    "Asterix-MinAtar",
+    "Breakout-MinAtar",
+    "Freeway-MinAtar",
+    "SpaceInvaders-MinAtar",
+    "Catch-bsuite",
+    "DeepSea-bsuite",
+    "MemoryChain-bsuite",
+    "UmbrellaChain-bsuite",
+    "DiscountingChain-bsuite",
+    "MNISTBandit-bsuite",
+    "SimpleBandit-bsuite",
+    "FourRooms-misc",
+    "MetaMaze-misc",
+    "PointRobot-misc",
+    "BernoulliBandit-misc",
+    "GaussianBandit-misc",
+]
