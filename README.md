@@ -38,7 +38,7 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ## Implemented Accelerated Environments 🏎️
 
 
-| Environment Name | Reference | Source | `np` Speed↑ | 🤖 Ckpt (Return) |
+| Environment Name | Reference | Source | 🤖 Ckpt (Return) | 1M🦶-S
 | --- | --- | --- | --- | --- |
 | [`Acrobot-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/acrobot.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py) | ~62x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Acrobot-v1) (R: -80)
 | [`Pendulum-v1`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/pendulum.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) | ~338x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Pendulum-v1) (R: -130)
@@ -46,11 +46,11 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 | [`MountainCar-v0`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/mountain_car.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540) | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) | ~92x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/MountainCar-v0) (R: -118)
 | [`MountainCarContinuous-v0`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/classic_control/continuous_mountain_car.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540)  | [Click](https://github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py) | ~341x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/MountainCarContinuous-v0) (R: 92)
 |  |  |  |  | 
-| [`Asterix-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/asterix.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py) | ~`?`x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Asterix-MinAtar) (R: 15)
-| [`Breakout-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/breakout.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py) | ~`?`x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Breakout-MinAtar) (R: 28)
-| [`Freeway-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/freeway.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py) | ~`?`x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Freeway-MinAtar) (R: 58)
-| [`Seaquest-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/seaquest.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py) | ~`? `x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Seaquest-MinAtar) (R: ???)
-| [`SpaceInvaders-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/space_invaders.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py) | ~`?`x | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/SpaceInvaders-MinAtar) (R: 131)
+| [`Asterix-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/asterix.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/Asterix-MinAtar) (R: 15)
+| [`Breakout-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/breakout.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/Breakout-MinAtar) (R: 28)
+| [`Freeway-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/freeway.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/Freeway-MinAtar) (R: 58)
+| [`Seaquest-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/seaquest.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/Seaquest-MinAtar) (R: ???)
+| [`SpaceInvaders-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/space_invaders.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py) | ~`?`x | [PPO](https://github.com/RobertTLange/gymnax-blines/agents/SpaceInvaders-MinAtar) (R: 131)
 |  |  |  |  | 
 | [`Catch-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/catch.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py) | - | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/Catch-bsuite) (R: 1)
 | [`DeepSea-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/deep_sea.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/deep_sea.py)  |  - | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/agents/DeepSea-bsuite) (R: 0)
@@ -86,9 +86,10 @@ pip install git+https://github.com/RobertTLange/gymnax.git@main
 In order to use JAX on your accelerators, you can find more details in the [JAX documentation](https://github.com/google/jax#installation).
 
 ## Examples 📖
-* 📓 [Environment API](notebooks/getting_started.ipynb) - Check out the API, how to train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `Catch-bsuite`.
-* 📓 [ES with `gymnax`](examples/es_in_gymnax.ipynb) - Using CMA-ES ([`evosax`](https://github.com/RobertTLange/evosax)) with vectorized population evaluations powered by `gymnax`.
-* 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents in `gymnax-blines`.
+* 📓 [Environment API](notebooks/getting_started.ipynb) - Check out the API,
+* 📓 [Distributed Anakin Agent](notebooks/01_anakin.ipynb) - how to train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `Catch-bsuite`.
+* 📓 [ES with `gymnax`](examples/02_es_gym.ipynb) - Using CMA-ES ([`evosax`](https://github.com/RobertTLange/evosax)) with vectorized population evaluations powered by `gymnax`.
+* 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO) in `gymnax-blines`.
 
 ## Key Selling Points 💵
 
@@ -111,7 +112,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 - **Scan through entire episode rollouts**: You can also `lax.scan` through entire `reset`, `step` episode loops for fast compilation:
 
   ```python
-  def rollout(rng_input, policy_params, env_params):
+  def rollout(rng_input, policy_params, env_params, steps_in_episode):
         """Rollout a jitted gymnax episode with lax.scan."""
         # Reset the environment
         rng_reset, rng_episode = jax.random.split(rng_input)
@@ -133,7 +134,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
             policy_step,
             [obs, state, policy_params, rng_episode],
             (),
-            self.env_params.max_steps_in_episode
+            steps_in_episode
         )
         # Return masked sum of rewards accumulated by agent in episode
         obs, action, reward, next_obs, done = scan_out
@@ -157,6 +158,9 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
       reward_seq.append(reward)
       if done:
           break
+      else:
+        obs = next_obs
+        env_state = next_env_state
   
   cum_rewards = jnp.cumsum(reward_seq)
   vis = Visualizer(env, env_params, state_seq, cum_rewards)

@@ -21,7 +21,7 @@ from space_invaders_helpers import (
     get_nearest_alien_numpy,
 )
 
-num_episodes, num_steps, tolerance = 2, 10, 1e-04
+num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "space_invaders", "SpaceInvaders-MinAtar"
 
 

@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-from typing import Tuple
+from typing import Tuple, Optional
 import chex
 from flax import struct
 
@@ -97,7 +97,9 @@ class DiscountingChain(environment.Environment):
         """Number of actions possible in environment."""
         return self.n_actions
 
-    def action_space(self, params: EnvParams) -> spaces.Discrete:
+    def action_space(
+        self, params: Optional[EnvParams] = None
+    ) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(self.n_actions)
 

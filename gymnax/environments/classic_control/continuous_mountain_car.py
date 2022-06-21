@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-from typing import Tuple
+from typing import Tuple, Optional
 import chex
 from flax import struct
 
@@ -111,8 +111,10 @@ class ContinuousMountainCar(environment.Environment):
         """Number of actions possible in environment."""
         return 1
 
-    def action_space(self, params: EnvParams) -> spaces.Box:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Box:
         """Action space of the environment."""
+        if params is None:
+            params = self.default_params
         return spaces.Box(
             low=params.min_action,
             high=params.max_action,

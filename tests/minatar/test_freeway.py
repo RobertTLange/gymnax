@@ -22,7 +22,7 @@ from freeway_helpers import (
     step_agent_numpy,
 )
 
-num_episodes, num_steps, tolerance = 10, 10, 1e-04
+num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "freeway", "Freeway-MinAtar"
 
 

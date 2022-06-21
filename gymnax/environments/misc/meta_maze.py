@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-from typing import Tuple
+from typing import Tuple, Optional
 import chex
 from flax import struct
 
@@ -194,7 +194,9 @@ class MetaMaze(environment.Environment):
         """Number of actions possible in environment."""
         return 4
 
-    def action_space(self, params: EnvParams) -> spaces.Discrete:
+    def action_space(
+        self, params: Optional[EnvParams] = None
+    ) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(4)
 

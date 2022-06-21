@@ -28,7 +28,7 @@ from seaquest_helpers import (
     surface_numpy,
 )
 
-num_episodes, num_steps, tolerance = 2, 10, 1e-04
+num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "seaquest", "Seaquest-MinAtar"
 
 

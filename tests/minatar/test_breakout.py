@@ -14,7 +14,7 @@ from gymnax.environments.minatar.breakout import step_agent, step_ball_brick
 from breakout_helpers import step_agent_numpy, step_ball_brick_numpy
 
 
-num_episodes, num_steps, tolerance = 10, 100, 1e-04
+num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "breakout", "Breakout-MinAtar"
 
 
