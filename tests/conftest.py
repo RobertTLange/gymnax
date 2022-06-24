@@ -47,3 +47,16 @@ def pytest_generate_tests(metafunc):
             )
         else:
             metafunc.parametrize("misc_env_name", ["FourRooms-misc"])
+    elif "viz_env_name" in metafunc.fixturenames:
+        if metafunc.config.getoption("all"):
+            metafunc.parametrize(
+                "viz_env_name",
+                [
+                    "MetaMaze-misc",
+                    "PointRobot-misc",
+                    "Catch-bsuite",
+                    "SpaceInvaders-MinAtar",
+                ],
+            )
+        else:
+            metafunc.parametrize("viz_env_name", ["SpaceInvaders-MinAtar"])

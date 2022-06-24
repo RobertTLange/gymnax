@@ -17,7 +17,7 @@
         <img src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
 </p>
 
-Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It supports a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables accelerated & parallelized rollouts for different configurations (e.g. for meta RL). By executing both environment and policy on the accelerator, it facilitates the Anakin sub-architecture proposed in the Podracer paper [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) and highly distributed evolutionary optimization (using e.g. [`evosax`](https://github.com/RobertTLange/evosax)). We provide training & checkpoints for both PPO & ES in [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines). Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
+Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It supports a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables accelerated & parallelized rollouts for different configurations (e.g. for meta RL). By executing both environment and policy on the accelerator, it facilitates the Anakin sub-architecture proposed in the Podracer paper [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) and highly distributed evolutionary optimization (using e.g. [`evosax`](https://github.com/RobertTLange/evosax)). We provide training & checkpoints for both PPO & ES in [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines). Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/getting_started.ipynb).
 
 ## Basic `gymnax` API Usage 🍲
 
@@ -28,10 +28,16 @@ import gymnax
 rng = jax.random.PRNGKey(0)
 rng, key_reset, key_act, key_step = jax.random.split(rng, 4)
 
+# Instantiate the environment & its settings.
 env, env_params = gymnax.make("Pendulum-v1")
 
+# Reset the environment.
 obs, state = env.reset(key_reset, env_params)
+
+# Sample a random action.
 action = env.action_space(env_params).sample(key_act)
+
+# Perform the step transition.
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
@@ -65,7 +71,7 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 | [`BernoulliBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/bernoulli_bandit.py) | [Wang et al. (2017)](https://arxiv.org/abs/1611.05763) | [Click](https://github.com/RobertTLange/minimal-meta-rl/blob/main/bandits/bandit_env.py) | [ES](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/BernoulliBandit-misc) (R: 90) | 0.08
 | [`GaussianBandit-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/gaussian_bandit.py) | [Lange & Sprekeler (2022)](https://arxiv.org/abs/2010.04466) | [Click](https://github.com/RobertTLange/learning-not-to-learn) | [ES](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/GaussianBandit-misc) (R: 0) | 0.07
 
-\* All displayed speed ups are estimated for 1M step transitions (random policy) on a NVIDIA A100 GPU using `jit` compiled episode rollouts with 2000 environment workers. For more detailed speed comparisons on different accelerators (CPU, RTX 2080Ti) and MLP policies, please refer to the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
+\* All displayed speeds are estimated for 1M step transitions (random policy) on a NVIDIA A100 GPU using `jit` compiled episode rollouts with 2000 environment workers. For more detailed speed comparisons on different accelerators (CPU, RTX 2080Ti) and MLP policies, please refer to the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
 
 
 ## Installation ⏳
@@ -85,10 +91,10 @@ pip install git+https://github.com/RobertTLange/gymnax.git@main
 In order to use JAX on your accelerators, you can find more details in the [JAX documentation](https://github.com/google/jax#installation).
 
 ## Examples 📖
-* 📓 [Environment API](notebooks/getting_started.ipynb) - Get started with the basic API.
-* 📓 [Distributed Anakin Agent](notebooks/01_anakin.ipynb) - Train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `Catch-bsuite`.
+* 📓 [Environment API](notebooks/getting_started.ipynb) - Get started with the basic `gymnax` API.
+* 📓 [Distributed Anakin Agent](notebooks/01_anakin.ipynb) - Train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `SpaceInvaders-MinAtar`.
 * 📓 [ES with `gymnax`](examples/02_evolution.ipynb) - Meta-evolve an LSTM controller that controls 2 link pendula of different lengths.
-* 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO) in `gymnax-blines`.
+* 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO/ES) in `gymnax-blines`.
 
 ## Key Selling Points 💵
 
@@ -106,7 +112,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   reset_params = jax.vmap(env.reset, in_axes=(None, 0))
   step_params = jax.vmap(env.step, in_axes=(None, 0, 0, 0))
   ```
-  For more speed comparisons check out [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines).
+  For speed comparisons with standard vectorized NumPy environments check out [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines).
 
 - **Scan through entire episode rollouts**: You can also `lax.scan` through entire `reset`, `step` episode loops for fast compilation:
 
@@ -161,7 +167,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
         obs = next_obs
         env_state = next_env_state
   
-  cum_rewards = jnp.cumsum(reward_seq)
+  cum_rewards = jnp.cumsum(jnp.array(reward_seq))
   vis = Visualizer(env, env_params, state_seq, cum_rewards)
   vis.animate(f"docs/anim.gif")
   ```
@@ -195,6 +201,8 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 
 ## Resources & Other Great JAX-ES Tools 📝
 * 💻 [Brax](https://github.com/google/brax): JAX-based library for rigid body physics by Google Brain with JAX-style MuJoCo substitutes.
+* 💻 [envpool](https://github.com/sail-sg/envpool): Vectorized parallel environment execution engine.
+
 
 ### Acknowledgements & Citing `gymnax` ✏️
 
