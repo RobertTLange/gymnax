@@ -17,7 +17,7 @@
         <img src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
 </p>
 
-Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It supports a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables accelerated & parallelized rollouts for different configurations (e.g. for meta RL). By executing both environment and policy on the accelerator, it facilitates the Anakin sub-architecture proposed in the Podracer paper [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) and highly distributed evolutionary optimization (using e.g. in [`evosax`](https://github.com/RobertTLange/evosax)). Finally, we provide training & checkpoints for both PPO & ES in [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines). Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
+Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It supports a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables accelerated & parallelized rollouts for different configurations (e.g. for meta RL). By executing both environment and policy on the accelerator, it facilitates the Anakin sub-architecture proposed in the Podracer paper [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) and highly distributed evolutionary optimization (using e.g. [`evosax`](https://github.com/RobertTLange/evosax)). We provide training & checkpoints for both PPO & ES in [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines). Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
 
 ## Basic `gymnax` API Usage 🍲
 
@@ -86,8 +86,8 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 
 ## Examples 📖
 * 📓 [Environment API](notebooks/getting_started.ipynb) - Get started with the basic API.
-* 📓 [Distributed Anakin Agent](notebooks/01_anakin.ipynb) - how to train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `Catch-bsuite`.
-* 📓 [ES with `gymnax`](examples/02_evolution.ipynb) - Using CMA-ES ([`evosax`](https://github.com/RobertTLange/evosax)) with parallelized population evaluations powered by `gymnax`.
+* 📓 [Distributed Anakin Agent](notebooks/01_anakin.ipynb) - Train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `Catch-bsuite`.
+* 📓 [ES with `gymnax`](examples/02_evolution.ipynb) - Meta-evolve an LSTM controller that controls 2 link pendula of different lengths.
 * 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO) in `gymnax-blines`.
 
 ## Key Selling Points 💵
@@ -112,32 +112,32 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 
   ```python
   def rollout(rng_input, policy_params, env_params, steps_in_episode):
-        """Rollout a jitted gymnax episode with lax.scan."""
-        # Reset the environment
-        rng_reset, rng_episode = jax.random.split(rng_input)
-        obs, state = env.reset(rng_reset, env_params)
+      """Rollout a jitted gymnax episode with lax.scan."""
+      # Reset the environment
+      rng_reset, rng_episode = jax.random.split(rng_input)
+      obs, state = env.reset(rng_reset, env_params)
 
-        def policy_step(state_input, tmp):
-            """lax.scan compatible step transition in jax env."""
-            obs, state, policy_params, rng = state_input
-            rng, rng_step, rng_net = jax.random.split(rng, 3)
-            action = model.apply(policy_params, obs)
-            next_obs, next_state, reward, done, _ = env.step(
-                rng_step, state, action, env_params
-            )
-            carry = [next_obs, next_state, policy_params, rng]
-            return carry, [obs, action, reward, next_obs, done]
+      def policy_step(state_input, tmp):
+          """lax.scan compatible step transition in jax env."""
+          obs, state, policy_params, rng = state_input
+          rng, rng_step, rng_net = jax.random.split(rng, 3)
+          action = model.apply(policy_params, obs)
+          next_obs, next_state, reward, done, _ = env.step(
+              rng_step, state, action, env_params
+          )
+          carry = [next_obs, next_state, policy_params, rng]
+          return carry, [obs, action, reward, next_obs, done]
 
-        # Scan over episode step loop
-        _, scan_out = jax.lax.scan(
-            policy_step,
-            [obs, state, policy_params, rng_episode],
-            (),
-            steps_in_episode
-        )
-        # Return masked sum of rewards accumulated by agent in episode
-        obs, action, reward, next_obs, done = scan_out
-        return obs, action, reward, next_obs, done
+      # Scan over episode step loop
+      _, scan_out = jax.lax.scan(
+          policy_step,
+          [obs, state, policy_params, rng_episode],
+          (),
+          steps_in_episode
+      )
+      # Return masked sum of rewards accumulated by agent in episode
+      obs, action, reward, next_obs, done = scan_out
+      return obs, action, reward, next_obs, done
   ```
 
 - **Build-in visualization tools**: You can also smoothly generate GIF animations using the `Visualizer` tool, which covers all `classic_control`, `MinAtar` and most `misc` environments: 

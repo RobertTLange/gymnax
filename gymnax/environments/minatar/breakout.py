@@ -84,7 +84,7 @@ class MinBreakout(environment.Environment):
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
-            reward,
+            reward.astype(jnp.float32),
             done,
             info,
         )
@@ -116,7 +116,7 @@ class MinBreakout(environment.Environment):
         obs = obs.at[state.ball_y, state.ball_x, 1].set(1)
         obs = obs.at[state.last_y, state.last_x, 2].set(1)
         obs = obs.at[:, :, 3].set(state.brick_map)
-        return obs
+        return obs.astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""

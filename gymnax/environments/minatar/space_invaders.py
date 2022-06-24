@@ -122,7 +122,7 @@ class MinSpaceInvaders(environment.Environment):
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
-            reward,
+            reward.astype(jnp.float32),
             done,
             info,
         )
@@ -162,7 +162,7 @@ class MinSpaceInvaders(environment.Environment):
         )
         obs = obs.at[:, :, 4].set(state.f_bullet_map)
         obs = obs.at[:, :, 5].set(state.e_bullet_map)
-        return obs
+        return obs.astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""

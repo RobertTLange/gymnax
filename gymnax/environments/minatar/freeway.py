@@ -91,7 +91,7 @@ class MinFreeway(environment.Environment):
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
-            reward,
+            reward.astype(jnp.float32),
             done,
             info,
         )
@@ -140,7 +140,7 @@ class MinFreeway(environment.Environment):
                 + 6 * (jnp.abs(car[3]) == 5)
             )
             obs = obs.at[car[1], back_x, trail_channel].set(1)
-        return obs
+        return obs.astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""

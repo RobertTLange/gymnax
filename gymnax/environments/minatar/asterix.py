@@ -103,7 +103,7 @@ class MinAsterix(environment.Environment):
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
-            reward,
+            reward.astype(jnp.float32),
             done,
             info,
         )
@@ -146,7 +146,7 @@ class MinAsterix(environment.Environment):
             leave_trail = jnp.logical_and(back_x >= 0, back_x <= 9)
             c_eff = 2 * x[4] + 4 * (1 - x[4])
             obs = obs.at[x[1], back_x, c_eff].set(leave_trail)
-        return obs[:, :, :4]
+        return obs[:, :, :4].astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""

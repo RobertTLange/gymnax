@@ -139,7 +139,7 @@ class MinSeaquest(environment.Environment):
         return (
             lax.stop_gradient(self.get_obs(state, params)),
             lax.stop_gradient(state),
-            reward,
+            reward.astype(jnp.float32),
             done,
             info,
         )
@@ -234,7 +234,7 @@ class MinSeaquest(environment.Environment):
                 obs.at[state.divers[d_id, 1], back_x, 3].set(1),
                 obs,
             )
-        return obs
+        return obs.astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
         """Check whether state is terminal."""
