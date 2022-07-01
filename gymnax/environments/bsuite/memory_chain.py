@@ -44,7 +44,7 @@ class MemoryChain(environment.Environment):
         obs = self.get_obs(state, params)
 
         # State smaller than mem length = 0 reward
-        reward = 0
+        reward = 0.0
         mem_not_full = state.time < params.memory_length
         correct_action = action == state.context[state.query]
         mem_correct = jnp.logical_and(1 - mem_not_full, correct_action)
