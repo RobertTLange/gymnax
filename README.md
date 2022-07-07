@@ -91,8 +91,8 @@ pip install git+https://github.com/RobertTLange/gymnax.git@main
 In order to use JAX on your accelerators, you can find more details in the [JAX documentation](https://github.com/google/jax#installation).
 
 ## Examples 📖
-* 📓 [Environment API](notebooks/getting_started.ipynb) - Get started with the basic `gymnax` API.
-* 📓 [Distributed Anakin Agent](notebooks/01_anakin.ipynb) - Train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `SpaceInvaders-MinAtar`.
+* 📓 [Environment API](examples/getting_started.ipynb) - Get started with the basic `gymnax` API.
+* 📓 [Distributed Anakin Agent](examples/01_anakin.ipynb) - Train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `SpaceInvaders-MinAtar`.
 * 📓 [ES with `gymnax`](examples/02_evolution.ipynb) - Meta-evolve an LSTM controller that controls 2 link pendula of different lengths.
 * 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO/ES) in `gymnax-blines`.
 
