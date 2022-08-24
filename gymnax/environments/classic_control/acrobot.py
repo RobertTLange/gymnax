@@ -18,6 +18,7 @@ class EnvState:
 
 @struct.dataclass
 class EnvParams:
+    available_torque: chex.Array
     dt: float = 0.2
     link_length_1: float = 1.0
     link_length_2: float = 1.0
@@ -28,7 +29,6 @@ class EnvParams:
     link_moi: float = 1.0
     max_vel_1: float = 4 * jnp.pi
     max_vel_2: float = 9 * jnp.pi
-    available_torque: chex.Array = jnp.array([-1.0, 0.0, +1.0])
     torque_noise_max: float = 0.0
     max_steps_in_episode: int = 500
 
@@ -46,7 +46,7 @@ class Acrobot(environment.Environment):
     @property
     def default_params(self) -> EnvParams:
         # Default environment parameters
-        return EnvParams()
+        return EnvParams(available_torque=jnp.array([-1.0, 0.0, +1.0]))
 
     def step_env(
         self,

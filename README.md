@@ -199,7 +199,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   )
   ```
 
-## Resources & Other Great JAX-ES Tools 📝
+## Resources & Other Great Tools 📝
 * 💻 [Brax](https://github.com/google/brax): JAX-based library for rigid body physics by Google Brain with JAX-style MuJoCo substitutes.
 * 💻 [envpool](https://github.com/sail-sg/envpool): Vectorized parallel environment execution engine.
 
@@ -218,7 +218,7 @@ If you use `gymnax` in your research, please cite it as follows:
 }
 ```
 
-We acknowledge financial support the [Google TRC](https://sites.research.google/trc/about/) and the Deutsche
+We acknowledge financial support by the [Google TRC](https://sites.research.google/trc/about/) and the Deutsche
 Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excellence Strategy - EXC 2002/1 ["Science of Intelligence"](https://www.scienceofintelligence.de/) - project number 390523135.
 
 ## Development 👷

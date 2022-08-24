@@ -1,3 +1,9 @@
+### [v0.0.5] - 24/08/2022
+##### Fixed
+
+- Fix deprecated `tree_multimap`.
+- Fix device grabbing when using an `jnp.array` to set default in Acrobot env.
+
 ### [v0.0.3] - 15/06/2022
 ##### Fixed
 
