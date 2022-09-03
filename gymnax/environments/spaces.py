@@ -1,14 +1,25 @@
-from typing import Tuple, Union
+from typing import Tuple, Sequence, Any
 from collections import OrderedDict
 import chex
 import jax
 import jax.numpy as jnp
+import numpy as np
+from gym import spaces as gspc
 
 
-# TODO: Add abstract class for general space (2 methods - sample, contains)
+class Space:
+    """
+    Minimal jittable class for abstract gymnax space.
+    """
+
+    def sample(self, rng: chex.PRNGKey) -> chex.Array:
+        raise NotImplementedError
+
+    def contains(self, x: jnp.int_) -> bool:
+        raise NotImplementedError
 
 
-class Discrete(object):
+class Discrete(Space):
     """
     Minimal jittable class for discrete gymnax spaces.
     TODO: For now this is a 1d space. Make composable for multi-discrete.
@@ -34,7 +45,7 @@ class Discrete(object):
         return range_cond
 
 
-class Box(object):
+class Box(Space):
     """
     Minimal jittable class for array-shaped gymnax spaces.
     TODO: Add unboundedness - sampling from other distributions, etc.
@@ -62,16 +73,14 @@ class Box(object):
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
-        range_cond = jnp.logical_and(
-            jnp.all(x >= self.low), jnp.all(x <= self.high)
-        )
+        range_cond = jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
         return range_cond
 
 
-class Dict(object):
+class Dict(Space):
     """Minimal jittable class for dictionary of simpler jittable spaces."""
 
-    def __init__(self, spaces: dict):
+    def __init__(self, spaces: dict[Any, Space]):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
@@ -96,10 +105,10 @@ class Dict(object):
         return out_of_space == 0
 
 
-class Tuple(object):
+class Tuple(Space):
     """Minimal jittable class for tuple (product) of jittable spaces."""
 
-    def __init__(self, spaces: Union[tuple, list]):
+    def __init__(self, spaces: Sequence[Space]):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
@@ -107,10 +116,7 @@ class Tuple(object):
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
         return tuple(
-            [
-                self.spaces[k].sample(key_split[i])
-                for i, k in enumerate(self.spaces)
-            ]
+            [self.spaces[k].sample(key_split[i]) for i, k in enumerate(self.spaces)]
         )
 
     def contains(self, x: jnp.int_) -> bool:
@@ -122,3 +128,21 @@ class Tuple(object):
         for space in self.spaces:
             out_of_space += 1 - space.contains(x)
         return out_of_space == 0
+
+
+def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
+    """Convert Gymnax space to equivalent Gym space"""
+    if isinstance(space, Discrete):
+        return gspc.Discrete(space.n)
+    elif isinstance(space, Box):
+        low = np.array(space.low) if space.low.size > 1 else float(space.low)
+        high = np.array(space.high) if space.low.size > 1 else float(space.high)
+        return gspc.Box(low, high, space.shape, space.dtype)
+    elif isinstance(space, Dict):
+        return gspc.Dict({k: gymnax_space_to_gym_space(v) for k, v in space.spaces})
+    elif isinstance(space, Tuple):
+        return gspc.Tuple(space.spaces)
+    else:
+        raise NotImplementedError(
+            f"Conversion of {space.__class__.__name__} not supported"
+        )
