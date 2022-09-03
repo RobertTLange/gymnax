@@ -82,7 +82,9 @@ class GymnaxToGymWrapper(gym.Env):
 
     def render(self, mode="human") -> Optional[Union[RenderFrame, List[RenderFrame]]]:
         """use underlying environment rendering if it exists, otherwise return None"""
-        return getattr(self._env, 'render', lambda x, y: None)(self.env_state, self.env_params)
+        return getattr(self._env, "render", lambda x, y: None)(
+            self.env_state, self.env_params
+        )
 
 
 class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
@@ -176,7 +178,6 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
 
     def render(self, mode="human") -> Optional[Union[RenderFrame, List[RenderFrame]]]:
         """use underlying environment rendering if it exists (for first environment), otherwise return None"""
-        return getattr(self._env, 'render', lambda x, y: None)(
-            jax.tree_map(lambda x: x[0], self.env_state),
-            self.env_params
+        return getattr(self._env, "render", lambda x, y: None)(
+            jax.tree_map(lambda x: x[0], self.env_state), self.env_params
         )
