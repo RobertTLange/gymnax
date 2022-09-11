@@ -6,8 +6,8 @@ import gym
 import jax.random
 from gym.core import ActType, ObsType, RenderFrame
 from gym.vector.utils import batch_space
-from .spaces import gymnax_space_to_gym_space
-from .environment import Environment, EnvState, EnvParams
+from gymnax.environments.spaces import gymnax_space_to_gym_space
+from gymnax.environments.environment import Environment, EnvState, EnvParams
 from copy import deepcopy
 
 
@@ -68,7 +68,7 @@ class GymnaxToGymWrapper(gym.Env):
         seed: Optional[int] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ) -> Union[ObsType, Tuple[ObsType, dict]]:
+    ) -> Tuple[ObsType, dict]:
         """Reset environment, update parameters and seed if provided"""
         if seed is not None:
             self._seed(seed)
@@ -78,7 +78,7 @@ class GymnaxToGymWrapper(gym.Env):
             )  # Allow changing environment parameters on reset
         self.rng, reset_key = jax.random.split(self.rng)
         o, self.env_state = self._env.reset(reset_key, self.env_params)
-        return o
+        return o, {}
 
     def render(self, mode="human") -> Optional[Union[RenderFrame, List[RenderFrame]]]:
         """use underlying environment rendering if it exists, otherwise return None"""
@@ -152,7 +152,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         seed: Optional[Union[int, List[int]]] = None,
         return_info: bool = False,
         options: Optional[dict] = None,
-    ):
+    ) -> Tuple[ObsType, dict]:
         """Reset environment, update parameters and seed if provided"""
         if seed is not None:
             self._seed(seed)
@@ -162,7 +162,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
             )  # Allow changing environment parameters on reset
         self.rng, reset_key = self._batched_rng_split(self.rng)  # Split all keys
         o, self.env_state = self._env.reset(reset_key, self.env_params)
-        return o
+        return o, {}
 
     def step(
         self, action: ActType
