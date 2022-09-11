@@ -1,6 +1,5 @@
 import gymnax
 from gymnax.environments.conversions.gym import GymnaxToGymWrapper, GymnaxToVectorGymWrapper
-from gymnax.environments.wrappers.gym import RecordEpisodeStatistics
 import jax
 import jax.numpy as jnp
 import chex
