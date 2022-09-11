@@ -6,8 +6,8 @@ import gym
 import jax.random
 from gym.core import ActType, ObsType, RenderFrame
 from gym.vector.utils import batch_space
-from gymnax.environments.spaces import gymnax_space_to_gym_space
-from gymnax.environments.environment import Environment, EnvState, EnvParams
+from ..spaces import gymnax_space_to_gym_space
+from ..environment import Environment, EnvState, EnvParams
 from copy import deepcopy
 
 
