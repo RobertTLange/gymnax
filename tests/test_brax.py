@@ -1,17 +1,26 @@
 import brax
+import chex
 import jax
 from brax.envs.wrappers import VmapWrapper, EpisodeWrapper, EvalWrapper
 from gymnax.environments.conversions.brax import GymnaxToBraxWrapper
 import gymnax
 
+
 def test_brax_wrapper():
-    env, env_params = gymnax.make('CartPole-v1')
+    """Wrap a Gymnax environment in brax. Use Brax's wrappers to handle vmap and episodes"""
+    env, env_params = gymnax.make("CartPole-v1")
     brax_env = GymnaxToBraxWrapper(env)
     wrapped_env = VmapWrapper(EpisodeWrapper(brax_env, 100, 1))
     B = 16
     keys = jax.random.split(jax.random.PRNGKey(0), B)
+    action = jax.vmap(env.action_space(env_params).sample)(keys)
     reset_fn = jax.jit(wrapped_env.reset)
+    o, env_state = jax.vmap(env.reset)(keys)
+    o, new_env_state, r, d, info = jax.vmap(env.step)(keys, env_state, action)
     state = reset_fn(keys)
-    step_fn = wrapped_env.step
-    new_state = step_fn(state, jax.numpy.tile(env.action_space(env_params).sample(keys[0]), (B, 1)))
-
+    chex.assert_tree_all_equal_shapes(o, state.obs)
+    chex.assert_tree_all_equal_shapes(r, state.reward)
+    chex.assert_tree_all_equal_shapes(d, state.done)
+    chex.assert_tree_all_equal_structs(new_env_state, state.qp)
+    step_fn = jax.jit(wrapped_env.step)
+    new_state = step_fn(state, action)
