@@ -135,8 +135,8 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
     if isinstance(space, Discrete):
         return gspc.Discrete(space.n)
     elif isinstance(space, Box):
-        low = np.array(space.low) if space.low.size > 1 else float(space.low)
-        high = np.array(space.high) if space.low.size > 1 else float(space.high)
+        low = float(space.low) if (np.isscalar(space.low) or space.low.size == 1) else np.array(space.low)
+        high = float(space.high) if (np.isscalar(space.high) or space.low.size == 1) else np.array(space.high)
         return gspc.Box(low, high, space.shape, space.dtype)
     elif isinstance(space, Dict):
         return gspc.Dict({k: gymnax_space_to_gym_space(v) for k, v in space.spaces})
