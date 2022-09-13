@@ -166,9 +166,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
 
     def step(
         self, action: ActType
-    ) -> Union[
-        Tuple[ObsType, float, bool, bool, dict], Tuple[ObsType, float, bool, dict]
-    ]:
+    ) -> Tuple[ObsType, float, bool, bool, dict]:
         """Step environment, follow new step API"""
         self.rng, step_key = self._batched_rng_split(self.rng)
         o, self.env_state, r, d, info = self._env.step(
