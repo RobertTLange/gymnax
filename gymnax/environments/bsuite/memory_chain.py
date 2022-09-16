@@ -41,7 +41,6 @@ class MemoryChain(environment.Environment):
         self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
-        obs = self.get_obs(state, params)
 
         # State smaller than mem length = 0 reward
         reward = 0.0
@@ -61,6 +60,7 @@ class MemoryChain(environment.Environment):
         )
 
         # Check game condition & no. steps for termination condition
+        obs = self.get_obs(state, params)
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
