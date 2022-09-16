@@ -1,4 +1,4 @@
-from typing import Tuple, Sequence, Any
+from typing import Tuple, Sequence, Any, Dict
 from collections import OrderedDict
 import chex
 import jax
@@ -80,11 +80,11 @@ class Box(Space):
 class Dict(Space):
     """Minimal jittable class for dictionary of simpler jittable spaces."""
 
-    def __init__(self, spaces: dict[Any, Space]):
+    def __init__(self, spaces: Dict[Any, Space]):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
-    def sample(self, rng: chex.PRNGKey) -> dict:
+    def sample(self, rng: chex.PRNGKey) -> Dict:
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
         return OrderedDict(
@@ -96,7 +96,7 @@ class Dict(Space):
 
     def contains(self, x: jnp.int_) -> bool:
         """Check whether dimensions of object are within subspace."""
-        # type_cond = isinstance(x, dict)
+        # type_cond = isinstance(x, Dict)
         # num_space_cond = len(x) != len(self.spaces)
         # Check for each space individually
         out_of_space = 0

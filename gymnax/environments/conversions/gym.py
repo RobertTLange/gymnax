@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Optional, Tuple, Union, List
 
 import chex
@@ -28,10 +27,10 @@ class GymnaxToGymWrapper(gym.Env):
         super().__init__()
         self._env = deepcopy(env)
         self.env_params = params if params is not None else env.default_params
-        self.metadata |= {
+        self.metadata.update({
             "name": env.name,
             "render_modes": ["human", "rgb_array"] if hasattr(env, "render") else [],
-        }
+        })
         self.rng: chex.PRNGKey = jax.random.PRNGKey(0)  # Placeholder
         self._seed(seed)
         _, self.env_state = self._env.reset(self.rng, self.env_params)
