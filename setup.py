@@ -34,7 +34,7 @@ else:
 git_tar = f"https://github.com/RobertTLange/gymnax/archive/v{verstr}.tar.gz"
 
 requires = ["jax", "jaxlib", "chex", "flax", "pyyaml"]
-test_requires = ["gym>=0.26", "bsuite", "minatar", "brax"]
+test_requires = ["gym>=0.26", "bsuite", "minatar"]
 
 setup(
     name="gymnax",

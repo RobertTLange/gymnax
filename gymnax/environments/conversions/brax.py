@@ -1,5 +1,9 @@
 from typing import Any, Dict, Union, Optional
-from brax.envs.env import Env
+
+try:
+    from brax.envs.env import Env
+except ImportError:
+    raise ImportError("You need to install `brax` to use the brax wrapper.")
 import jax
 import chex
 from ..environment import Environment, EnvState, EnvParams
