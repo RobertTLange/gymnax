@@ -98,6 +98,7 @@ registered_envs = [
     "Asterix-MinAtar",
     "Breakout-MinAtar",
     "Freeway-MinAtar",
+    "Seaquest-MinAtar",
     "SpaceInvaders-MinAtar",
     "Catch-bsuite",
     "DeepSea-bsuite",

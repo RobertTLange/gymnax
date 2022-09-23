@@ -310,7 +310,7 @@ def step_agent(state: EnvState, action: int, env_params: EnvParams) -> EnvState:
     # Update friendly bullets based on f action and shot_timer
     bullet_cond = jnp.logical_and(action == 5, state["shot_timer"] == 0)
     state["shot_timer"] = lax.select(
-        bullet_cond, env_params["shot_cool_down"], state["shot_timer"]
+        bullet_cond, env_params.shot_cool_down, state["shot_timer"]
     )
     bullet_array = jnp.array([state["sub_x"], state["sub_y"], state["sub_or"]])
     # Use counter to keep track of row idx to update!

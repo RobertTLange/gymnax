@@ -29,7 +29,7 @@ class Environment(object):
         state: EnvState,
         action: Union[int, float],
         params: Optional[EnvParams] = None,
-    ) -> Tuple[chex.Array, EnvState, float, bool]:
+    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Performs step transitions in the environment."""
         # Use default env parameters if no others specified
         if params is None:

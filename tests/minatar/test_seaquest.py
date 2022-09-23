@@ -45,7 +45,7 @@ def test_sub_steps():
         for s in range(num_steps):
             rng, key_step, key_action = jax.random.split(rng, 3)
             state = np_state_to_jax(env_gym, env_name_jax)
-            action = env_jax.action_space.sample(key_action)
+            action = env_jax.action_space(env_params).sample(key_action)
             action_gym = minatar_action_map(action, env_name_jax)
 
             step_agent_numpy(env_gym, action_gym)

@@ -23,7 +23,7 @@ def test_step(gym_env_name):
         for s in range(num_steps):
             action = env_gym.action_space.sample()
             state = np_state_to_jax(env_gym, gym_env_name, get_jax=True)
-            obs_gym, reward_gym, done_gym, _ = env_gym.step(action)
+            obs_gym, reward_gym, done_gym, truncated_gym, _ = env_gym.step(action)
 
             rng, rng_input = jax.random.split(rng)
             obs_jax, state_jax, reward_jax, done_jax, _ = env_jax.step(

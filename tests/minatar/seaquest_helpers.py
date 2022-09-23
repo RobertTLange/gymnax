@@ -1,5 +1,9 @@
 import numpy as np
 
+shot_cool_down = 5
+diver_move_interval = 5
+enemy_shot_interval = 10
+max_oxygen = 200
 # Update environment according to agent action
 def step_agent_numpy(env, action):
     a = env.env.action_map[action]
