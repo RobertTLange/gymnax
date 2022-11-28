@@ -1,4 +1,3 @@
-import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
@@ -16,7 +15,7 @@ class EnvState:
 
 @struct.dataclass
 class EnvParams:
-    reward_timestep: chex.Array = jnp.array([1, 3, 10, 30, 100])
+    reward_timestep: chex.Array
     optimal_return: float = 1.1
     max_steps_in_episode: int = 100
 
@@ -38,7 +37,7 @@ class DiscountingChain(environment.Environment):
     @property
     def default_params(self) -> EnvParams:
         # Default environment parameters
-        return EnvParams()
+        return EnvParams(reward_timestep=jnp.array([1, 3, 10, 30, 100]))
 
     def step_env(
         self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams

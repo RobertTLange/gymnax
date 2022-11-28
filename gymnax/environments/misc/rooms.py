@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax import lax
 from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 import chex
 from flax import struct
 
@@ -56,8 +56,8 @@ class FourRooms(environment.Environment):
     def __init__(
         self,
         use_visual_obs: bool = False,
-        goal_fixed: chex.Array = jnp.array([8, 9]),
-        pos_fixed: chex.Array = jnp.array([4, 1]),
+        goal_fixed: List[int] = [8, 9],
+        pos_fixed: List[int] = [4, 1],
     ):
         super().__init__()
         self.env_map = string_to_bool_map(four_rooms_map)

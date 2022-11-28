@@ -1,3 +1,4 @@
+from .environment import EnvParams, EnvState
 from .classic_control import (
     Pendulum,
     CartPole,
@@ -34,6 +35,8 @@ from .misc import (
 
 
 __all__ = [
+    "EnvParams",
+    "EnvState",
     "Pendulum",
     "CartPole",
     "MountainCar",
