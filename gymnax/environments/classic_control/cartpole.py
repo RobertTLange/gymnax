@@ -39,6 +39,7 @@ class CartPole(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (4,)
 
     @property
     def default_params(self) -> EnvParams:

@@ -42,6 +42,7 @@ class Acrobot(environment.Environment):
 
     def __init__(self):
         super().__init__()
+        self.obs_shape = (6,)
 
     @property
     def default_params(self) -> EnvParams:

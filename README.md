@@ -94,6 +94,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 * 📓 [Environment API](examples/getting_started.ipynb) - Get started with the basic `gymnax` API.
 * 📓 [Distributed Anakin Agent](examples/01_anakin.ipynb) - Train an Anakin [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) agent on `SpaceInvaders-MinAtar`.
 * 📓 [ES with `gymnax`](examples/02_evolution.ipynb) - Meta-evolve an LSTM controller that controls 2 link pendula of different lengths.
+* 📓 [Bandit A2C Meta-RL](examples/03_meta_a2c.ipynb) - Meta-learn an A2C LSTM that learns to explore/exploit in multi-arm bandit tasks.
 * 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO/ES) in `gymnax-blines`.
 
 ## Key Selling Points 💵
@@ -202,7 +203,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 ## Resources & Other Great Tools 📝
 * 💻 [Brax](https://github.com/google/brax): JAX-based library for rigid body physics by Google Brain with JAX-style MuJoCo substitutes.
 * 💻 [envpool](https://github.com/sail-sg/envpool): Vectorized parallel environment execution engine.
-
+* 💻 [Jumaji](https://github.com/instadeepai/jumanji): Industry-driven JAX-based RL environments.
 
 ### Acknowledgements & Citing `gymnax` ✏️
 
