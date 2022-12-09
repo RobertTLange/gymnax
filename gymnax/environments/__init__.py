@@ -31,6 +31,7 @@ from .misc import (
     FourRooms,
     MetaMaze,
     PointRobot,
+    Reacher,
 )
 
 
@@ -59,4 +60,5 @@ __all__ = [
     "FourRooms",
     "MetaMaze",
     "PointRobot",
+    "Reacher",
 ]

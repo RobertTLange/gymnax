@@ -21,6 +21,7 @@ from .environments import (
     FourRooms,
     MetaMaze,
     PointRobot,
+    Reacher,
 )
 
 # =============================================================================
@@ -67,6 +68,7 @@ def make(env_id: str, **env_kwargs):
     elif env_id == "Freeway-MinAtar":
         env = MinFreeway(**env_kwargs)
     elif env_id == "Seaquest-MinAtar":
+        raise NotImplementedError("Seaquest is not yet supported.")
         env = MinSeaquest(**env_kwargs)
     elif env_id == "SpaceInvaders-MinAtar":
         env = MinSpaceInvaders(**env_kwargs)
@@ -82,6 +84,8 @@ def make(env_id: str, **env_kwargs):
         env = MetaMaze(**env_kwargs)
     elif env_id == "PointRobot-misc":
         env = PointRobot(**env_kwargs)
+    elif env_id == "Reacher-misc":
+        env = Reacher(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 
@@ -98,7 +102,7 @@ registered_envs = [
     "Asterix-MinAtar",
     "Breakout-MinAtar",
     "Freeway-MinAtar",
-    "Seaquest-MinAtar",
+    # "Seaquest-MinAtar",
     "SpaceInvaders-MinAtar",
     "Catch-bsuite",
     "DeepSea-bsuite",
@@ -112,4 +116,5 @@ registered_envs = [
     "PointRobot-misc",
     "BernoulliBandit-misc",
     "GaussianBandit-misc",
+    "Reacher-misc",
 ]
