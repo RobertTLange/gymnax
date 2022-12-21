@@ -32,6 +32,7 @@ from .misc import (
     MetaMaze,
     PointRobot,
     Reacher,
+    Pong,
 )
 
 
@@ -61,4 +62,5 @@ __all__ = [
     "MetaMaze",
     "PointRobot",
     "Reacher",
+    "Pong",
 ]

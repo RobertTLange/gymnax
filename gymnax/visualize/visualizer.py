@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from typing import Optional
-from .vis_gym import init_gym, update_gym
-from .vis_minatar import init_minatar, update_minatar
-from .vis_circle import init_circle, update_circle
-from .vis_maze import init_maze, update_maze
-from .vis_catch import init_catch, update_catch
+from gymnax.visualize.vis_gym import init_gym, update_gym
+from gymnax.visualize.vis_minatar import init_minatar, update_minatar
+from gymnax.visualize.vis_circle import init_circle, update_circle
+from gymnax.visualize.vis_maze import init_maze, update_maze
+from gymnax.visualize.vis_catch import init_catch, update_catch
 
 
 class Visualizer(object):
@@ -75,6 +75,7 @@ class Visualizer(object):
             "Freeway-MinAtar",
             "Seaquest-MinAtar",
             "SpaceInvaders-MinAtar",
+            "Pong-misc",
         ]:
             self.im = init_minatar(self.ax, self.env, self.state_seq[0])
         elif self.env.name == "PointRobot-misc":
@@ -104,6 +105,7 @@ class Visualizer(object):
             "Freeway-MinAtar",
             "Seaquest-MinAtar",
             "SpaceInvaders-MinAtar",
+            "Pong-misc",
         ]:
             update_minatar(self.im, self.env, self.state_seq[frame])
         elif self.env.name == "PointRobot-misc":
@@ -122,3 +124,33 @@ class Visualizer(object):
                 ),
                 fontsize=15,
             )
+
+
+if __name__ == "__main__":
+    import jax
+    import jax.numpy as jnp
+    import gymnax
+
+    rng = jax.random.PRNGKey(0)
+    env, env_params = gymnax.make("Pong-misc")
+
+    state_seq, reward_seq = [], []
+    rng, rng_reset = jax.random.split(rng)
+    obs, env_state = env.reset(rng_reset, env_params)
+    while True:
+        state_seq.append(env_state)
+        rng, rng_act, rng_step = jax.random.split(rng, 3)
+        action = env.action_space(env_params).sample(rng_act)
+        next_obs, next_env_state, reward, done, info = env.step(
+            rng_step, env_state, action, env_params
+        )
+        reward_seq.append(reward)
+        if done:
+            break
+        else:
+            obs = next_obs
+            env_state = next_env_state
+
+    cum_rewards = jnp.cumsum(jnp.array(reward_seq))
+    vis = Visualizer(env, env_params, state_seq, cum_rewards)
+    vis.animate(f"anim.gif")

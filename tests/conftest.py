@@ -44,10 +44,11 @@ def pytest_generate_tests(metafunc):
                     "MetaMaze-misc",
                     "PointRobot-misc",
                     "Reacher-misc",
+                    "Pong-misc",
                 ],
             )
         else:
-            metafunc.parametrize("misc_env_name", ["Reacher-misc"])
+            metafunc.parametrize("misc_env_name", ["Pong-misc"])
     elif "viz_env_name" in metafunc.fixturenames:
         if metafunc.config.getoption("all"):
             metafunc.parametrize(

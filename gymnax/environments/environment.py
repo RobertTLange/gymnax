@@ -22,7 +22,7 @@ class Environment(object):
     def default_params(self) -> EnvParams:
         return EnvParams()
 
-    @partial(jax.jit, static_argnums=(0,))
+    # @partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,
@@ -46,7 +46,7 @@ class Environment(object):
         obs = jax.lax.select(done, obs_re, obs_st)
         return obs, state, reward, done, info
 
-    @partial(jax.jit, static_argnums=(0,))
+    # @partial(jax.jit, static_argnums=(0,))
     def reset(
         self, key: chex.PRNGKey, params: Optional[EnvParams] = None
     ) -> Tuple[chex.Array, EnvState]:
