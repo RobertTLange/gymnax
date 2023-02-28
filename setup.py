@@ -1,12 +1,12 @@
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distutils.core import setup, find_packages
-
-
-import re
 import os
+import re
 from typing import List
+
+try:
+    from setuptools import find_packages, setup
+except ImportError:
+    from distutils.core import find_packages, setup
+
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -17,9 +17,7 @@ with open(os.path.join(CURRENT_DIR, "README.md"), encoding="utf-8") as f:
 def parse_requirements(path: str) -> List[str]:
     with open(os.path.join(CURRENT_DIR, path)) as f:
         return [
-            line.rstrip()
-            for line in f
-            if not (line.isspace() or line.startswith("#"))
+            line.rstrip() for line in f if not (line.isspace() or line.startswith("#"))
         ]
 
 
@@ -31,9 +29,9 @@ if mo:
     verstr = mo.group(1)
 else:
     raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
-git_tar = f"https://github.com/RobertTLange/gymnax/archive/v{verstr}.tar.gz"
+git_tar = f"https://github.com/jaronsgit/gymnax/archive/v{verstr}.tar.gz"
 
-requires = ["jax", "jaxlib", "chex", "flax", "pyyaml", "gym>=0.26"]
+requires = ["jax", "jaxlib", "chex", "flax", "pyyaml", "gym>=0.19"]
 test_requires = ["bsuite", "minatar"]
 
 setup(
@@ -44,7 +42,7 @@ setup(
     description="JAX-compatible version of Open AI's gym environments",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/RobertTLange/gymnax",
+    url="https://github.com/jaronsgit/gymnax",
     download_url=git_tar,
     classifiers=[
         "Programming Language :: Python :: 3.7",
