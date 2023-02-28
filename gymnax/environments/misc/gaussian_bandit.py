@@ -84,7 +84,11 @@ class GaussianBandit(environment.Environment):
         """Concatenate reward, one-hot action and time stamp."""
         action_one_hot = jax.nn.one_hot(state.last_action, self.num_actions).squeeze()
         time_rep = jax.lax.select(
-            params.normalize_time, time_normalization(state.time), state.time
+            params.normalize_time,
+            time_normalization(
+                state.time, params.min_lim, params.max_lim, params.t_max
+            ),
+            state.time,
         )
         return jnp.hstack([state.last_reward, action_one_hot, time_rep])
 
