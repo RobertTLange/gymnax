@@ -55,6 +55,7 @@ class Pendulum(environment.Environment):
             + 0.1 * state.theta_dot ** 2
             + 0.001 * (u ** 2)
         )
+        reward = reward.squeeze()
 
         newthdot = state.theta_dot + (
             (

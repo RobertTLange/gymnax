@@ -67,6 +67,7 @@ class ContinuousMountainCar(environment.Environment):
             (position >= params.goal_position)
             * (velocity >= params.goal_velocity)
         )
+        reward = reward.squeeze()
 
         # Update state dict and evaluate termination conditions
         state = EnvState(position.squeeze(), velocity.squeeze(), state.time + 1)
