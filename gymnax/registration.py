@@ -22,6 +22,8 @@ from .environments import (
     MetaMaze,
     PointRobot,
     Reacher,
+    Swimmer,
+    Pong,
 )
 
 # =============================================================================
@@ -86,6 +88,10 @@ def make(env_id: str, **env_kwargs):
         env = PointRobot(**env_kwargs)
     elif env_id == "Reacher-misc":
         env = Reacher(**env_kwargs)
+    elif env_id == "Swimmer-misc":
+        env = Swimmer(**env_kwargs)
+    elif env_id == "Pong-misc":
+        env = Pong(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 
@@ -117,4 +123,6 @@ registered_envs = [
     "BernoulliBandit-misc",
     "GaussianBandit-misc",
     "Reacher-misc",
+    "Swimmer-misc",
+    "Pong-misc",
 ]

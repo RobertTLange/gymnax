@@ -1,3 +1,16 @@
+### [v0.0.6] - TBD
+
+##### Added
+
+- Gym wrappers
+- Reacher environment
+- Swimmer environment
+- Pong environment
+
+##### Fixed
+
+##### Changed
+
 ### [v0.0.5] - 24/08/2022
 ##### Fixed
 

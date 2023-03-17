@@ -4,6 +4,8 @@ from .rooms import FourRooms
 from .meta_maze import MetaMaze
 from .point_robot import PointRobot
 from .reacher import Reacher
+from .swimmer import Swimmer
+from .pong import Pong
 
 __all__ = [
     "BernoulliBandit",
@@ -12,4 +14,6 @@ __all__ = [
     "MetaMaze",
     "PointRobot",
     "Reacher",
+    "Swimmer",
+    "Pong",
 ]
