@@ -64,6 +64,7 @@ class Reacher(environment.Environment):
         reward = jnp.reshape(
             jnp.exp(-1 * jnp.sum((xy - state.goal_xy) ** 2, axis=-1)), (-1,)
         )
+        reward = reward.squeeze()
 
         done = self.is_terminal(state, params)
         return (
