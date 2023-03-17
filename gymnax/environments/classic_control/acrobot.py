@@ -236,12 +236,12 @@ def dsdt(s_augmented: chex.Array, t: float, params: EnvParams) -> chex.Array:
 def wrap(x: float, m: float, M: float) -> float:
     """For example, m = -180, M = 180 (degrees), x = 360 --> returns 0."""
     diff = M - m
-    diff_x_M = x - M
-    diff_x_m = x - m
-    go_down = diff_x_M > 0
-    go_up = diff_x_m < 0
+    go_up = x < m     # Wrap if x is outside the left bound
+    go_down = x >= M  # Wrap if x is outside OR on the right bound
+
     how_often = (
-        jnp.ceil(diff_x_M / diff) * go_down + jnp.ceil(diff_x_m / diff) * go_up
+        go_up * jnp.ceil((m - x) / diff)           # if m - x is an integer, keep it
+        + go_down * jnp.floor((x - M) / diff + 1)  # if x - M is an integer, round up
     )
     x_out = x - how_often * diff * go_down + how_often * diff * go_up
     return x_out
