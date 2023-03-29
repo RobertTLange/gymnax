@@ -51,7 +51,8 @@ class FlattenObservation(GymnaxWrapper):
         obs = jnp.reshape(obs, (-1,))
         return obs, state, reward, done, info
 
-class EpisodeStats(NamedTuple):
+class LogEnvState(NamedTuple):
+    env_state: environment.EnvState
     episode_returns: float
     episode_lengths: int
     returned_episode_returns: float
@@ -68,7 +69,7 @@ class LogWrapper(GymnaxWrapper):
         self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
     ) -> Tuple[chex.Array, environment.EnvState]:
         obs, env_state = self._env.reset(key, params)
-        state = (env_state, EpisodeStats(0, 0, 0, 0))
+        state = LogEnvState(env_state, 0, 0, 0, 0)
         return obs, state
     
     @partial(jax.jit, static_argnums=(0,))
@@ -79,19 +80,18 @@ class LogWrapper(GymnaxWrapper):
         action: Union[int, float],
         params: Optional[environment.EnvParams] = None,
     ) -> Tuple[chex.Array, environment.EnvState, float, bool, dict]:
-        env_state, episode_stats = state
-        obs, env_state, reward, done, info = self._env.step(key, env_state, action, params)
-        new_episode_return = episode_stats.episode_returns + reward
-        new_episode_length = episode_stats.episode_lengths + 1
-        new_episode_stats = EpisodeStats(
+        obs, env_state, reward, done, info = self._env.step(key, state.env_state, action, params)
+        new_episode_return = state.episode_returns + reward
+        new_episode_length = state.episode_lengths + 1
+        state = LogEnvState(
+            env_state = env_state,
             episode_returns = new_episode_return * (1 - done),
             episode_lengths = new_episode_length * (1 - done),
-            returned_episode_returns = episode_stats.returned_episode_returns * (1 - done) + new_episode_return * done,
-            returned_episode_lengths = episode_stats.returned_episode_lengths * (1 - done) + new_episode_length * done,
+            returned_episode_returns = state.returned_episode_returns * (1 - done) + new_episode_return * done,
+            returned_episode_lengths = state.returned_episode_lengths * (1 - done) + new_episode_length * done,
         )
-        info["returned_episode_returns"] = new_episode_stats.returned_episode_returns
-        info["returned_episode_lengths"] = new_episode_stats.returned_episode_lengths
+        info["returned_episode_returns"] = state.returned_episode_returns
+        info["returned_episode_lengths"] = state.returned_episode_lengths
         info["returned_episode"] = done
-        state = (env_state, new_episode_stats)
         return obs, state, reward, done, info
  
