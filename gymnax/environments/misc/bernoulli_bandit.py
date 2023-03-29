@@ -1,10 +1,12 @@
+from typing import Optional, Tuple
+
+import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
-import chex
 from flax import struct
+from jax import lax
+
+from gymnax.environments import environment, spaces
 
 
 @struct.dataclass
@@ -21,6 +23,9 @@ class EnvParams:
     reward_prob: float = 0.1
     normalize_time: bool = True
     max_steps_in_episode: int = 100
+    min_lim: float = -1.0
+    max_lim: float = 1.0
+    t_max: int = 100
 
 
 class BernoulliBandit(environment.Environment):
@@ -40,9 +45,7 @@ class BernoulliBandit(environment.Environment):
         self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Sample bernoulli reward, increase counter, construct input."""
-        reward = jax.random.bernoulli(key, state.reward_probs[action]).astype(
-            jnp.int32
-        )
+        reward = jax.random.bernoulli(key, state.reward_probs[action]).astype(jnp.int32)
         state = EnvState(
             action,
             reward,
@@ -83,7 +86,11 @@ class BernoulliBandit(environment.Environment):
         """Concatenate reward, one-hot action and time stamp."""
         action_one_hot = jax.nn.one_hot(state.last_action, 2).squeeze()
         time_rep = jax.lax.select(
-            params.normalize_time, time_normalization(state.time), state.time
+            params.normalize_time,
+            time_normalization(
+                state.time, params.min_lim, params.max_lim, params.t_max
+            ),
+            state.time,
         )
         return jnp.hstack([state.last_reward, action_one_hot, time_rep])
 
@@ -103,20 +110,25 @@ class BernoulliBandit(environment.Environment):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(self.num_actions)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         low = jnp.array(
-            [0, 0, 0, 0],
+            [0, 0, 0, jax.lax.select(params.normalize_time, params.min_lim, 0)],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            [self.num_actions, 1, 1, params.max_steps_in_episode],
+            [
+                self.num_actions,
+                1,
+                1,
+                jax.lax.select(
+                    params.normalize_time, params.max_lim, params.max_steps_in_episode
+                ),
+            ],
             dtype=jnp.float32,
         )
         return spaces.Box(low, high, (4,), jnp.float32)
