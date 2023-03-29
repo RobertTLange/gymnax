@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import chex
 import numpy as np
+from flax import struct
 from functools import partial
 from gymnax.environments import environment, spaces
 from typing import NamedTuple, Optional, Tuple, Union
@@ -51,7 +52,8 @@ class FlattenObservation(GymnaxWrapper):
         obs = jnp.reshape(obs, (-1,))
         return obs, state, reward, done, info
 
-class LogEnvState(NamedTuple):
+@struct.dataclass
+class LogEnvState:
     env_state: environment.EnvState
     episode_returns: float
     episode_lengths: int
@@ -94,4 +96,3 @@ class LogWrapper(GymnaxWrapper):
         info["returned_episode_lengths"] = state.returned_episode_lengths
         info["returned_episode"] = done
         return obs, state, reward, done, info
- 
