@@ -3,7 +3,6 @@ import gymnax
 from gymnax.utils import (
     np_state_to_jax,
     minatar_action_map,
-    assert_correct_transit,
     assert_correct_state,
 )
 

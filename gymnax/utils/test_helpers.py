@@ -18,15 +18,24 @@ def assert_correct_state(
             if type(jax_value) in [
                 jax.interpreters.xla._DeviceArray,
                 jaxlib.xla_extension.Buffer,
+                jaxlib.xla_extension.ArrayImpl,
                 np.ndarray,
             ]:
                 assert np.allclose(jax_value, state_gym[k], atol=atol)
             else:
                 # print(k, state_gym[k], state_jax[k])
                 # Exclude extra time and terminal state from assertion
-                if type(state_gym[k]) in [float, np.float64]:
+                if type(state_gym[k]) in [
+                    float,
+                    np.float64,
+                    jax.interpreters.xla._DeviceArray,
+                    jaxlib.xla_extension.Buffer,
+                    np.ndarray,
+                    jaxlib.xla_extension.ArrayImpl,
+                ]:
                     np.allclose(state_gym[k], jax_value, atol=atol)
                 else:
+                    print(type(state_gym[k]), k)
                     assert state_gym[k] == jax_value
 
 
