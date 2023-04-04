@@ -45,7 +45,9 @@ class BernoulliBandit(environment.Environment):
         self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Sample bernoulli reward, increase counter, construct input."""
-        reward = jax.random.bernoulli(key, state.reward_probs[action]).astype(jnp.int32)
+        reward = jax.random.bernoulli(key, state.reward_probs[action]).astype(
+            jnp.int32
+        )
         state = EnvState(
             action,
             reward,
@@ -110,14 +112,21 @@ class BernoulliBandit(environment.Environment):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(
+        self, params: Optional[EnvParams] = None
+    ) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(self.num_actions)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         low = jnp.array(
-            [0, 0, 0, jax.lax.select(params.normalize_time, params.min_lim, 0)],
+            [
+                0,
+                0,
+                0,
+                jax.lax.select(params.normalize_time, params.min_lim, 0.0),
+            ],
             dtype=jnp.float32,
         )
         high = jnp.array(
@@ -126,7 +135,9 @@ class BernoulliBandit(environment.Environment):
                 1,
                 1,
                 jax.lax.select(
-                    params.normalize_time, params.max_lim, params.max_steps_in_episode
+                    params.normalize_time,
+                    params.max_lim,
+                    params.max_steps_in_episode,
                 ),
             ],
             dtype=jnp.float32,
