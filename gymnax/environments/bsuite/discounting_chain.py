@@ -67,8 +67,12 @@ class DiscountingChain(environment.Environment):
     ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Setup reward fct from mapping seed - random sampling outside of env
-        self.reward = jnp.ones(self.n_actions).at[self.mapping_seed].set(params.optimal_return)
-        state = EnvState(self.reward, -1, 0)
+        reward = (
+            jnp.ones(self.n_actions)
+            .at[self.mapping_seed]
+            .set(params.optimal_return)
+        )
+        state = EnvState(reward, -1, 0)
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
@@ -110,7 +114,10 @@ class DiscountingChain(environment.Environment):
         return spaces.Dict(
             {
                 "rewards": spaces.Box(
-                    1, params.optimal_return, (self.n_actions,), dtype=jnp.float32
+                    1,
+                    params.optimal_return,
+                    (self.n_actions,),
+                    dtype=jnp.float32,
                 ),
                 "context": spaces.Box(
                     -1, self.n_actions, (), dtype=jnp.float32

@@ -9,6 +9,9 @@
 
 ##### Fixed
 
+- Fixed Minatar tests for jax arrays.
+- Fixed reward setting in `DiscountingChain-v0`
+
 ##### Changed
 
 ### [v0.0.5] - 24/08/2022
