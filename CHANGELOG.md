@@ -2,7 +2,7 @@
 
 ##### Added
 
-- Gym, EvoJAX, Brax wrappers
+- Gym, EvoJAX, Brax, DM env wrappers
 - Reacher environment
 - Swimmer environment
 - Pong environment
