@@ -2,7 +2,7 @@
 
 ##### Added
 
-- Gym wrappers
+- Gym, EvoJAX, Brax wrappers
 - Reacher environment
 - Swimmer environment
 - Pong environment
@@ -11,8 +11,11 @@
 
 - Fixed Minatar tests for jax arrays.
 - Fixed reward setting in `DiscountingChain-v0`
+- Fixed `Tuple` space check via enumerate.
 
 ##### Changed
+
+- Refactored wrappers into separate sub-directory.
 
 ### [v0.0.5] - 24/08/2022
 ##### Fixed

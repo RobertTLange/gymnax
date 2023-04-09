@@ -1,7 +1,9 @@
 import gymnax
-from gymnax.environments.conversions.gym import GymnaxToGymWrapper, GymnaxToVectorGymWrapper
+from gymnax.wrappers import (
+    GymnaxToGymWrapper,
+    GymnaxToVectorGymWrapper,
+)
 import jax
-import jax.numpy as jnp
 import chex
 import gym
 
@@ -30,7 +32,10 @@ def test_gym_vector_wrapper():
     a_space, o_space = e.action_space, e.observation_space
     assert isinstance(a_space, gym.spaces.MultiDiscrete)
     assert isinstance(o_space, gym.spaces.Box)
-    single_a_space, single_o_space = e.single_action_space, e.single_observation_space
+    single_a_space, single_o_space = (
+        e.single_action_space,
+        e.single_observation_space,
+    )
     assert isinstance(single_a_space, gym.spaces.Discrete)
     assert isinstance(single_o_space, gym.spaces.Box)
     keys = jax.random.split(jax.random.PRNGKey(0), B)
@@ -42,5 +47,3 @@ def test_gym_vector_wrapper():
     chex.assert_trees_all_equal_shapes(o_env, o)
     o, r, d, truncated, info = e.step(e.action_space.sample())
     e.render()
-
-

@@ -21,7 +21,7 @@ class GymState(TaskState):
     rng: chex.PRNGKey
 
 
-class GymnaxTask(VectorizedTask):
+class GymnaxToEvoJaxTask(VectorizedTask):
     """Task wrapper for gymnax environments."""
 
     def __init__(

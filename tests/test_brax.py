@@ -7,7 +7,7 @@ def test_brax_wrapper():
     """Wrap a Gymnax environment in brax. Use Brax's wrappers to handle vmap and episodes"""
     try:
         from brax.envs.wrappers import VmapWrapper, EpisodeWrapper, EvalWrapper
-        from gymnax.environments.conversions.brax import GymnaxToBraxWrapper
+        from gymnax.wrappers import GymnaxToBraxWrapper
     except ImportError:
         return
     env, env_params = gymnax.make("CartPole-v1")
