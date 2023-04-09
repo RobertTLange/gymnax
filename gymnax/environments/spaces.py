@@ -73,7 +73,9 @@ class Box(Space):
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
-        range_cond = jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
+        range_cond = jnp.logical_and(
+            jnp.all(x >= self.low), jnp.all(x <= self.high)
+        )
         return range_cond
 
 
@@ -116,7 +118,7 @@ class Tuple(Space):
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
         return tuple(
-            [self.spaces[k].sample(key_split[i]) for i, k in enumerate(self.spaces)]
+            [s.sample(key_split[i]) for i, s in enumerate(self.spaces)]
         )
 
     def contains(self, x: jnp.int_) -> bool:
@@ -125,8 +127,8 @@ class Tuple(Space):
         # num_space_cond = len(x) != len(self.spaces)
         # Check for each space individually
         out_of_space = 0
-        for space in self.spaces:
-            out_of_space += 1 - space.contains(x)
+        for i, space in enumerate(self.spaces):
+            out_of_space += 1 - space.contains(x[i])
         return out_of_space == 0
 
 
@@ -135,11 +137,21 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
     if isinstance(space, Discrete):
         return gspc.Discrete(space.n)
     elif isinstance(space, Box):
-        low = float(space.low) if (np.isscalar(space.low) or space.low.size == 1) else np.array(space.low)
-        high = float(space.high) if (np.isscalar(space.high) or space.low.size == 1) else np.array(space.high)
+        low = (
+            float(space.low)
+            if (np.isscalar(space.low) or space.low.size == 1)
+            else np.array(space.low)
+        )
+        high = (
+            float(space.high)
+            if (np.isscalar(space.high) or space.low.size == 1)
+            else np.array(space.high)
+        )
         return gspc.Box(low, high, space.shape, space.dtype)
     elif isinstance(space, Dict):
-        return gspc.Dict({k: gymnax_space_to_gym_space(v) for k, v in space.spaces})
+        return gspc.Dict(
+            {k: gymnax_space_to_gym_space(v) for k, v in space.spaces}
+        )
     elif isinstance(space, Tuple):
         return gspc.Tuple(space.spaces)
     else:
