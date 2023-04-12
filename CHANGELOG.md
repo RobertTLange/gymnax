@@ -1,11 +1,11 @@
-### [v0.0.6] - TBD
+### [v0.0.6] - 12/04/2023
 
 ##### Added
 
 - Gym, EvoJAX, Brax, DM env wrappers
-- Reacher environment
-- Swimmer environment
-- Pong environment
+- Reacher environment inspired by [Lenton et al. (2021)](https://github.com/unifyai/gym/)
+- Swimmer environment inspired by [Lenton et al. (2021)](https://github.com/unifyai/gym/)
+- Basic Pong environment inspired by [Kirsch (2018)](https://github.com/BlackHC/batch_pong_poc)
 
 ##### Fixed
 
