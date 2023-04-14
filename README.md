@@ -206,7 +206,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 ## Resources & Other Great Tools 📝
 * 💻 [Brax](https://github.com/google/brax): JAX-based library for rigid body physics by Google Brain with JAX-style MuJoCo substitutes.
 * 💻 [envpool](https://github.com/sail-sg/envpool): Vectorized parallel environment execution engine.
-* 💻 [Jumaji](https://github.com/instadeepai/jumanji): Industry-driven JAX-based RL environments.
+* 💻 [Jumanji](https://github.com/instadeepai/jumanji): A suite of diverse and challenging RL environments in JAX.
 * 💻 [Pgx](https://github.com/sotetsuk/pgx): JAX-based classic board game environments.
 
 ### Acknowledgements & Citing `gymnax` ✏️
