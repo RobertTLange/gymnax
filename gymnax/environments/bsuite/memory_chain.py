@@ -102,7 +102,9 @@ class MemoryChain(environment.Environment):
         obs = obs.at[1].set(query_val)
         # Show context - only first step.
         context_val = lax.select(
-            state.time == 0, (2 * state.context - 1).squeeze(), 0
+            state.time == 0,
+            (2 * state.context - 1).squeeze(),
+            jnp.zeros(self.num_bits, dtype=jnp.int32).squeeze()
         )
         obs = obs.at[2:].set(context_val)
         return obs
