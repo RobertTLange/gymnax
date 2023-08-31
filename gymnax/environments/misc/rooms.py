@@ -19,6 +19,7 @@ class EnvParams:
     fail_prob: float = 1.0 / 3
     resample_init_pos: bool = False
     resample_goal_pos: bool = False
+    discounted_reward: bool = False
     max_steps_in_episode: int = 500
 
 
@@ -103,10 +104,14 @@ class FourRooms(environment.Environment):
         p = state.pos + self.directions[action]
         in_map = self.env_map[p[0], p[1]]
         new_pos = jax.lax.select(in_map, p, state.pos)
-        reward = jnp.logical_and(
+        normal_reward = jnp.logical_and(
             new_pos[0] == state.goal[0], new_pos[1] == state.goal[1]
         )
 
+        # Caculate the disocunted return
+        discounted_reward = normal_reward - 0.9 *( state.int / params.max_steps_in_episode)
+
+        reward = jax.lax.cond(params.discounted_reward, lambda: discounted_reward, lambda: normal_reward)
         # Update state dict and evaluate termination conditions
         state = EnvState(new_pos, state.goal, state.time + 1)
         done = self.is_terminal(state, params)
