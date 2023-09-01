@@ -111,7 +111,7 @@ class FourRooms(environment.Environment):
         # Caculate the disocunted return
         discounted_reward = normal_reward - 0.9 *( state.time / params.max_steps_in_episode)
 
-        reward = jax.lax.cond(params.discounted_reward, lambda: discounted_reward, lambda: int(normal_reward))
+        reward = jax.lax.cond(params.discounted_reward, lambda: discounted_reward, lambda: jnp.int32(normal_reward))
         # Update state dict and evaluate termination conditions
         state = EnvState(new_pos, state.goal, state.time + 1)
         done = self.is_terminal(state, params)
