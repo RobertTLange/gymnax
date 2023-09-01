@@ -109,7 +109,7 @@ class FourRooms(environment.Environment):
         )
 
         # Caculate the disocunted return
-        discounted_reward = normal_reward - 0.9 *( state.int / params.max_steps_in_episode)
+        discounted_reward = normal_reward - 0.9 *( state.time / params.max_steps_in_episode)
 
         reward = jax.lax.cond(params.discounted_reward, lambda: discounted_reward, lambda: normal_reward)
         # Update state dict and evaluate termination conditions
