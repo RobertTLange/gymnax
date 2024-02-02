@@ -24,12 +24,12 @@ class EnvState:
     time: int
 
 
-last_goal_col_dist = jax.tree_util.Partial(lambda key, size: size - 1)
-uniform_action_mapping = jax.tree_util.Partial(
-    lambda key, size: jax.random.randint(key, shape=(1,), minval=0, maxval=2)
-    * jnp.ones((size, size))
-)
-default_action_mapping = jax.tree_util.Partial(lambda key, size: jnp.ones((size, size)))
+# last_goal_col_dist = jax.tree_util.Partial(lambda key, size: size - 1)
+# uniform_action_mapping = jax.tree_util.Partial(
+#     lambda key, size: jax.random.randint(key, shape=(1,), minval=0, maxval=2)
+#     * jnp.ones((size, size))
+# )
+# default_action_mapping = jax.tree_util.Partial(lambda key, size: jnp.ones((size, size)))
 
 
 @struct.dataclass
@@ -51,8 +51,8 @@ class DeepSea(Environment):
         size: int,
         action_mapping_dist: Callable[
             [chex.PRNGKey], chex.Array
-        ] = default_action_mapping,
-        goal_column_dist: Callable[[chex.PRNGKey, int], int] = last_goal_col_dist,
+        ], #= default_action_mapping,
+        goal_column_dist: Callable[[chex.PRNGKey, int], int], #= last_goal_col_dist,
     ):
         super().__init__()
         self.size = size
