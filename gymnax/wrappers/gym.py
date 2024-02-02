@@ -68,7 +68,7 @@ class GymnaxToGymWrapper(gym.Env):
         o, self.env_state, r, d, info = self._env.step(
             step_key, self.env_state, action, self.env_params
         )
-        return o, r, d, d, info
+        return o, r, d, info
 
     def reset(
         self,
@@ -190,7 +190,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         o, self.env_state, r, d, info = self._env.step(
             step_key, self.env_state, action, self.env_params
         )
-        return o, r, d, d, info
+        return o, r, d, info
 
     def render(
         self, mode="human"
