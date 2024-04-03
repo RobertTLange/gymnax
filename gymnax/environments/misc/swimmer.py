@@ -1,14 +1,19 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""Swimmer environment."""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     urchin_xys: chex.Array
     xy: chex.Array
     xy_vel: chex.Array
@@ -17,15 +22,16 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     dt: float = 0.05
     max_steps_in_episode: int = 500  # Steps in an episode (constant goal)
 
 
-class Swimmer(environment.Environment):
-    """
-    Swimmer environment. Adapted from:
-    https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py
+class Swimmer(environment.Environment[EnvState, EnvParams]):
+    """Swimmer environment.
+
+
+    Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py
     """
 
     def __init__(self, num_urchins: int = 5):
@@ -41,28 +47,25 @@ class Swimmer(environment.Environment):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: chex.Array,
+        action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         xy_vel = state.xy_vel + params.dt * action
         xy = state.xy + params.dt * xy_vel
 
         state = EnvState(
-            state.urchin_xys,
-            xy,
-            xy_vel,
-            state.goal_xy,
-            state.time + 1,
+            urchin_xys=state.urchin_xys,
+            xy=xy,
+            xy_vel=xy_vel,
+            goal_xy=state.goal_xy,
+            time=state.time + 1,
         )
 
         rew = jnp.exp(-0.5 * jnp.sum((state.xy - state.goal_xy) ** 2))
         # Urchins proximity.
         reward = rew * jnp.prod(
-            1
-            - jnp.exp(
-                -30 * jnp.sum((state.xy - state.urchin_xys) ** 2, axis=-1)
-            ),
+            1 - jnp.exp(-30 * jnp.sum((state.xy - state.urchin_xys) ** 2, axis=-1)),
             axis=-1,
         )
 
@@ -90,15 +93,15 @@ class Swimmer(environment.Environment):
         goal_xy = jax.random.uniform(rng_goal, minval=-1, maxval=1, shape=(2,))
 
         state = EnvState(
-            urchin_xys,
-            xy,
-            xy_vel,
-            goal_xy,
-            0,
+            urchin_xys=urchin_xys,
+            xy=xy,
+            xy_vel=xy_vel,
+            goal_xy=goal_xy,
+            time=0,
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
         """Concatenate reward, one-hot action and time stamp."""
         ob = (
             jnp.reshape(state.urchin_xys, (-1, 2)),
@@ -109,11 +112,11 @@ class Swimmer(environment.Environment):
         ob = jnp.concatenate(ob, axis=0)
         return jnp.reshape(ob, (-1,))
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
-        return done
+        return jnp.array(done)
 
     @property
     def name(self) -> str:
@@ -127,8 +130,8 @@ class Swimmer(environment.Environment):
 
     def action_space(self, params: Optional[EnvParams] = None) -> spaces.Box:
         """Action space of the environment."""
-        if params is None:
-            params = self.default_params
+        # if params is None:
+        #   params = self.default_params
         low = jnp.array(2 * [-1], dtype=jnp.float32)
         high = jnp.array(2 * [1], dtype=jnp.float32)
         return spaces.Box(low, high, (2,), jnp.float32)

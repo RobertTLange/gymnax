@@ -1,14 +1,19 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""Reacher environment."""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     angles: chex.Array
     angle_vels: chex.Array
     goal_xy: chex.Array
@@ -16,16 +21,17 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     torque_scale: float = 1.0
     dt: float = 0.05
     max_steps_in_episode: int = 100  # Steps in an episode (constant goal)
 
 
-class Reacher(environment.Environment):
-    """
-    Reacher environment. Adapted from:
-    https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py
+class Reacher(environment.Environment[EnvState, EnvParams]):
+    """Reacher environment.
+
+
+    Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py
     """
 
     def __init__(self, num_joints: int = 2):
@@ -41,19 +47,19 @@ class Reacher(environment.Environment):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: chex.Array,
+        action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         angle_accs = params.torque_scale * action
         angle_vels = state.angle_vels + params.dt * angle_accs
         angles = state.angles + params.dt * angle_vels
 
         state = EnvState(
-            angles,
-            angle_vels,
-            state.goal_xy,
-            state.time + 1,
+            angles=angles,
+            angle_vels=angle_vels,
+            goal_xy=state.goal_xy,
+            time=state.time + 1,
         )
 
         x = jnp.sum(jnp.cos(state.angles), axis=-1)
@@ -96,14 +102,14 @@ class Reacher(environment.Environment):
         )
 
         state = EnvState(
-            angles,
-            angle_vels,
-            goal_xy,
-            0,
+            angles=angles,
+            angle_vels=angle_vels,
+            goal_xy=goal_xy,
+            time=0.0,
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
         """Concatenate reward, one-hot action and time stamp."""
         ob = (
             jnp.reshape(jnp.cos(state.angles), (1, self.num_joints)),
@@ -114,11 +120,11 @@ class Reacher(environment.Environment):
         ob = jnp.concatenate(ob, axis=0)
         return jnp.reshape(ob, (-1,))
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
-        return done
+        return jnp.array(done)
 
     @property
     def name(self) -> str:
@@ -132,8 +138,8 @@ class Reacher(environment.Environment):
 
     def action_space(self, params: Optional[EnvParams] = None) -> spaces.Box:
         """Action space of the environment."""
-        if params is None:
-            params = self.default_params
+        # if params is None:
+        #   params = self.default_params
         low = jnp.array(self.num_joints * [-1], dtype=jnp.float32)
         high = jnp.array(self.num_joints * [1], dtype=jnp.float32)
         return spaces.Box(low, high, (self.num_joints,), jnp.float32)
