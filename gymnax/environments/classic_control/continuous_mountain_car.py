@@ -1,21 +1,31 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment.
+
+
+Source:
+github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
-    position: float
-    velocity: float
+class EnvState(environment.EnvState):
+    position: jnp.ndarray
+    velocity: jnp.ndarray
     time: int
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     min_action: float = -1.0
     max_action: float = 1.0
     min_position: float = -1.2
@@ -28,14 +38,8 @@ class EnvParams:
     max_steps_in_episode: int = 999
 
 
-class ContinuousMountainCar(environment.Environment):
-    """
-    JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment. Source:
-    github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py
-    """
-
-    def __init__(self):
-        super().__init__()
+class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment."""
 
     @property
     def default_params(self) -> EnvParams:
@@ -46,9 +50,9 @@ class ContinuousMountainCar(environment.Environment):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: float,
+        action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         force = jnp.clip(action, params.min_action, params.max_action)
         velocity = (
@@ -59,18 +63,19 @@ class ContinuousMountainCar(environment.Environment):
         velocity = jnp.clip(velocity, -params.max_speed, params.max_speed)
         position = state.position + velocity
         position = jnp.clip(position, params.min_position, params.max_position)
-        velocity = velocity * (
-            1 - (position >= params.goal_position) * (velocity < 0)
-        )
+        velocity = velocity * (1 - (position >= params.goal_position) * (velocity < 0))
 
-        reward = -0.1 * action ** 2 + 100 * (
-            (position >= params.goal_position)
-            * (velocity >= params.goal_velocity)
+        reward = -0.1 * action**2 + 100 * (
+            (position >= params.goal_position) * (velocity >= params.goal_velocity)
         )
         reward = reward.squeeze()
 
         # Update state dict and evaluate termination conditions
-        state = EnvState(position.squeeze(), velocity.squeeze(), state.time + 1)
+        state = EnvState(
+            position=position.squeeze(),
+            velocity=velocity.squeeze(),
+            time=state.time + 1,
+        )
         done = self.is_terminal(state, params)
         return (
             lax.stop_gradient(self.get_obs(state)),
@@ -85,14 +90,14 @@ class ContinuousMountainCar(environment.Environment):
     ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
-        state = EnvState(position=init_state, velocity=0.0, time=0)
+        state = EnvState(position=init_state, velocity=jnp.array(0.0), time=0)
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         return jnp.array([state.position, state.velocity]).squeeze()
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done1 = (state.position >= params.goal_position) * (
             state.velocity >= params.goal_velocity

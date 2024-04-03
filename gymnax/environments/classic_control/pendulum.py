@@ -1,22 +1,31 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX compatible version of Pendulum-v0 OpenAI gym environment.
+
+
+Source: github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
-    theta: float
-    theta_dot: float
-    last_u: float  # Only needed for rendering
+class EnvState(environment.EnvState):
+    theta: jnp.ndarray
+    theta_dot: jnp.ndarray
+    last_u: jnp.ndarray  # Only needed for rendering
     time: int
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     max_speed: float = 8.0
     max_torque: float = 2.0
     dt: float = 0.05
@@ -26,11 +35,8 @@ class EnvParams:
     max_steps_in_episode: int = 200
 
 
-class Pendulum(environment.Environment):
-    """
-    JAX Compatible version of Pendulum-v0 OpenAI gym environment. Source:
-    github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
-    """
+class Pendulum(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of Pendulum-v0 OpenAI gym environment."""
 
     def __init__(self):
         super().__init__()
@@ -45,22 +51,22 @@ class Pendulum(environment.Environment):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: float,
+        action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Integrate pendulum ODE and return transition."""
         u = jnp.clip(action, -params.max_torque, params.max_torque)
         reward = -(
             angle_normalize(state.theta) ** 2
-            + 0.1 * state.theta_dot ** 2
-            + 0.001 * (u ** 2)
+            + 0.1 * state.theta_dot**2
+            + 0.001 * (u**2)
         )
         reward = reward.squeeze()
 
         newthdot = state.theta_dot + (
             (
                 3 * params.g / (2 * params.l) * jnp.sin(state.theta)
-                + 3.0 / (params.m * params.l ** 2) * u
+                + 3.0 / (params.m * params.l**2) * u
             )
             * params.dt
         )
@@ -70,7 +76,10 @@ class Pendulum(environment.Environment):
 
         # Update state dict and evaluate termination conditions
         state = EnvState(
-            newth.squeeze(), newthdot.squeeze(), u.reshape(), state.time + 1
+            theta=newth.squeeze(),
+            theta_dot=newthdot.squeeze(),
+            last_u=u.reshape(),
+            time=state.time + 1,
         )
         done = self.is_terminal(state, params)
         return (
@@ -87,10 +96,12 @@ class Pendulum(environment.Environment):
         """Reset environment state by sampling theta, theta_dot."""
         high = jnp.array([jnp.pi, 1])
         state = jax.random.uniform(key, shape=(2,), minval=-high, maxval=high)
-        state = EnvState(theta=state[0], theta_dot=state[1], last_u=0.0, time=0)
+        state = EnvState(
+            theta=state[0], theta_dot=state[1], last_u=jnp.array(0.0), time=0
+        )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return angle in polar coordinates and change."""
         return jnp.array(
             [
@@ -100,11 +111,11 @@ class Pendulum(environment.Environment):
             ]
         ).squeeze()
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
-        return done
+        return jnp.array(done)
 
     @property
     def name(self) -> str:
@@ -159,6 +170,6 @@ class Pendulum(environment.Environment):
         )
 
 
-def angle_normalize(x: float) -> float:
+def angle_normalize(x: jnp.ndarray) -> jnp.ndarray:
     """Normalize the angle - radians."""
     return ((x + jnp.pi) % (2 * jnp.pi)) - jnp.pi

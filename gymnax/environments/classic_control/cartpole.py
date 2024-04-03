@@ -1,23 +1,28 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX compatible version of CartPole-v1 OpenAI gym environment."""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
-    x: float
-    x_dot: float
-    theta: float
-    theta_dot: float
+class EnvState(environment.EnvState):
+    x: jnp.ndarray
+    x_dot: jnp.ndarray
+    theta: jnp.ndarray
+    theta_dot: jnp.ndarray
     time: int
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     gravity: float = 9.8
     masscart: float = 1.0
     masspole: float = 0.1
@@ -31,10 +36,11 @@ class EnvParams:
     max_steps_in_episode: int = 500  # v0 had only 200 steps!
 
 
-class CartPole(environment.Environment):
-    """
-    JAX Compatible version of CartPole-v1 OpenAI gym environment. Source:
-    github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
+class CartPole(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of CartPole-v1 OpenAI gym environment.
+
+
+    Source: github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
     """
 
     def __init__(self):
@@ -47,8 +53,12 @@ class CartPole(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Performs step transitions in the environment."""
         prev_terminal = self.is_terminal(state, params)
         force = params.force_mag * action - params.force_mag * (1 - action)
@@ -56,16 +66,13 @@ class CartPole(environment.Environment):
         sintheta = jnp.sin(state.theta)
 
         temp = (
-            force + params.polemass_length * state.theta_dot ** 2 * sintheta
+            force + params.polemass_length * state.theta_dot**2 * sintheta
         ) / params.total_mass
         thetaacc = (params.gravity * sintheta - costheta * temp) / (
             params.length
-            * (4.0 / 3.0 - params.masspole * costheta ** 2 / params.total_mass)
+            * (4.0 / 3.0 - params.masspole * costheta**2 / params.total_mass)
         )
-        xacc = (
-            temp
-            - params.polemass_length * thetaacc * costheta / params.total_mass
-        )
+        xacc = temp - params.polemass_length * thetaacc * costheta / params.total_mass
 
         # Only default Euler integration option available here!
         x = state.x + params.tau * state.x_dot
@@ -77,13 +84,19 @@ class CartPole(environment.Environment):
         reward = 1.0 - prev_terminal
 
         # Update state dict and evaluate termination conditions
-        state = EnvState(x, x_dot, theta, theta_dot, state.time + 1)
+        state = EnvState(
+            x=x,
+            x_dot=x_dot,
+            theta=theta,
+            theta_dot=theta_dot,
+            time=state.time + 1,
+        )
         done = self.is_terminal(state, params)
 
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
-            reward,
+            jnp.array(reward),
             done,
             {"discount": self.discount(state, params)},
         )
@@ -92,9 +105,7 @@ class CartPole(environment.Environment):
         self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
-        init_state = jax.random.uniform(
-            key, minval=-0.05, maxval=0.05, shape=(4,)
-        )
+        init_state = jax.random.uniform(key, minval=-0.05, maxval=0.05, shape=(4,))
         state = EnvState(
             x=init_state[0],
             x_dot=init_state[1],
@@ -104,11 +115,11 @@ class CartPole(environment.Environment):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Applies observation function to state."""
         return jnp.array([state.x, state.x_dot, state.theta, state.theta_dot])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check termination criteria
         done1 = jnp.logical_or(
@@ -135,9 +146,7 @@ class CartPole(environment.Environment):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 
