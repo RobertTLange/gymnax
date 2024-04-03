@@ -1,9 +1,29 @@
-import numpy as np
+"""Helper functions to translate gym state to JAX state."""
+
 import jax.numpy as jnp
+from gymnax.environments.bsuite import bandit
+from gymnax.environments.bsuite import catch
+from gymnax.environments.bsuite import deep_sea
+from gymnax.environments.bsuite import discounting_chain
+from gymnax.environments.bsuite import memory_chain
+from gymnax.environments.bsuite import mnist
+from gymnax.environments.bsuite import umbrella_chain
+from gymnax.environments.classic_control import acrobot
+from gymnax.environments.classic_control import cartpole
+from gymnax.environments.classic_control import continuous_mountain_car
+from gymnax.environments.classic_control import mountain_car
+from gymnax.environments.classic_control import pendulum
+from gymnax.environments.minatar import asterix
+from gymnax.environments.minatar import breakout
+from gymnax.environments.minatar import freeway
+from gymnax.environments.minatar import space_invaders
+
+# from gymnax.environments.minatar import seaquest
 
 
 def np_state_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
     """Helper that collects env state into dict for JAX `step`."""
+
     if env_name in [
         "Pendulum-v1",
         "CartPole-v1",
@@ -26,22 +46,18 @@ def np_state_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
         "Asterix-MinAtar",
         "Breakout-MinAtar",
         "Freeway-MinAtar",
-        "Seaquest-MinAtar",
+        # "Seaquest-MinAtar",
         "SpaceInvaders-MinAtar",
     ]:
         state_gym_to_jax = minatar_np_to_jax(env, env_name, get_jax)
-    # TODO: Add misc/meta-learning environment testing
     else:
-        raise ValueError(
-            f"{env_name} is not in set of implemented environments."
-        )
+        raise ValueError(f"{env_name} is not in set of implemented environments.")
     return state_gym_to_jax
 
 
-def control_np_to_jax(
-    env, env_name: str = "Pendulum-v1", get_jax: bool = False
-):
+def control_np_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
     """Collects env state of classic_control into dict for JAX `step`."""
+    state_gym_to_jax = None
     if env_name == "Pendulum-v1":
         state_gym_to_jax = {
             "theta": env.state[0],
@@ -50,9 +66,7 @@ def control_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.classic_control.pendulum import EnvState
-
-            return EnvState(**state_gym_to_jax)
+            return pendulum.EnvState(**state_gym_to_jax)
     elif env_name == "CartPole-v1":
         state_gym_to_jax = {
             "x": env.state[0],
@@ -62,9 +76,7 @@ def control_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.classic_control.cartpole import EnvState
-
-            return EnvState(**state_gym_to_jax)
+            return cartpole.EnvState(**state_gym_to_jax)
     elif env_name == "MountainCar-v0":
         state_gym_to_jax = {
             "position": env.state[0],
@@ -72,11 +84,7 @@ def control_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.classic_control.mountain_car import (
-                EnvState,
-            )
-
-            return EnvState(**state_gym_to_jax)
+            return mountain_car.EnvState(**state_gym_to_jax)
     elif env_name == "MountainCarContinuous-v0":
         state_gym_to_jax = {
             "position": env.state[0],
@@ -84,12 +92,10 @@ def control_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.classic_control.continuous_mountain_car import (
-                EnvState,
-            )
 
-            return EnvState(**state_gym_to_jax)
+            return continuous_mountain_car.EnvState(**state_gym_to_jax)
     elif env_name == "Acrobot-v1":
+
         state_gym_to_jax = {
             "joint_angle1": env.state[0],
             "joint_angle2": env.state[1],
@@ -98,16 +104,14 @@ def control_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.classic_control.acrobot import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return acrobot.EnvState(**state_gym_to_jax)
     return state_gym_to_jax
 
 
-def bsuite_np_to_jax(
-    env, env_name: str = "Catch-bsuite", get_jax: bool = False
-):
+def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False):
     """Collects env state of bsuite into dict for JAX `step`."""
+    state_gym_to_jax = None
     if env_name == "Catch-bsuite":
         state_gym_to_jax = {
             "ball_x": env._ball_x,
@@ -118,9 +122,8 @@ def bsuite_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.bsuite.catch import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return catch.EnvState(**state_gym_to_jax)
     elif env_name == "DeepSea-bsuite":
         state_gym_to_jax = {
             "row": env._row,
@@ -133,9 +136,8 @@ def bsuite_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.bsuite.deep_sea import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return deep_sea.EnvState(**state_gym_to_jax)
     elif env_name == "DiscountingChain-bsuite":
         state_gym_to_jax = {
             "rewards": env._rewards,
@@ -143,9 +145,8 @@ def bsuite_np_to_jax(
             "time": env._timestep,
         }
         if get_jax:
-            from gymnax.environments.bsuite.discounting_chain import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return discounting_chain.EnvState(**state_gym_to_jax)
     elif env_name == "MemoryChain-bsuite":
         state_gym_to_jax = {
             "context": env._context,
@@ -155,9 +156,8 @@ def bsuite_np_to_jax(
             "time": env._timestep,
         }
         if get_jax:
-            from gymnax.environments.bsuite.memory_chain import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return memory_chain.EnvState(**state_gym_to_jax)
     elif env_name == "UmbrellaChain-bsuite":
         state_gym_to_jax = {
             "need_umbrella": env._need_umbrella,
@@ -166,9 +166,8 @@ def bsuite_np_to_jax(
             "time": env._timestep,
         }
         if get_jax:
-            from gymnax.environments.bsuite.umbrella_chain import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return umbrella_chain.EnvState(**state_gym_to_jax)
     elif env_name == "MNISTBandit-bsuite":
         state_gym_to_jax = {
             "correct_label": env._correct_label,
@@ -176,9 +175,8 @@ def bsuite_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.bsuite.mnist import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return mnist.EnvState(**state_gym_to_jax)
     elif env_name == "SimpleBandit-bsuite":
         state_gym_to_jax = {
             "rewards": env._rewards,
@@ -186,23 +184,19 @@ def bsuite_np_to_jax(
             "time": 0,
         }
         if get_jax:
-            from gymnax.environments.bsuite.bandit import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return bandit.EnvState(**state_gym_to_jax)
     return state_gym_to_jax
 
 
-def minatar_np_to_jax(
-    env, env_name: str = "Asterix-MinAtar", get_jax: bool = False
-):
+def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar", get_jax: bool = False):
     """Collects env state of MinAtar into dict for JAX `step`."""
+    state_gym_to_jax = None
     if env_name == "Asterix-MinAtar":
         entities_array = jnp.zeros((8, 5), dtype=jnp.int32)
         for i in range(8):
             if env.env.entities[i] is not None:
-                entities_array = entities_array.at[i, 0:4].set(
-                    env.env.entities[i]
-                )
+                entities_array = entities_array.at[i, 0:4].set(env.env.entities[i])
                 entities_array = entities_array.at[i, 4].set(1)
         state_gym_to_jax = {
             "player_x": env.env.player_x,
@@ -216,12 +210,11 @@ def minatar_np_to_jax(
             "ramp_index": env.env.ramp_index,
             "entities": entities_array,
             "time": 0,
-            "terminal": 0,
+            "terminal": False,
         }
         if get_jax:
-            from gymnax.environments.minatar.asterix import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return asterix.EnvState(**state_gym_to_jax)
     elif env_name == "Breakout-MinAtar":
         state_gym_to_jax = {
             "ball_y": jnp.array(env.env.ball_y),
@@ -233,70 +226,67 @@ def minatar_np_to_jax(
             "last_y": jnp.array(env.env.last_y),
             "last_x": jnp.array(env.env.last_x),
             "time": 0,
-            "terminal": 0,
+            "terminal": False,
         }
         if get_jax:
-            from gymnax.environments.minatar.breakout import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return breakout.EnvState(**state_gym_to_jax)
     elif env_name == "Freeway-MinAtar":
         state_gym_to_jax = {
             "pos": env.env.pos,
             "cars": jnp.array(env.env.cars),
             "move_timer": env.env.move_timer,
             "time": 0,
-            "terminal": 0,
+            "terminal": False,
         }
         if get_jax:
-            from gymnax.environments.minatar.freeway import EnvState
 
-            return EnvState(**state_gym_to_jax)
-    elif env_name == "Seaquest-MinAtar":
-        f_bullets = np.zeros((100, 3))
-        for i, f_b in enumerate(env.env.f_bullets):
-            f_bullets[i] = f_b
-        e_bullets = np.zeros((100, 3))
-        for i, e_b in enumerate(env.env.e_bullets):
-            e_bullets[i] = e_b
-        e_fish = np.zeros((100, 5))
-        for i, e_f in enumerate(env.env.e_fish):
-            e_fish[i] = e_f + [10]
-        e_subs = np.zeros((100, 5))
-        for i, e_s in enumerate(env.env.e_subs):
-            e_subs[i] = e_s
-        divers = np.zeros((100, 4))
-        for i, d in enumerate(env.env.divers):
-            divers[i] = d
+            return freeway.EnvState(**state_gym_to_jax)
+    # elif env_name == "Seaquest-MinAtar":
+    #   f_bullets = np.zeros((100, 3))
+    #   for i, f_b in enumerate(env.env.f_bullets):
+    #     f_bullets[i] = f_b
+    #   e_bullets = np.zeros((100, 3))
+    #   for i, e_b in enumerate(env.env.e_bullets):
+    #     e_bullets[i] = e_b
+    #   e_fish = np.zeros((100, 5))
+    #   for i, e_f in enumerate(env.env.e_fish):
+    #     e_fish[i] = e_f + [10]
+    #   e_subs = np.zeros((100, 5))
+    #   for i, e_s in enumerate(env.env.e_subs):
+    #     e_subs[i] = e_s
+    #   divers = np.zeros((100, 4))
+    #   for i, d in enumerate(env.env.divers):
+    #     divers[i] = d
 
-        state_gym_to_jax = {
-            "oxygen": env.env.oxygen,
-            "sub_x": env.env.sub_x,
-            "sub_y": env.env.sub_y,
-            "sub_or": env.env.sub_or,
-            "f_bullet_count": len(env.env.f_bullets),
-            "f_bullets": f_bullets,
-            "e_bullet_count": len(env.env.e_bullets),
-            "e_bullets": e_bullets,
-            "e_fish_count": len(env.env.e_fish),
-            "e_fish": e_fish,
-            "e_subs_count": len(env.env.e_subs),
-            "e_subs": e_subs,
-            "diver_count": env.env.diver_count,
-            "divers": divers,
-            "e_spawn_speed": env.env.e_spawn_speed,
-            "e_spawn_timer": env.env.e_spawn_timer,
-            "d_spawn_timer": env.env.d_spawn_timer,
-            "move_speed": env.env.move_speed,
-            "ramp_index": env.env.ramp_index,
-            "shot_timer": env.env.shot_timer,
-            "surface": env.env.surface,
-            "time": 0,
-            "terminal": 0,
-        }
-        if get_jax:
-            from gymnax.environments.minatar.seaquest import EnvState
+    #   state_gym_to_jax = {
+    #       "oxygen": env.env.oxygen,
+    #       "sub_x": env.env.sub_x,
+    #       "sub_y": env.env.sub_y,
+    #       "sub_or": env.env.sub_or,
+    #       "f_bullet_count": len(env.env.f_bullets),
+    #       "f_bullets": f_bullets,
+    #       "e_bullet_count": len(env.env.e_bullets),
+    #       "e_bullets": e_bullets,
+    #       "e_fish_count": len(env.env.e_fish),
+    #       "e_fish": e_fish,
+    #       "e_subs_count": len(env.env.e_subs),
+    #       "e_subs": e_subs,
+    #       "diver_count": env.env.diver_count,
+    #       "divers": divers,
+    #       "e_spawn_speed": env.env.e_spawn_speed,
+    #       "e_spawn_timer": env.env.e_spawn_timer,
+    #       "d_spawn_timer": env.env.d_spawn_timer,
+    #       "move_speed": env.env.move_speed,
+    #       "ramp_index": env.env.ramp_index,
+    #       "shot_timer": env.env.shot_timer,
+    #       "surface": env.env.surface,
+    #       "time": 0,
+    #       "terminal": 0,
+    #   }
+    #   if get_jax:
 
-            return EnvState(**state_gym_to_jax)
+    #     return seaquest.EnvState(**state_gym_to_jax)
     elif env_name == "SpaceInvaders-MinAtar":
         state_gym_to_jax = {
             "pos": env.env.pos,
@@ -311,10 +301,9 @@ def minatar_np_to_jax(
             "shot_timer": env.env.shot_timer,
             "ramping": env.env.ramping,
             "time": 0,
-            "terminal": 0,
+            "terminal": False,
         }
         if get_jax:
-            from gymnax.environments.minatar.space_invaders import EnvState
 
-            return EnvState(**state_gym_to_jax)
+            return space_invaders.EnvState(**state_gym_to_jax)
     return state_gym_to_jax

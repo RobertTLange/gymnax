@@ -16,15 +16,18 @@
 # ============================================================================
 """Downloads and loads the MNIST dataset.
 
+
 Adapted from https://github.com/google/jax/blob/master/examples/datasets.py
 and https://github.com/deepmind/bsuite/blob/master/bsuite/utils/datasets.py
 """
+
 
 import array
 import gzip
 import os
 from os import path
 import struct
+
 
 from absl import logging
 import numpy as np
