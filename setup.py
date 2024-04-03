@@ -33,7 +33,7 @@ else:
     raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
 git_tar = f"https://github.com/RobertTLange/gymnax/archive/v{verstr}.tar.gz"
 
-requires = ["jax", "jaxlib", "chex", "flax", "pyyaml", "gym>=0.26"]
+requires = ["jax", "jaxlib", "chex", "flax", "pyyaml", "gym>=0.26", "gymnasium"]
 test_requires = ["bsuite", "minatar"]
 
 setup(
