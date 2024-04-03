@@ -93,7 +93,12 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
         key_need, key_has, key_distractor = jax.random.split(key, 3)
         need_umbrella = jnp.int32(jax.random.bernoulli(key_need, p=0.5, shape=()))
         has_umbrella = jnp.int32(jax.random.bernoulli(key_has, p=0.5, shape=()))
-        state = EnvState(need_umbrella=need_umbrella, has_umbrella=has_umbrella, total_regret=0, time=0)
+        state = EnvState(
+            need_umbrella=need_umbrella,
+            has_umbrella=has_umbrella,
+            total_regret=0,
+            time=0,
+        )
         return self.get_obs(state=state, key=key_distractor, params=params), state
 
     def get_obs(

@@ -89,8 +89,13 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         key_context, key_query = jax.random.split(key)
         context = jax.random.bernoulli(key_context, p=0.5, shape=(self.num_bits,))
         query = jax.random.randint(key_query, minval=0, maxval=self.num_bits, shape=())
-        state = EnvState(context=jnp.int32(context), query=jnp.int32(query),
-                         total_perfect=0, total_regret=jnp.float32(0), time=0,)
+        state = EnvState(
+            context=jnp.int32(context),
+            query=jnp.int32(query),
+            total_perfect=0,
+            total_regret=jnp.float32(0),
+            time=0,
+        )
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
