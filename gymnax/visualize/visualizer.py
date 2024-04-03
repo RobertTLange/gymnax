@@ -1,21 +1,30 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+"""Visualizer for Gymnax environments."""
+
 from typing import Optional
-from gymnax.visualize.vis_gym import init_gym, update_gym
-from gymnax.visualize.vis_minatar import init_minatar, update_minatar
-from gymnax.visualize.vis_circle import init_circle, update_circle
-from gymnax.visualize.vis_maze import init_maze, update_maze
-from gymnax.visualize.vis_catch import init_catch, update_catch
+import gym
+import jax
+import jax.numpy as jnp
+from matplotlib import animation
+import matplotlib.pyplot as plt
+import gymnax
+from gymnax.visualize import vis_catch
+from gymnax.visualize import vis_circle
+from gymnax.visualize import vis_gym
+from gymnax.visualize import vis_maze
+from gymnax.visualize import vis_minatar
 
 
 class Visualizer(object):
-    def __init__(self, env, env_params, state_seq, reward_seq=None):
-        self.env = env
-        self.env_params = env_params
-        self.state_seq = state_seq
-        self.reward_seq = reward_seq
+    """Visualizer for Gymnax environments."""
+
+    def __init__(self, env_arg, env_params_arg, state_seq_arg, reward_seq_arg=None):
+
+        self.env = env_arg
+        self.env_params = env_params_arg
+        self.state_seq = state_seq_arg
+        self.reward_seq = reward_seq_arg
         self.fig, self.ax = plt.subplots(1, 1, figsize=(6, 5))
-        if env.name not in [
+        if env_arg.name not in [
             "Acrobot-v1",
             "CartPole-v1",
             "Pendulum-v1",
@@ -31,7 +40,7 @@ class Visualizer(object):
         save_fname: Optional[str] = "test.gif",
         view: bool = False,
     ):
-        """Anim for 2D fct - x (#steps, #pop, 2) & fitness (#steps, #pop)"""
+        """Anim for 2D fct - x (#steps, #pop, 2) & fitness (#steps, #pop)."""
         ani = animation.FuncAnimation(
             self.fig,
             self.update,
@@ -50,7 +59,7 @@ class Visualizer(object):
             plt.close()
 
     def init(self):
-        # Plot placeholder points
+        """Plot placeholder points."""
         if self.env.name in [
             "Acrobot-v1",
             "CartPole-v1",
@@ -58,15 +67,14 @@ class Visualizer(object):
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-            import gym
 
             # Animations have to use older gym version and pyglet!
             assert gym.__version__ == "0.19.0"
-            self.im = init_gym(
+            self.im = vis_gym.init_gym(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
         elif self.env.name == "Catch-bsuite":
-            self.im = init_catch(
+            self.im = vis_catch.init_catch(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
         elif self.env.name in [
@@ -77,18 +85,19 @@ class Visualizer(object):
             "SpaceInvaders-MinAtar",
             "Pong-misc",
         ]:
-            self.im = init_minatar(self.ax, self.env, self.state_seq[0])
+            self.im = vis_minatar.init_minatar(self.ax, self.env, self.state_seq[0])
         elif self.env.name == "PointRobot-misc":
-            self.im = init_circle(
+            self.im = vis_circle.init_circle(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
         elif self.env.name in ["MetaMaze-misc", "FourRooms-misc"]:
-            self.im = init_maze(
+            self.im = vis_maze.init_maze(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
         self.fig.tight_layout(rect=[0.02, 0.03, 1.0, 0.95])
 
     def update(self, frame):
+        """Update the animation."""
         if self.env.name in [
             "Acrobot-v1",
             "CartPole-v1",
@@ -96,9 +105,9 @@ class Visualizer(object):
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-            self.im = update_gym(self.im, self.env, self.state_seq[frame])
+            self.im = vis_gym.update_gym(self.im, self.env, self.state_seq[frame])
         elif self.env.name == "Catch-bsuite":
-            self.im = update_catch(self.im, self.env, self.state_seq[frame])
+            self.im = vis_catch.update_catch(self.im, self.env, self.state_seq[frame])
         elif self.env.name in [
             "Asterix-MinAtar",
             "Breakout-MinAtar",
@@ -107,16 +116,14 @@ class Visualizer(object):
             "SpaceInvaders-MinAtar",
             "Pong-misc",
         ]:
-            update_minatar(self.im, self.env, self.state_seq[frame])
+            vis_minatar.update_minatar(self.im, self.env, self.state_seq[frame])
         elif self.env.name == "PointRobot-misc":
-            self.im = update_circle(self.im, self.env, self.state_seq[frame])
+            self.im = vis_circle.update_circle(self.im, self.env, self.state_seq[frame])
         elif self.env.name in ["MetaMaze-misc", "FourRooms-misc"]:
-            self.im = update_maze(self.im, self.env, self.state_seq[frame])
+            self.im = vis_maze.update_maze(self.im, self.env, self.state_seq[frame])
 
         if self.reward_seq is None:
-            self.ax.set_title(
-                f"{self.env.name} - Step {frame + 1}", fontsize=15
-            )
+            self.ax.set_title(f"{self.env.name} - Step {frame + 1}", fontsize=15)
         else:
             self.ax.set_title(
                 "{}: Step {:4.0f} - Return {:7.2f}".format(
@@ -127,10 +134,6 @@ class Visualizer(object):
 
 
 if __name__ == "__main__":
-    import jax
-    import jax.numpy as jnp
-    import gymnax
-
     rng = jax.random.PRNGKey(0)
     env, env_params = gymnax.make("Pong-misc")
 
@@ -153,4 +156,4 @@ if __name__ == "__main__":
 
     cum_rewards = jnp.cumsum(jnp.array(reward_seq))
     vis = Visualizer(env, env_params, state_seq, cum_rewards)
-    vis.animate(f"anim.gif")
+    vis.animate("anim.gif")

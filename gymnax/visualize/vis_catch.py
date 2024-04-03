@@ -1,10 +1,24 @@
+"""Visualization for Catch."""
+
 import numpy as np
 
 
-def init_catch(ax, env, state, params):
-    im = ax.imshow(
-        np.zeros((env.rows, env.columns)), cmap="Greys", vmin=0, vmax=1
-    )
+def init_catch(ax, env, state, _):
+    """Initialize the visualization for Catch.
+
+
+    Args:
+      ax: The matplotlib axis to draw on.
+      env: The environment.
+      state: The initial state.
+      _: The parameters.
+
+
+    Returns:
+      The annotations for the paddle and ball.
+    """
+
+    _ = ax.imshow(np.zeros((env.rows, env.columns)), cmap="Greys", vmin=0, vmax=1)
     anno_paddle = ax.annotate(
         "P",
         fontsize=20,
@@ -24,7 +38,20 @@ def init_catch(ax, env, state, params):
     return (anno_paddle, anno_ball)
 
 
-def update_catch(im, env, state):
+def update_catch(im, _, state):
+    """Update the visualization for Catch.
+
+
+    Args:
+      im: The annotations for the paddle and ball.
+      _: The environment.
+      state: The current state.
+
+
+    Returns:
+      The updated annotations for the paddle and ball.
+    """
+
     anno_paddle, anno_ball = im
 
     xy_p = (state.paddle_x, state.paddle_y)
