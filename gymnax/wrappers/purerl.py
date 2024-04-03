@@ -1,11 +1,16 @@
+"""Wrappers for pure RL."""
+
+import functools
+from typing import Any, Dict, Optional, Tuple, Union
+
+
+import chex
+from flax import struct
 import jax
 import jax.numpy as jnp
-import chex
 import numpy as np
-from flax import struct
-from functools import partial
-from gymnax.environments import environment, spaces
-from typing import Optional, Tuple, Union
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 class GymnaxWrapper(object):
@@ -22,8 +27,8 @@ class GymnaxWrapper(object):
 class FlattenObservationWrapper(GymnaxWrapper):
     """Flatten the observations of the environment."""
 
-    def __init__(self, env: environment.Environment):
-        super().__init__(env)
+    #   def __init__(self, env: environment.Environment):
+    #     super().__init__(env)
 
     def observation_space(self, params) -> spaces.Box:
         assert isinstance(
@@ -36,7 +41,7 @@ class FlattenObservationWrapper(GymnaxWrapper):
             dtype=self._env.observation_space(params).dtype,
         )
 
-    @partial(jax.jit, static_argnums=(0,))
+    @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
         self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
     ) -> Tuple[chex.Array, environment.EnvState]:
@@ -44,17 +49,15 @@ class FlattenObservationWrapper(GymnaxWrapper):
         obs = jnp.reshape(obs, (-1,))
         return obs, state
 
-    @partial(jax.jit, static_argnums=(0,))
+    @functools.partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,
         state: environment.EnvState,
         action: Union[int, float],
         params: Optional[environment.EnvParams] = None,
-    ) -> Tuple[chex.Array, environment.EnvState, float, bool, dict]:
-        obs, state, reward, done, info = self._env.step(
-            key, state, action, params
-        )
+    ) -> Tuple[chex.Array, environment.EnvState, float, bool, Any]:  # dict]:
+        obs, state, reward, done, info = self._env.step(key, state, action, params)
         obs = jnp.reshape(obs, (-1,))
         return obs, state, reward, done, info
 
@@ -71,25 +74,38 @@ class LogEnvState:
 class LogWrapper(GymnaxWrapper):
     """Log the episode returns and lengths."""
 
-    def __init__(self, env: environment.Environment):
-        super().__init__(env)
+    #   def __init__(self, env: environment.Environment):
+    #     super().__init__(env)
 
-    @partial(jax.jit, static_argnums=(0,))
+    @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
         self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
-    ) -> Tuple[chex.Array, environment.EnvState]:
+    ) -> Tuple[chex.Array, LogEnvState]:
         obs, env_state = self._env.reset(key, params)
         state = LogEnvState(env_state, 0, 0, 0, 0)
         return obs, state
 
-    @partial(jax.jit, static_argnums=(0,))
+    @functools.partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,
-        state: environment.EnvState,
+        state: LogEnvState,
         action: Union[int, float],
         params: Optional[environment.EnvParams] = None,
-    ) -> Tuple[chex.Array, environment.EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, LogEnvState, jnp.ndarray, bool, Dict[Any, Any]]:
+        """Step the environment.
+
+
+        Args:
+          key: PRNG key.
+          state: The current state of the environment.
+          action: The action to take.
+          params: The parameters of the environment.
+
+
+        Returns:
+          A tuple of (observation, state, reward, done, info).
+        """
         obs, env_state, reward, done, info = self._env.step(
             key, state.env_state, action, params
         )

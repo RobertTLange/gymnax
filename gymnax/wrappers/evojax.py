@@ -1,22 +1,22 @@
 """Utility wrapper to port gymnax env to evoJAX tasks."""
+
 from typing import Tuple
 import chex
-import jax
-from flax.struct import dataclass
-
+from flax import struct
 import gymnax
-from gymnax import EnvState
+from gymnax.environments import environment
+import jax
 
 try:
     from evojax.task.base import VectorizedTask
     from evojax.task.base import TaskState
-except Exception:
-    raise ImportError("You need to additionally install EvoJAX.")
+except Exception as exc:
+    raise ImportError("You need to additionally install EvoJAX.") from exc
 
 
-@dataclass
+@struct.dataclass
 class GymState(TaskState):
-    state: EnvState
+    state: environment.EnvState
     obs: chex.Array
     rng: chex.PRNGKey
 
@@ -24,9 +24,7 @@ class GymState(TaskState):
 class GymnaxToEvoJaxTask(VectorizedTask):
     """Task wrapper for gymnax environments."""
 
-    def __init__(
-        self, env_name: str, max_steps: int = 1000, test: bool = False
-    ):
+    def __init__(self, env_name: str, max_steps: int = 1000, test: bool = False):
         self.max_steps = max_steps
         self.test = test
         env, env_params = gymnax.make(env_name)
@@ -58,7 +56,5 @@ class GymnaxToEvoJaxTask(VectorizedTask):
     def reset(self, key: chex.PRNGKey) -> GymState:
         return self._reset_fn(key)
 
-    def step(
-        self, state: GymState, action: chex.Array
-    ) -> Tuple[GymState, chex.Array, chex.Array]:
+    def step(self, state, action):  # -> Tuple[GymState, chex.Array, chex.Array]:
         return self._step_fn(state, action)
