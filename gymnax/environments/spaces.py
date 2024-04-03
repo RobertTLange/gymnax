@@ -1,29 +1,27 @@
-from typing import Tuple, Sequence, Any, Dict
-from collections import OrderedDict
+"""Gymnax space classes."""
+
+import collections
+from typing import Any, Sequence, Union
 import chex
+# from gym import spaces as gspc
+from gymnasium import spaces as gspc
 import jax
 import jax.numpy as jnp
 import numpy as np
-from gym import spaces as gspc
 
 
 class Space:
-    """
-    Minimal jittable class for abstract gymnax space.
-    """
+    """Minimal jittable class for abstract gymnax space."""
 
     def sample(self, rng: chex.PRNGKey) -> chex.Array:
         raise NotImplementedError
 
-    def contains(self, x: jnp.int_) -> bool:
+    def contains(self, x: jnp.int_) -> Any:
         raise NotImplementedError
 
 
 class Discrete(Space):
-    """
-    Minimal jittable class for discrete gymnax spaces.
-    TODO: For now this is a 1d space. Make composable for multi-discrete.
-    """
+    """Minimal jittable class for discrete gymnax spaces."""
 
     def __init__(self, num_categories: int):
         assert num_categories >= 0
@@ -37,7 +35,7 @@ class Discrete(Space):
             rng, shape=self.shape, minval=0, maxval=self.n
         ).astype(self.dtype)
 
-    def contains(self, x: jnp.int_) -> bool:
+    def contains(self, x: jnp.int_) -> jnp.ndarray:
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
@@ -46,16 +44,13 @@ class Discrete(Space):
 
 
 class Box(Space):
-    """
-    Minimal jittable class for array-shaped gymnax spaces.
-    TODO: Add unboundedness - sampling from other distributions, etc.
-    """
+    """Minimal jittable class for array-shaped gymnax spaces."""
 
     def __init__(
         self,
-        low: float,
-        high: float,
-        shape: Tuple[int],
+        low: Union[jnp.ndarray, float],
+        high: Union[jnp.ndarray, float],
+        shape: Any,  # Tuple[int],
         dtype: jnp.dtype = jnp.float32,
     ):
         self.low = low
@@ -69,27 +64,25 @@ class Box(Space):
             rng, shape=self.shape, minval=self.low, maxval=self.high
         ).astype(self.dtype)
 
-    def contains(self, x: jnp.int_) -> bool:
+    def contains(self, x: jnp.int_) -> jnp.ndarray:
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
-        range_cond = jnp.logical_and(
-            jnp.all(x >= self.low), jnp.all(x <= self.high)
-        )
+        range_cond = jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
         return range_cond
 
 
 class Dict(Space):
     """Minimal jittable class for dictionary of simpler jittable spaces."""
 
-    def __init__(self, spaces: Dict[Any, Space]):
+    def __init__(self, spaces: Any):  # Dict[Any, Space]):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
-    def sample(self, rng: chex.PRNGKey) -> Dict:
+    def sample(self, rng: chex.PRNGKey) -> Any:  # Dict:
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
-        return OrderedDict(
+        return collections.OrderedDict(
             [
                 (k, self.spaces[k].sample(key_split[i]))
                 for i, k in enumerate(self.spaces)
@@ -114,12 +107,10 @@ class Tuple(Space):
         self.spaces = spaces
         self.num_spaces = len(spaces)
 
-    def sample(self, rng: chex.PRNGKey) -> Tuple[chex.Array]:
+    def sample(self, rng: chex.PRNGKey) -> Any:  # Tuple[chex.Array]:
         """Sample random action from all subspaces."""
         key_split = jax.random.split(rng, self.num_spaces)
-        return tuple(
-            [s.sample(key_split[i]) for i, s in enumerate(self.spaces)]
-        )
+        return tuple([s.sample(key_split[i]) for i, s in enumerate(self.spaces)])
 
     def contains(self, x: jnp.int_) -> bool:
         """Check whether dimensions of object are within subspace."""
@@ -133,7 +124,7 @@ class Tuple(Space):
 
 
 def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
-    """Convert Gymnax space to equivalent Gym space"""
+    """Convert Gymnax space to equivalent Gym space."""
     if isinstance(space, Discrete):
         return gspc.Discrete(space.n)
     elif isinstance(space, Box):
@@ -149,9 +140,7 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
         )
         return gspc.Box(low, high, space.shape, space.dtype)
     elif isinstance(space, Dict):
-        return gspc.Dict(
-            {k: gymnax_space_to_gym_space(v) for k, v in space.spaces}
-        )
+        return gspc.Dict({k: gymnax_space_to_gym_space(v) for k, v in space.spaces})
     elif isinstance(space, Tuple):
         return gspc.Tuple(space.spaces)
     else:
