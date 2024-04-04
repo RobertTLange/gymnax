@@ -1,97 +1,107 @@
-from .environments import (
-    Pendulum,
-    CartPole,
-    MountainCar,
-    ContinuousMountainCar,
-    Acrobot,
-    Catch,
-    DeepSea,
-    DiscountingChain,
-    MemoryChain,
-    UmbrellaChain,
-    MNISTBandit,
-    SimpleBandit,
-    MinAsterix,
-    MinBreakout,
-    MinFreeway,
-    MinSeaquest,
-    MinSpaceInvaders,
-    BernoulliBandit,
-    GaussianBandit,
-    FourRooms,
-    MetaMaze,
-    PointRobot,
-    Reacher,
-    Swimmer,
-    Pong,
-)
+"""A JAX-version of OpenAI's infamous env.make(env_name)."""
+
+from gymnax.environments.bsuite import bandit
+from gymnax.environments.bsuite import catch
+from gymnax.environments.bsuite import deep_sea
+from gymnax.environments.bsuite import discounting_chain
+from gymnax.environments.bsuite import memory_chain
+from gymnax.environments.bsuite import mnist
+from gymnax.environments.bsuite import umbrella_chain
+from gymnax.environments.classic_control import acrobot
+from gymnax.environments.classic_control import cartpole
+from gymnax.environments.classic_control import continuous_mountain_car
+from gymnax.environments.classic_control import mountain_car
+from gymnax.environments.classic_control import pendulum
+from gymnax.environments.minatar import asterix
+from gymnax.environments.minatar import breakout
+from gymnax.environments.minatar import freeway
+from gymnax.environments.minatar import space_invaders
+from gymnax.environments.misc import bernoulli_bandit
+from gymnax.environments.misc import gaussian_bandit
+from gymnax.environments.misc import meta_maze
+from gymnax.environments.misc import point_robot
+from gymnax.environments.misc import pong
+from gymnax.environments.misc import reacher
+from gymnax.environments.misc import rooms
+from gymnax.environments.misc import swimmer
+
 
 # =============================================================================
 
 
 def make(env_id: str, **env_kwargs):
-    """A JAX-version of OpenAI's infamous env.make(env_name)"""
+    """A JAX-version of OpenAI's infamous env.make(env_name).
+
+
+    Args:
+      env_id: A string identifier for the environment.
+      **env_kwargs: Keyword arguments to pass to the environment.
+
+
+    Returns:
+      A tuple of the environment and the default parameters.
+    """
     if env_id not in registered_envs:
         raise ValueError(f"{env_id} is not in registered gymnax environments.")
 
     # 1. Classic OpenAI Control Tasks
     if env_id == "Pendulum-v1":
-        env = Pendulum(**env_kwargs)
+        env = pendulum.Pendulum(**env_kwargs)
     elif env_id == "CartPole-v1":
-        env = CartPole(**env_kwargs)
+        env = cartpole.CartPole(**env_kwargs)
     elif env_id == "MountainCar-v0":
-        env = MountainCar(**env_kwargs)
+        env = mountain_car.MountainCar(**env_kwargs)
     elif env_id == "MountainCarContinuous-v0":
-        env = ContinuousMountainCar(**env_kwargs)
+        env = continuous_mountain_car.ContinuousMountainCar(**env_kwargs)
     elif env_id == "Acrobot-v1":
-        env = Acrobot(**env_kwargs)
+        env = acrobot.Acrobot(**env_kwargs)
 
     # 2. DeepMind's bsuite environments
     elif env_id == "Catch-bsuite":
-        env = Catch(**env_kwargs)
+        env = catch.Catch(**env_kwargs)
     elif env_id == "DeepSea-bsuite":
-        env = DeepSea(**env_kwargs)
+        env = deep_sea.DeepSea(**env_kwargs)
     elif env_id == "DiscountingChain-bsuite":
-        env = DiscountingChain(**env_kwargs)
+        env = discounting_chain.DiscountingChain(**env_kwargs)
     elif env_id == "MemoryChain-bsuite":
-        env = MemoryChain(**env_kwargs)
+        env = memory_chain.MemoryChain(**env_kwargs)
     elif env_id == "UmbrellaChain-bsuite":
-        env = UmbrellaChain(**env_kwargs)
+        env = umbrella_chain.UmbrellaChain(**env_kwargs)
     elif env_id == "MNISTBandit-bsuite":
-        env = MNISTBandit(**env_kwargs)
+        env = mnist.MNISTBandit(**env_kwargs)
     elif env_id == "SimpleBandit-bsuite":
-        env = SimpleBandit(**env_kwargs)
+        env = bandit.SimpleBandit(**env_kwargs)
 
     # 3. MinAtar Environments
     elif env_id == "Asterix-MinAtar":
-        env = MinAsterix(**env_kwargs)
+        env = asterix.MinAsterix(**env_kwargs)
     elif env_id == "Breakout-MinAtar":
-        env = MinBreakout(**env_kwargs)
+        env = breakout.MinBreakout(**env_kwargs)
     elif env_id == "Freeway-MinAtar":
-        env = MinFreeway(**env_kwargs)
+        env = freeway.MinFreeway(**env_kwargs)
     elif env_id == "Seaquest-MinAtar":
         raise NotImplementedError("Seaquest is not yet supported.")
-        env = MinSeaquest(**env_kwargs)
+        # env = MinSeaquest(**env_kwargs)
     elif env_id == "SpaceInvaders-MinAtar":
-        env = MinSpaceInvaders(**env_kwargs)
+        env = space_invaders.MinSpaceInvaders(**env_kwargs)
 
     # 4. Miscellanoues Environments
     elif env_id == "BernoulliBandit-misc":
-        env = BernoulliBandit(**env_kwargs)
+        env = bernoulli_bandit.BernoulliBandit(**env_kwargs)
     elif env_id == "GaussianBandit-misc":
-        env = GaussianBandit(**env_kwargs)
+        env = gaussian_bandit.GaussianBandit(**env_kwargs)
     elif env_id == "FourRooms-misc":
-        env = FourRooms(**env_kwargs)
+        env = rooms.FourRooms(**env_kwargs)
     elif env_id == "MetaMaze-misc":
-        env = MetaMaze(**env_kwargs)
+        env = meta_maze.MetaMaze(**env_kwargs)
     elif env_id == "PointRobot-misc":
-        env = PointRobot(**env_kwargs)
+        env = point_robot.PointRobot(**env_kwargs)
     elif env_id == "Reacher-misc":
-        env = Reacher(**env_kwargs)
+        env = reacher.Reacher(**env_kwargs)
     elif env_id == "Swimmer-misc":
-        env = Swimmer(**env_kwargs)
+        env = swimmer.Swimmer(**env_kwargs)
     elif env_id == "Pong-misc":
-        env = Pong(**env_kwargs)
+        env = pong.Pong(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 

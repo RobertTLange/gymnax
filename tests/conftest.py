@@ -1,8 +1,13 @@
+"""Conftest for gymnax tests."""
+
+
 def pytest_addoption(parser):
+    """Add pytest options."""
     parser.addoption("--all", action="store_true", help="run all combinations")
 
 
 def pytest_generate_tests(metafunc):
+    """Generate tests."""
     if "bsuite_env_name" in metafunc.fixturenames:
         if metafunc.config.getoption("all"):
             metafunc.parametrize(

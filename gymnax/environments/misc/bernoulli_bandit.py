@@ -1,25 +1,28 @@
-from typing import Optional, Tuple
+"""JAX version of a Bernoulli bandit environment as in Wang et al. 2017."""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
 
 import chex
-import jax
-import jax.numpy as jnp
 from flax import struct
+import jax
 from jax import lax
-
-from gymnax.environments import environment, spaces
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
-    last_action: int
-    last_reward: int
-    exp_reward_best: float
+class EnvState(environment.EnvState):
+    last_action: jnp.ndarray
+    last_reward: jnp.ndarray
+    exp_reward_best: jnp.ndarray
     reward_probs: chex.Array
     time: float
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     reward_prob: float = 0.1
     normalize_time: bool = True
     max_steps_in_episode: float = 100.0
@@ -28,13 +31,8 @@ class EnvParams:
     t_max: int = 100
 
 
-class BernoulliBandit(environment.Environment):
-    """
-    JAX version of a Bernoulli bandit environment as in Wang et al. 2017
-    """
-
-    def __init__(self):
-        super().__init__()
+class BernoulliBandit(environment.Environment[EnvState, EnvParams]):
+    """JAX version of a Bernoulli bandit environment as in Wang et al. 2017."""
 
     @property
     def default_params(self) -> EnvParams:
@@ -42,18 +40,20 @@ class BernoulliBandit(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
-        reward = jax.random.bernoulli(key, state.reward_probs[action]).astype(
-            jnp.int32
-        )
+        reward = jax.random.bernoulli(key, state.reward_probs[action]).astype(jnp.int32)
         state = EnvState(
-            action,
-            reward,
-            state.exp_reward_best,
-            state.reward_probs,
-            state.time + 1,
+            last_action=action,
+            last_reward=reward,
+            exp_reward_best=state.exp_reward_best,
+            reward_probs=state.reward_probs,
+            time=state.time + 1,
         )
         done = self.is_terminal(state, params)
         return (
@@ -76,15 +76,15 @@ class BernoulliBandit(environment.Environment):
         ).squeeze()
 
         state = EnvState(
-            0,
-            0,
-            jax.lax.select(p1 > 0.5, p1, 1 - p1),
-            jnp.array([p1, 1 - p1]),
-            0.0,
+            last_action=jnp.array(0),
+            last_reward=jnp.array(0),
+            exp_reward_best=jax.lax.select(p1 > 0.5, p1, 1 - p1),
+            reward_probs=jnp.array([p1, 1 - p1]),
+            time=0.0,
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
         """Concatenate reward, one-hot action and time stamp."""
         action_one_hot = jax.nn.one_hot(state.last_action, 2).squeeze()
         time_rep = jax.lax.select(
@@ -96,11 +96,11 @@ class BernoulliBandit(environment.Environment):
         )
         return jnp.hstack([state.last_reward, action_one_hot, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
-        return done
+        return jnp.array(done)
 
     @property
     def name(self) -> str:
@@ -112,9 +112,7 @@ class BernoulliBandit(environment.Environment):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(self.num_actions)
 
@@ -152,13 +150,16 @@ class BernoulliBandit(environment.Environment):
                 "last_reward": spaces.Discrete(2),
                 "exp_reward_best": spaces.Box(0, 1, (2,), jnp.float32),
                 "reward_probs": spaces.Box(0, 1, (2,), jnp.float32),
-                "time": spaces.Discrete(params.max_steps_in_episode),
+                "time": spaces.Discrete(int(params.max_steps_in_episode)),
             }
         )
 
 
 def time_normalization(
-    t: int, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
+    t: float,
+    min_lim: float = -1.0,
+    max_lim: float = 1.0,
+    t_max: int = 100,
 ) -> float:
     """Normalize time integer into range given max time."""
     return (max_lim - min_lim) * t / t_max + min_lim

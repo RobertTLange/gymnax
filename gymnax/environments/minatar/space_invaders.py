@@ -1,14 +1,43 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX Compatible version of Space Invaders MinAtar environment.
+
+
+Source:
+github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py
+
+
+ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
+- Player controls cannon at bottom of screen and can shoot bullets at aliens
+- Aliens move across screen until one of them hits the edge.
+- At this point all move down and switch directions.
+- Current alien dir indicated by 2 channels (left/right) - active at position.
+- Reward of +1 is given each time alien is shot and alien is removed.
+- Aliens will also shoot bullets back at player.
+- Alien speed increases when only few of them are left.
+- When only one alien is left, it will move at one cell per frame.
+- When wave of aliens is cleared, slightly faster new one will spawn.
+- Termination occurs when an alien or bullet hits the player.
+- Channels are encoded as follows: 'cannon':0, 'alien':1, 'alien_left':2,
+- 'alien_right':3, 'friendly_bullet':4, 'enemy_bullet':5
+- Observation has dimensionality (10, 10, 6)
+- Actions are encoded as follows: ['n','l','r','f']
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
+    """State of the environment."""
+
     pos: int
     f_bullet_map: chex.Array
     e_bullet_map: chex.Array
@@ -25,34 +54,15 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     shot_cool_down: int = 5
     enemy_move_interval: int = 12
     enemy_shot_interval: int = 10
     max_steps_in_episode: int = 1000
 
 
-class MinSpaceInvaders(environment.Environment):
-    """
-    JAX Compatible version of Freeway MinAtar environment. Source:
-    github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py
-
-    ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
-    - Player controls cannon at bottom of screen and can shoot bullets at aliens
-    - Aliens move across screen until one of them hits the edge.
-    - At this point all move down and switch directions.
-    - Current alien dir indicated by 2 channels (left/right) - active at position.
-    - Reward of +1 is given each time alien is shot and alien is removed.
-    - Aliens will also shoot bullets back at player.
-    - Alien speed increases when only few of them are left.
-    - When only one alien is left, it will move at one cell per frame.
-    - When wave of aliens is cleared, slightly faster new one will spawn.
-    - Termination occurs when an alien or bullet hits the player.
-    - Channels are encoded as follows: 'cannon':0, 'alien':1, 'alien_left':2,
-    - 'alien_right':3, 'friendly_bullet':4, 'enemy_bullet':5
-    - Observation has dimensionality (10, 10, 6)
-    - Actions are encoded as follows: ['n','l','r','f']
-    """
+class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of Space Invaders MinAtar environment."""
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -74,8 +84,12 @@ class MinSpaceInvaders(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Resolve player action - fire, left, right.
         a = self.action_set[action]
@@ -92,9 +106,7 @@ class MinSpaceInvaders(environment.Environment):
 
         # Reset alien map and increase speed if map is cleared
         reset_map_cond = jnp.count_nonzero(state.alien_map) == 0
-        ramping_cond = jnp.logical_and(
-            state.enemy_move_interval > 6, state.ramping
-        )
+        ramping_cond = jnp.logical_and(state.enemy_move_interval > 6, state.ramping)
         reset_ramp_cond = jnp.logical_and(reset_map_cond, ramping_cond)
         enemy_move_interval = state.enemy_move_interval - reset_ramp_cond
         ramp_index = state.ramp_index + reset_ramp_cond
@@ -148,7 +160,7 @@ class MinSpaceInvaders(environment.Environment):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((10, 10, 6), dtype=bool)
         # Update cannon, aliens - left + right dir, friendly + enemy bullet
@@ -164,7 +176,7 @@ class MinSpaceInvaders(environment.Environment):
         obs = obs.at[:, :, 5].set(state.e_bullet_map)
         return obs.astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         return jnp.logical_or(done_steps, state.terminal)
@@ -179,9 +191,7 @@ class MinSpaceInvaders(environment.Environment):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -198,9 +208,7 @@ class MinSpaceInvaders(environment.Environment):
                 "e_bullet_map": spaces.Box(0, 1, (10, 10)),
                 "alien_map": spaces.Box(0, 1, (10, 10)),
                 "alien_dir": spaces.Box(-1, 3, ()),
-                "enemy_move_interval": spaces.Discrete(
-                    params.enemy_move_interval
-                ),
+                "enemy_move_interval": spaces.Discrete(params.enemy_move_interval),
                 "alien_move_timer": spaces.Discrete(params.enemy_move_interval),
                 "alien_shot_timer": spaces.Discrete(params.enemy_shot_interval),
                 "ramp_index": spaces.Discrete(2),
@@ -212,7 +220,7 @@ class MinSpaceInvaders(environment.Environment):
         )
 
 
-def step_agent(action: int, state: EnvState, params: EnvParams) -> EnvState:
+def step_agent(action: jnp.ndarray, state: EnvState, params: EnvParams) -> EnvState:
     """Resolve player action - fire, left, right."""
     fire_cond = jnp.logical_and(action == 5, state.shot_timer == 0)
     left_cond, right_cond = (action == 1), (action == 3)
@@ -221,9 +229,7 @@ def step_agent(action: int, state: EnvState, params: EnvParams) -> EnvState:
         state.f_bullet_map.at[9, state.pos].set(1),
         state.f_bullet_map,
     )
-    shot_timer = jax.lax.select(
-        fire_cond, params.shot_cool_down, state.shot_timer
-    )
+    shot_timer = jax.lax.select(fire_cond, params.shot_cool_down, state.shot_timer)
 
     # Update position of agent
     pos = jax.lax.select(left_cond, jnp.maximum(0, state.pos - 1), state.pos)
@@ -255,23 +261,13 @@ def step_aliens(state: EnvState) -> EnvState:
 
     alien_move_timer = jax.lax.select(
         alien_move_cond,
-        jnp.minimum(
-            jnp.count_nonzero(state.alien_map), state.enemy_move_interval
-        ),
+        jnp.minimum(jnp.count_nonzero(state.alien_map), state.enemy_move_interval),
         state.alien_move_timer,
     )
-    cond1 = jnp.logical_and(
-        jnp.sum(state.alien_map[:, 0]) > 0, state.alien_dir < 0
-    )
-    cond2 = jnp.logical_and(
-        jnp.sum(state.alien_map[:, 9]) > 0, state.alien_dir > 0
-    )
-    alien_border_cond = jnp.logical_and(
-        alien_move_cond, jnp.logical_or(cond1, cond2)
-    )
-    alien_dir = jax.lax.select(
-        alien_border_cond, -1 * state.alien_dir, state.alien_dir
-    )
+    cond1 = jnp.logical_and(jnp.sum(state.alien_map[:, 0]) > 0, state.alien_dir < 0)
+    cond2 = jnp.logical_and(jnp.sum(state.alien_map[:, 9]) > 0, state.alien_dir > 0)
+    alien_border_cond = jnp.logical_and(alien_move_cond, jnp.logical_or(cond1, cond2))
+    alien_dir = jax.lax.select(alien_border_cond, -1 * state.alien_dir, state.alien_dir)
     alien_terminal_2 = jnp.logical_and(
         alien_border_cond, jnp.sum(state.alien_map[9, :]) > 0
     )
@@ -289,9 +285,7 @@ def step_aliens(state: EnvState) -> EnvState:
     alien_terminal_3 = jnp.logical_and(alien_move_cond, alien_map[9, state.pos])
 
     # Jointly evaluate the 3 alien terminal conditions
-    alien_terminal = (
-        alien_terminal_1 + alien_terminal_2 + alien_terminal_3
-    ) > 0
+    alien_terminal = (alien_terminal_1 + alien_terminal_2 + alien_terminal_3) > 0
     terminal = jnp.logical_or(state.terminal, alien_terminal)
     return state.replace(
         alien_move_timer=alien_move_timer,
@@ -301,7 +295,7 @@ def step_aliens(state: EnvState) -> EnvState:
     )
 
 
-def step_shoot(state: EnvState, params: EnvParams) -> Tuple[EnvState, float]:
+def step_shoot(state: EnvState, params: EnvParams) -> Tuple[EnvState, jnp.ndarray]:
     """Update aliens - shooting check and calculate rewards."""
     reward = 0
     alien_shot_cond = state.alien_shot_timer == 0
@@ -337,7 +331,9 @@ def step_shoot(state: EnvState, params: EnvParams) -> Tuple[EnvState, float]:
     )
 
 
-def get_nearest_alien(pos: int, alien_map: chex.Array) -> Tuple[int, int, int]:
+def get_nearest_alien(
+    pos: int, alien_map: chex.Array
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Find alien closest to player in manhattan distance -> shot target."""
     ids = jnp.array([jnp.abs(jnp.array([i for i in range(10)]) - pos)])
     search_order = jnp.argsort(ids).squeeze()
@@ -352,9 +348,7 @@ def get_nearest_alien(pos: int, alien_map: chex.Array) -> Tuple[int, int, int]:
         aliens_loc = jnp.max(locations)
         results_temp = (
             aliens_exist[i]
-            * results_temp.at[:].set(
-                jnp.array([aliens_exist[i], aliens_loc, i])
-            )
+            * results_temp.at[:].set(jnp.array([aliens_exist[i], aliens_loc, i]))
             + (1 - aliens_exist[i]) * results_temp
         )
         counter += 1

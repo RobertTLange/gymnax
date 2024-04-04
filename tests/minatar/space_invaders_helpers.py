@@ -1,8 +1,11 @@
+"""Helper functions for Space Invaders."""
+
 import numpy as np
 
 
 def get_jax_state_from_numpy(env):
     """A helper for summarizing numpy env info into JAX state."""
+
     state_jax = {
         "pos": env.env.pos,
         "f_bullet_map": env.env.f_bullet_map,
@@ -22,6 +25,7 @@ def get_jax_state_from_numpy(env):
 
 def step_agent_numpy(env, action):
     """Part of numpy env state transition - Only agent."""
+
     a = env.env.action_map[action]
     shot_cool_down = 5
 
@@ -47,6 +51,7 @@ def step_agent_numpy(env, action):
 
 def step_aliens_numpy(env):
     """Part of numpy env state transition - Update aliens."""
+
     terminal_1, terminal_2, terminal_3 = 0, 0, 0
     if env.env.alien_map[9, env.env.pos]:
         terminal_1 = 1
@@ -62,9 +67,7 @@ def step_aliens_numpy(env):
                 terminal_2 = 1
             env.env.alien_map = np.roll(env.env.alien_map, 1, axis=0)
         else:
-            env.env.alien_map = np.roll(
-                env.env.alien_map, env.env.alien_dir, axis=1
-            )
+            env.env.alien_map = np.roll(env.env.alien_map, env.env.alien_dir, axis=1)
         if env.env.alien_map[9, env.env.pos]:
             terminal_3 = 1
     env.env.terminal = (terminal_1 + terminal_2 + terminal_3) > 0
@@ -72,6 +75,8 @@ def step_aliens_numpy(env):
 
 
 def step_shoot_numpy(env):
+    """Part of numpy env state transition - Update shooting."""
+
     r = 0
     enemy_shot_interval = 10
     if env.env.alien_shot_timer == 0:
@@ -90,6 +95,7 @@ def step_shoot_numpy(env):
 
 def get_nearest_alien_numpy(env):
     """Get closest alien to shoot."""
+
     search_order = [i for i in range(10)]
     search_order.sort(key=lambda x: abs(x - env.env.pos))
     # Loop over distances and check if there is alien left

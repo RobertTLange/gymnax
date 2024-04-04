@@ -1,3 +1,5 @@
+"""Helper functions for Asterix environment."""
+
 ramp_interval = 100
 init_spawn_speed = 10
 init_move_interval = 5

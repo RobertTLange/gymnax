@@ -1,3 +1,5 @@
+"""Helper functions for testing freeway environment."""
+
 import numpy as np
 
 
@@ -17,7 +19,7 @@ def det_randomize_cars_numpy(speeds, directions, old_cars, initialize):
 
 
 def step_cars_numpy(env):
-    # Update cars
+    """Update cars."""
     for car in env.env.cars:
         if car[0:2] == [4, env.env.pos]:
             env.env.pos = 9

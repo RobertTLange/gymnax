@@ -1,4 +1,9 @@
-from .rollout import RolloutWrapper
+"""Experimental Gymnax modules."""
+
+from gymnax.experimental import rollout
+
+
+RolloutWrapper = rollout.RolloutWrapper
 
 
 __all__ = [

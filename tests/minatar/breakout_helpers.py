@@ -1,10 +1,13 @@
+"""Helper functions for breakout environment."""
+
 import numpy as np
 
 
 def step_agent_numpy(env, action):
     """Helper that steps agent pos and ball_x, ball_y."""
     a = env.env.action_map[action]
-
+    new_x = None
+    new_y = None
     # Resolve player action
     if a == "l":
         env.env.pos = max(0, env.env.pos - 1)
@@ -26,6 +29,8 @@ def step_agent_numpy(env, action):
     elif env.env.ball_dir == 3:
         new_x = env.env.ball_x - 1
         new_y = env.env.ball_y + 1
+    else:
+        raise ValueError("Invalid ball dir: %s" % env.env.ball_dir)
 
     if new_x < 0 or new_x > 9:
         if new_x < 0:

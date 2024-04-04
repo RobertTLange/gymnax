@@ -1,23 +1,34 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX Compatible version of meta-maze environment (Miconi et al., 2019).
+
+
+Source: Comparable to
+github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     last_action: int
-    last_reward: float
+    last_reward: jnp.ndarray
     pos: chex.Array
     goal: chex.Array
     time: float
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     # github.com/uber-research/backpropamine/blob/180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431
     reward: float = 10.0
     punishment: float = 0.0
@@ -35,9 +46,7 @@ def generate_maze_layout(maze_size: int, rf_size: int) -> chex.Array:
 
     # Add inidividual rows with walls
     row_with_walls = (
-        rf_offset * "x"
-        + int((maze_size + 1) / 2) * " x"
-        + (rf_offset - 1) * "x"
+        rf_offset * "x" + int((maze_size + 1) / 2) * " x" + (rf_offset - 1) * "x"
     )
     row_without_walls = rf_offset * "x" + maze_size * " " + rf_offset * "x"
     for r in range(maze_size):
@@ -46,7 +55,7 @@ def generate_maze_layout(maze_size: int, rf_size: int) -> chex.Array:
         else:
             maze.append(row_with_walls)
     # Need to add surrounding outer walls - last row
-    for r in range(rf_offset):
+    for _ in range(rf_offset):
         maze.append((maze_size + 2 * rf_offset) * "x")
 
     # Transform into boolean array map
@@ -56,12 +65,8 @@ def generate_maze_layout(maze_size: int, rf_size: int) -> chex.Array:
     return jnp.array(bool_map)
 
 
-class MetaMaze(environment.Environment):
-    """
-    JAX Compatible version of meta-maze environment (Miconi et al., 2019).
-    Source: Comparable to
-    github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py
-    """
+class MetaMaze(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of meta-maze environment (Miconi et al., 2019)."""
 
     def __init__(self, maze_size: int = 9, rf_size: int = 3):
         super().__init__()
@@ -95,8 +100,12 @@ class MetaMaze(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         p = state.pos + self.directions[action]
         in_map = self.env_map[p[0], p[1]]
@@ -113,7 +122,13 @@ class MetaMaze(environment.Environment):
         pos_sampled = reset_pos(key, self.coords)
         new_pos = jax.lax.select(goal_reached, pos_sampled, new_pos)
         # Update state dict and evaluate termination conditions
-        state = EnvState(action, reward, new_pos, state.goal, state.time + 1)
+        state = EnvState(
+            last_action=action,
+            last_reward=reward,
+            pos=new_pos,
+            goal=state.goal,
+            time=state.time + 1,
+        )
         done = self.is_terminal(state, params)
         return (
             lax.stop_gradient(self.get_obs(state, params)),
@@ -130,25 +145,29 @@ class MetaMaze(environment.Environment):
         # Reset both the agents position and the goal location
         goal = reset_goal(key, self.available_goals, params)
         # Initialize agent always at fixed center position of maze
-        state = EnvState(0, 0.0, self.center_position, goal, 0.0)
+        state = EnvState(
+            last_action=0,
+            last_reward=jnp.array(0.0),
+            pos=self.center_position,
+            goal=goal,
+            time=0.0,
+        )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         rf_obs = jax.lax.dynamic_slice(
             self.occupied_map,
             (state.pos[0] - self.rf_off, state.pos[1] - self.rf_off),
             (self.rf_size, self.rf_size),
         ).reshape(-1)
-        action_one_hot = jax.nn.one_hot(
-            state.last_action, self.num_actions
-        ).squeeze()
+        action_one_hot = jax.nn.one_hot(state.last_action, self.num_actions).squeeze()
         time_rep = jax.lax.select(
             params.normalize_time, time_normalization(state.time), state.time
         )
         return jnp.hstack([rf_obs, action_one_hot, state.last_reward, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done_steps = state.time >= params.max_steps_in_episode
@@ -160,9 +179,8 @@ class MetaMaze(environment.Environment):
         done = jnp.logical_or(done_goal, done_steps)
         return done
 
-    def render(self, state: EnvState, params: EnvParams):
+    def render(self, state: EnvState, _: EnvParams):
         """Small utility for plotting the agent's state."""
-        import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
         ax.imshow(self.occupied_map, cmap="Greys")
@@ -194,26 +212,24 @@ class MetaMaze(environment.Environment):
         """Number of actions possible in environment."""
         return 4
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(4)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         low = jnp.array(
-            self.rf_size ** 2 * [0] + self.num_actions * [0] + [0, 0],
+            self.rf_size**2 * [0] + self.num_actions * [0] + [0, 0],
             dtype=jnp.float32,
         )
         high = jnp.array(
-            self.rf_size ** 2 * [1]
+            self.rf_size**2 * [1]
             + self.num_actions * [1]
             + [1, params.max_steps_in_episode],
             dtype=jnp.float32,
         )
         return spaces.Box(
-            low, high, (self.rf_size ** 2 + self.num_actions + 2,), jnp.float32
+            low, high, (self.rf_size**2 + self.num_actions + 2,), jnp.float32
         )
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
@@ -245,7 +261,7 @@ class MetaMaze(environment.Environment):
 
 
 def reset_goal(
-    rng: chex.PRNGKey, available_goals: chex.Array, params: EnvParams
+    rng: chex.PRNGKey, available_goals: chex.Array, _: EnvParams
 ) -> chex.Array:
     """Reset the goal state/position in the environment."""
     goal_index = jax.random.randint(rng, (), 0, available_goals.shape[0])

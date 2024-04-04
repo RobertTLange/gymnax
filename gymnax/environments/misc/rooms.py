@@ -1,21 +1,32 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional, List
+"""JAX Compatible version of Four Rooms environment (Sutton et al., 1999).
+
+
+Source: Comparable to https://github.com/howardh/gym-fourrooms Since gymnax
+automatically resets env at done, we abstract different resets
+"""
+
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     pos: chex.Array
     goal: chex.Array
     time: int
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     fail_prob: float = 1.0 / 3
     resample_init_pos: bool = False
     resample_goal_pos: bool = False
@@ -46,18 +57,14 @@ def string_to_bool_map(str_map: str) -> chex.Array:
     return jnp.array(bool_map)
 
 
-class FourRooms(environment.Environment):
-    """
-    JAX Compatible version of Four Rooms environment (Sutton et al., 1999).
-    Source: Comparable to https://github.com/howardh/gym-fourrooms
-    Since gymnax automatically resets env at done, we abstract different resets
-    """
+class FourRooms(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of Four Rooms environment (Sutton et al., 1999)."""
 
     def __init__(
         self,
         use_visual_obs: bool = False,
-        goal_fixed: List[int] = [8, 9],
-        pos_fixed: List[int] = [4, 1],
+        goal_fixed: List[int] | None = None,
+        pos_fixed: List[int] | None = None,
     ):
         super().__init__()
         self.env_map = string_to_bool_map(four_rooms_map)
@@ -79,6 +86,10 @@ class FourRooms(environment.Environment):
         self.use_visual_obs = use_visual_obs
 
         # Set fixed goal and position if we dont resample each time
+        if goal_fixed is None:
+            goal_fixed = [8, 9]
+        if pos_fixed is None:
+            pos_fixed = [4, 1]
         self.goal_fixed = jnp.array(goal_fixed)
         self.pos_fixed = jnp.array(pos_fixed)
 
@@ -88,14 +99,16 @@ class FourRooms(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         key_random, key_action = jax.random.split(key)
         # Sample whether to choose a random action
-        choose_random = (
-            jax.random.uniform(key_random, ()) < params.fail_prob * 4 / 3
-        )
+        choose_random = jax.random.uniform(key_random, ()) < params.fail_prob * 4 / 3
         action = jax.lax.select(
             choose_random, self.action_space(params).sample(key_action), action
         )
@@ -108,7 +121,7 @@ class FourRooms(environment.Environment):
         )
 
         # Update state dict and evaluate termination conditions
-        state = EnvState(new_pos, state.goal, state.time + 1)
+        state = EnvState(pos=new_pos, goal=state.goal, time=state.time + 1)
         done = self.is_terminal(state, params)
         return (
             lax.stop_gradient(self.get_obs(state)),
@@ -126,16 +139,14 @@ class FourRooms(environment.Environment):
         rng_goal, rng_pos = jax.random.split(key, 2)
         goal_new = reset_goal(rng_goal, self.available_goals, params)
         # Only use resampled position if specified in EnvParams
-        goal = jax.lax.select(
-            params.resample_goal_pos, goal_new, self.goal_fixed
-        )
+        goal = jax.lax.select(params.resample_goal_pos, goal_new, self.goal_fixed)
 
         pos_new = reset_pos(rng_pos, self.coords, goal)
         pos = jax.lax.select(params.resample_init_pos, pos_new, self.pos_fixed)
-        state = EnvState(pos, goal, 0)
+        state = EnvState(pos=pos, goal=goal, time=0)
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         if not self.use_visual_obs:
             return jnp.array(
@@ -152,7 +163,7 @@ class FourRooms(environment.Environment):
             obs_array = jnp.stack([self.occupied_map, agent_map], axis=2)
             return obs_array
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done_steps = state.time >= params.max_steps_in_episode
@@ -174,9 +185,7 @@ class FourRooms(environment.Environment):
         """Number of actions possible in environment."""
         return 4
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(4)
 
@@ -209,9 +218,8 @@ class FourRooms(environment.Environment):
             }
         )
 
-    def render(self, state: EnvState, params: EnvParams):
+    def render(self, state: EnvState, _: EnvParams):
         """Small utility for plotting the agent's state."""
-        import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
         ax.imshow(self.occupied_map, cmap="Greys")
@@ -235,7 +243,7 @@ class FourRooms(environment.Environment):
 
 
 def reset_goal(
-    rng: chex.PRNGKey, available_goals: chex.Array, params: EnvParams
+    rng: chex.PRNGKey, available_goals: chex.Array, _: EnvParams
 ) -> chex.Array:
     """Reset the goal state/position in the environment."""
     goal_index = jax.random.randint(rng, (), 0, available_goals.shape[0])
@@ -243,9 +251,7 @@ def reset_goal(
     return goal
 
 
-def reset_pos(
-    rng: chex.PRNGKey, coords: chex.Array, goal: chex.Array
-) -> chex.Array:
+def reset_pos(rng: chex.PRNGKey, coords: chex.Array, goal: chex.Array) -> chex.Array:
     """Reset the position of the agent."""
     pos_index = jax.random.randint(rng, (), 0, coords.shape[0] - 1)
     collision = jnp.logical_and(

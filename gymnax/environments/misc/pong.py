@@ -1,14 +1,28 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX compatible version of Pong-like environment.
+
+
+Adapted from:
+https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py -
+Actions are encoded as: ['n', 'u', 'd']
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from matplotlib import colors
+import matplotlib.pyplot as plt
+import seaborn as sns
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     paddle_centers: chex.Array
     ball_position: chex.Array
     last_ball_position: chex.Array
@@ -18,7 +32,7 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     ball_max_y_speed: int = 3
     paddle_y_speed: int = 1
     ball_x_speed: int = 1
@@ -26,12 +40,8 @@ class EnvParams:
     max_steps_in_episode: int = 1000
 
 
-class Pong(environment.Environment):
-    """
-    JAX Compatible version of Pong-like environment. Adapted from:
-    https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py
-    - Actions are encoded as: ['n', 'u', 'd']
-    """
+class Pong(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of Pong-like environment."""
 
     def __init__(
         self,
@@ -53,8 +63,12 @@ class Pong(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         last_ball_position = state.ball_position
 
@@ -68,9 +82,7 @@ class Pong(environment.Environment):
         )
         state = move_ball(state)
         state = reflect_on_borders(state, self.height)
-        state = reflect_on_paddle(
-            state, self.width, self.paddle_half_height, params
-        )
+        state = reflect_on_paddle(state, self.width, self.paddle_half_height, params)
 
         # Check game condition & no. steps for termination condition
         state = state.replace(
@@ -105,7 +117,7 @@ class Pong(environment.Environment):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((self.height, self.width, 3))
         ball_index = jnp.floor(state.ball_position)
@@ -135,11 +147,11 @@ class Pong(environment.Environment):
         )  # paddle
         return obs.reshape((self.height, self.width, 3)).astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         done_term = update_game_state(state, self.width)
-        done = jnp.logical_or(done_steps, done_term)
+        done = jnp.logical_or(jnp.array(done_steps), jnp.array(done_term))
         return jnp.logical_or(done, state.terminal)
 
     @property
@@ -152,9 +164,7 @@ class Pong(environment.Environment):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -175,35 +185,28 @@ class Pong(environment.Environment):
             }
         )
 
-    def render(self, state: EnvState, params: EnvParams):
+    def render(self, state: EnvState, _: EnvParams):
         """Small utility for plotting the agent's state."""
-        import seaborn as sns
-        import matplotlib.pyplot as plt
-        import matplotlib.colors as colors
 
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         obs = self.get_obs(state)
         n_channels = self.obs_shape[-1]
-        # The seaborn color_palette cubhelix is used to assign visually distinct colors to each channel for the env
+        # The seaborn color_palette cubhelix is used to
+        # assign visually distinct colors to each channel for the env
         cmap = sns.color_palette("cubehelix", n_channels)
         cmap.insert(0, (0, 0, 0))
         cmap = colors.ListedColormap(cmap)
         bounds = [i for i in range(n_channels + 2)]
         norm = colors.BoundaryNorm(bounds, n_channels + 1)
         numerical_state = (
-            jnp.amax(
-                obs * jnp.reshape(jnp.arange(n_channels) + 1, (1, 1, -1)), 2
-            )
-            + 0.5
+            jnp.amax(obs * jnp.reshape(jnp.arange(n_channels) + 1, (1, 1, -1)), 2) + 0.5
         )
         ax.set_xticks([])
         ax.set_yticks([])
-        return ax.imshow(
-            numerical_state, cmap=cmap, norm=norm, interpolation="none"
-        )
+        return ax.imshow(numerical_state, cmap=cmap, norm=norm, interpolation="none")
 
 
-def update_game_state(state: EnvState, width: int) -> Tuple[bool, bool]:
+def update_game_state(state: EnvState, width: int) -> jnp.ndarray:
     """Check if right or left border win conditions are met."""
     win_right = state.ball_position[1] < 0
     win_left = state.ball_position[1] >= width
@@ -212,24 +215,23 @@ def update_game_state(state: EnvState, width: int) -> Tuple[bool, bool]:
 
 def reflect_on_borders(state: EnvState, height: int) -> EnvState:
     """Reflect ball at the bottom/top border of the frame."""
-    reflect_bottom = state.ball_position[0] < 0
-    ball_position = jax.lax.select(
-        reflect_bottom,
-        state.ball_position.at[0].set(state.ball_position[0] * -1),
-        state.ball_position,
-    )
-    ball_velocity = jax.lax.select(
-        reflect_bottom,
-        state.ball_velocity.at[0].set(state.ball_velocity[0] * -1),
-        state.ball_velocity,
-    )
+    # these are not really used?
+    #   reflect_bottom = state.ball_position[0] < 0
+    #   ball_position = jax.lax.select(
+    #       reflect_bottom,
+    #       state.ball_position.at[0].set(state.ball_position[0] * -1),
+    #       state.ball_position,
+    #   )
+    #   ball_velocity = jax.lax.select(
+    #       reflect_bottom,
+    #       state.ball_velocity.at[0].set(state.ball_velocity[0] * -1),
+    #       state.ball_velocity,
+    #   )
 
     reflect_top = state.ball_position[0] >= height
     ball_position = jax.lax.select(
         reflect_top,
-        state.ball_position.at[0].set(
-            2 * (height - 1) - state.ball_position[0]
-        ),
+        state.ball_position.at[0].set(2 * (height - 1) - state.ball_position[0]),
         state.ball_position,
     )
     ball_velocity = jax.lax.select(
@@ -237,22 +239,17 @@ def reflect_on_borders(state: EnvState, height: int) -> EnvState:
         state.ball_velocity.at[0].set(state.ball_velocity[0] * -1),
         state.ball_velocity,
     )
-    return state.replace(
-        ball_position=ball_position, ball_velocity=ball_velocity
-    )
+    return state.replace(ball_position=ball_position, ball_velocity=ball_velocity)
 
 
 def reflect_on_paddle(
     state: EnvState, width: int, paddle_half_height: int, env_params: EnvParams
 ):
     """Reflect ball on paddle contact."""
-    # TODO(RobertTLange): Check visually correct reflection.
     left_paddle_reflected_x = 2 * 1 - state.ball_position[1]
     right_paddle_reflected_x = 2 * (width - 2) - state.ball_position[1]
 
-    paddle_height_distance = (
-        state.ball_position[jnp.newaxis, 0] - state.paddle_centers
-    )
+    paddle_height_distance = state.ball_position[jnp.newaxis, 0] - state.paddle_centers
 
     left_paddle_hit = jnp.logical_and(
         left_paddle_reflected_x >= 1,
@@ -265,13 +262,10 @@ def reflect_on_paddle(
 
     # Left paddle hit updates
     left_ball_position = state.ball_position.at[1].set(left_paddle_reflected_x)
-    left_ball_velocity = state.ball_velocity.at[1].set(
-        state.ball_velocity[1] * -1
-    )
+    left_ball_velocity = state.ball_velocity.at[1].set(state.ball_velocity[1] * -1)
     left_ball_velocity = left_ball_velocity.at[0].set(
         jnp.clip(
-            left_ball_velocity[0]
-            + paddle_height_distance[0] / paddle_half_height,
+            left_ball_velocity[0] + paddle_height_distance[0] / paddle_half_height,
             -env_params.ball_max_y_speed,
             env_params.ball_max_y_speed,
         )
@@ -288,18 +282,13 @@ def reflect_on_paddle(
     right_ball_velocity = ball_velocity.at[1].set(ball_velocity[1] * -1)
     right_ball_velocity = right_ball_velocity.at[0].set(
         jnp.clip(
-            right_ball_velocity[0]
-            + paddle_height_distance[1] / paddle_half_height,
+            right_ball_velocity[0] + paddle_height_distance[1] / paddle_half_height,
             -env_params.ball_max_y_speed,
             env_params.ball_max_y_speed,
         )
     )
-    ball_position = jax.lax.select(
-        right_paddle_hit, right_ball_position, ball_position
-    )
-    ball_velocity = jax.lax.select(
-        right_paddle_hit, right_ball_velocity, ball_velocity
-    )
+    ball_position = jax.lax.select(right_paddle_hit, right_ball_position, ball_position)
+    ball_velocity = jax.lax.select(right_paddle_hit, right_ball_velocity, ball_velocity)
     return state.replace(
         ball_position=ball_position,
         ball_velocity=ball_velocity,
@@ -364,9 +353,7 @@ def move_paddles(
         paddle_half_height,
         height - paddle_half_height - 1,
     )
-    new_center_p2 = jax.lax.select(
-        use_ai_policy, new_center_ai, new_center_self
-    )
+    new_center_p2 = jax.lax.select(use_ai_policy, new_center_ai, new_center_self)
 
     new_centers = jnp.array([new_center_p1, new_center_p2])
     return state.replace(paddle_centers=new_centers)

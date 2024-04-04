@@ -1,8 +1,9 @@
-import numpy as np
+"""Visualization of the maze environment."""
 
 
-def init_maze(ax, env, state, params):
-    im = ax.imshow(env.occupied_map, cmap="Greys")
+def init_maze(ax, env, state, _):
+    """Initializes the maze visualization."""
+    _ = ax.imshow(env.occupied_map, cmap="Greys")
     anno_pos = ax.annotate(
         "A",
         fontsize=20,
@@ -10,7 +11,7 @@ def init_maze(ax, env, state, params):
         xycoords="data",
         xytext=(state.pos[1] - 0.3, state.pos[0] + 0.25),
     )
-    anno_goal = ax.annotate(
+    _ = ax.annotate(
         "G",
         fontsize=20,
         xy=(state.goal[1], state.goal[0]),
@@ -22,7 +23,8 @@ def init_maze(ax, env, state, params):
     return anno_pos
 
 
-def update_maze(im, env, state):
+def update_maze(im, _, state):
+    """Updates the maze visualization."""
     xy = (state.pos[1], state.pos[0])
 
     xytext = (state.pos[1] - 0.3, state.pos[0] + 0.25)

@@ -1,8 +1,11 @@
+"""Visualization of gym environments."""
+
+import gymnasium as gym
 import numpy as np
-import gym
 
 
 def set_gym_params(gym_env, env_name, params):
+    """Set gym environment parameters."""
     if env_name == "Acrobot-v1":
         gym_env.env.LINK_LENGTH_1 = params.link_length_1
         gym_env.env.LINK_LENGTH_2 = params.link_length_2
@@ -23,6 +26,7 @@ def set_gym_params(gym_env, env_name, params):
 
 
 def get_gym_state(state, env_name):
+    """Get gym environment state."""
     if env_name == "Acrobot-v1":
         return np.array(
             [
@@ -43,6 +47,7 @@ def get_gym_state(state, env_name):
 
 
 def init_gym(ax, env, state, params):
+    """Initialize gym environment."""
     if env.name == "Pendulum-v1":
         gym_env = gym.make("Pendulum-v0")
     else:
@@ -61,6 +66,7 @@ def init_gym(ax, env, state, params):
 
 
 def update_gym(im, env, state):
+    """Update gym environment."""
     if env.name == "Pendulum-v1":
         gym_env = gym.make("Pendulum-v0")
     else:

@@ -1,8 +1,22 @@
+"""Visualization for the circle environment."""
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 
-def init_circle(ax, env, state, params):
-    import matplotlib.pyplot as plt
+def init_circle(ax, _, state, params):
+    """Initializes the visualization for the circle environment.
+
+
+    Args:
+      ax: The matplotlib axis to draw on.
+      state: The state of the environment.
+      params: The parameters of the environment.
+
+
+    Returns:
+      A list of matplotlib artists to update during the episode.
+    """
 
     angles = np.linspace(0, np.pi, 100)
     x, y = np.cos(angles), np.sin(angles)
@@ -25,7 +39,18 @@ def init_circle(ax, env, state, params):
     return [anno_goal, anno_agent]
 
 
-def update_circle(im, env, state):
+def update_circle(im, _, state):
+    """Updates the visualization for the circle environment.
+
+
+    Args:
+      im: The list of matplotlib artists to update.
+      state: The state of the environment.
+
+
+    Returns:
+      A list of matplotlib artists to update during the episode.
+    """
     anno_goal = im[0]
     anno_agent = im[1]
     anno_goal.center = (state.goal[0], state.goal[1])

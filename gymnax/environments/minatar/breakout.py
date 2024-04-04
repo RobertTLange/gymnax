@@ -1,35 +1,43 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX compatible version of Breakout MinAtar environment."""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
-    ball_y: int
-    ball_x: int
-    ball_dir: int
+class EnvState(environment.EnvState):
+    ball_y: jnp.ndarray
+    ball_x: jnp.ndarray
+    ball_dir: jnp.ndarray
     pos: int
     brick_map: chex.Array
     strike: bool
-    last_y: int
-    last_x: int
+    last_y: jnp.ndarray
+    last_x: jnp.ndarray
     time: int
     terminal: bool
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 1000
 
 
-class MinBreakout(environment.Environment):
-    """
-    JAX Compatible version of Breakout MinAtar environment. Source:
+class MinBreakout(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of Breakout MinAtar environment.
+
+
+    Source:
     github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py
+
 
     ENVIRONMENT DESCRIPTION - 'Breakout-MinAtar'
     - Player controls paddle on bottom of screen.
@@ -68,9 +76,9 @@ class MinBreakout(environment.Environment):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: int,
+        action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         a = self.action_set[action]
         state, new_x, new_y = step_agent(state, a)
@@ -95,20 +103,20 @@ class MinBreakout(environment.Environment):
         """Reset environment state by sampling initial position."""
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
-            ball_y=3,
+            ball_y=jnp.array(3),
             ball_x=jnp.array([0, 9])[ball_start],
             ball_dir=jnp.array([2, 3])[ball_start],
             pos=4,
             brick_map=jnp.zeros((10, 10)).at[1:4, :].set(1),
             strike=False,
-            last_y=3,
+            last_y=jnp.array(3),
             last_x=jnp.array([0, 9])[ball_start],
             time=0,
             terminal=False,
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the player paddle, paddle, trail & brick map
@@ -118,7 +126,7 @@ class MinBreakout(environment.Environment):
         obs = obs.at[:, :, 3].set(state.brick_map)
         return obs.astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         return jnp.logical_or(done_steps, state.terminal)
@@ -133,9 +141,7 @@ class MinBreakout(environment.Environment):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -161,7 +167,10 @@ class MinBreakout(environment.Environment):
         )
 
 
-def step_agent(state: EnvState, action: int) -> Tuple[EnvState, int, int]:
+def step_agent(
+    state: EnvState,
+    action: jnp.ndarray,
+) -> Tuple[EnvState, jnp.ndarray, jnp.ndarray]:
     """Helper that steps the agent and checks boundary conditions."""
     # Update player position
     pos = (
@@ -191,9 +200,7 @@ def step_agent(state: EnvState, action: int) -> Tuple[EnvState, int, int]:
 
     # Boundary conditions for x position
     border_cond_x = jnp.logical_or(new_x < 0, new_x > 9)
-    new_x = jax.lax.select(
-        border_cond_x, (0 * (new_x < 0) + 9 * (new_x > 9)), new_x
-    )
+    new_x = jax.lax.select(border_cond_x, (0 * (new_x < 0) + 9 * (new_x > 9)), new_x)
     # Reflect ball direction if bounced off at x border
     ball_dir = jax.lax.select(
         border_cond_x, jnp.array([1, 0, 3, 2])[state.ball_dir], state.ball_dir
@@ -211,9 +218,10 @@ def step_agent(state: EnvState, action: int) -> Tuple[EnvState, int, int]:
 
 
 def step_ball_brick(
-    state: EnvState, new_x: int, new_y: int
-) -> Tuple[EnvState, float]:
+    state: EnvState, new_x: jnp.ndarray, new_y: jnp.ndarray
+) -> Tuple[EnvState, jnp.ndarray]:
     """Helper that computes reward and termination cond. from brickmap."""
+
     reward = 0
 
     # Reflect ball direction if bounced off at y border
@@ -229,26 +237,21 @@ def step_ball_brick(
     )
     strike_bool = jnp.logical_and((1 - state.strike), strike_toggle)
     reward += strike_bool * 1.0
-    strike = jax.lax.select(strike_toggle, strike_bool, False)
+    # next line wasn't used anywhere
+    # strike = jax.lax.select(strike_toggle, strike_bool, False)
 
     brick_map = jax.lax.select(
         strike_bool, state.brick_map.at[new_y, new_x].set(0), state.brick_map
     )
     new_y = jax.lax.select(strike_bool, state.last_y, new_y)
-    ball_dir = jax.lax.select(
-        strike_bool, jnp.array([3, 2, 1, 0])[ball_dir], ball_dir
-    )
+    ball_dir = jax.lax.select(strike_bool, jnp.array([3, 2, 1, 0])[ball_dir], ball_dir)
 
     # 2nd NASTY ELIF BEGINS HERE... = Wall collision
     brick_cond = jnp.logical_and(1 - strike_toggle, new_y == 9)
 
     # Spawn new bricks if there are no more around - everything is collected
-    spawn_bricks = jnp.logical_and(
-        brick_cond, jnp.count_nonzero(brick_map) == 0
-    )
-    brick_map = jax.lax.select(
-        spawn_bricks, brick_map.at[1:4, :].set(1), brick_map
-    )
+    spawn_bricks = jnp.logical_and(brick_cond, jnp.count_nonzero(brick_map) == 0)
+    brick_map = jax.lax.select(spawn_bricks, brick_map.at[1:4, :].set(1), brick_map)
 
     # Redirect ball because it collided with old player position
     redirect_ball1 = jnp.logical_and(brick_cond, state.ball_x == state.pos)

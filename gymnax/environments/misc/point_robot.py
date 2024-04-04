@@ -1,16 +1,22 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""Point Robot environment."""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     last_action: chex.Array
-    last_reward: float
+    last_reward: jnp.ndarray
     pos: chex.Array
     goal: chex.Array
     goals_reached: int
@@ -18,7 +24,7 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     max_force: float = 0.1  # Max action (+/-)
     circle_radius: float = 1.0  # Radius of semi-circle
     dense_reward: bool = False  # Distance reward at each timestep
@@ -28,14 +34,12 @@ class EnvParams:
     max_steps_in_episode: int = 100  # Steps in an episode (constant goal)
 
 
-class PointRobot(environment.Environment):
-    """
-    2D Semi-Circle Point Robot environment similar to Dorfman et al. 2021
-    https://openreview.net/pdf?id=IBdEfhLveS
-    """
+class PointRobot(environment.Environment[EnvState, EnvParams]):
+    """2D Semi-Circle Point Robot environment similar to Dorfman et al.
 
-    def __init__(self):
-        super().__init__()
+
+    2021 https://openreview.net/pdf?id=IBdEfhLveS
+    """
 
     @property
     def default_params(self) -> EnvParams:
@@ -46,30 +50,28 @@ class PointRobot(environment.Environment):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: chex.Array,
+        action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         a = jnp.clip(action, -params.max_force, params.max_force)
         pos = state.pos + a
         goal_distance = jnp.linalg.norm(state.goal - state.pos)
         goal_reached = goal_distance <= params.goal_radius
         # Dense reward - distance to goal, sparse reward - 1 if in radius
-        reward = jax.lax.select(
-            params.dense_reward, -goal_distance, goal_reached * 1.0
-        )
+        reward = jax.lax.select(params.dense_reward, -goal_distance, goal_reached * 1.0)
         sampled_pos = sample_agent_position(
             key, params.circle_radius, params.center_init
         )
         # Sample/set new initial position if goal was reached
         new_pos = jax.lax.select(goal_reached, sampled_pos, pos)
         state = EnvState(
-            action,
-            reward,
-            new_pos,
-            state.goal,
-            state.goals_reached + goal_reached,
-            state.time + 1,
+            last_action=action,
+            last_reward=reward,
+            pos=new_pos,
+            goal=state.goal,
+            goals_reached=state.goals_reached + goal_reached,
+            time=state.time + 1,
         )
 
         done = self.is_terminal(state, params)
@@ -96,29 +98,27 @@ class PointRobot(environment.Environment):
         )
 
         state = EnvState(
-            jnp.zeros(2),
-            0.0,
-            sampled_pos,
-            goal,
-            0,
-            0.0,
+            last_action=jnp.zeros(2),
+            last_reward=jnp.array(0.0),
+            pos=sampled_pos,
+            goal=goal,
+            goals_reached=0,
+            time=0.0,
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
         """Concatenate reward, one-hot action and time stamp."""
         time_rep = jax.lax.select(
             params.normalize_time, time_normalization(state.time), state.time
         )
-        return jnp.hstack(
-            [state.pos, state.last_reward, state.last_action, time_rep]
-        )
+        return jnp.hstack([state.pos, state.last_reward, state.last_action, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
-        return done
+        return jnp.array(done)
 
     @property
     def name(self) -> str:
@@ -134,12 +134,8 @@ class PointRobot(environment.Environment):
         """Action space of the environment."""
         if params is None:
             params = self.default_params
-        low = jnp.array(
-            [-params.max_force, -params.max_force], dtype=jnp.float32
-        )
-        high = jnp.array(
-            [params.max_force, params.max_force], dtype=jnp.float32
-        )
+        low = jnp.array([-params.max_force, -params.max_force], dtype=jnp.float32)
+        high = jnp.array([params.max_force, params.max_force], dtype=jnp.float32)
         return spaces.Box(low, high, (2,), jnp.float32)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
@@ -166,8 +162,6 @@ class PointRobot(environment.Environment):
 
     def render(self, state: EnvState, params: EnvParams):
         """Small utility for plotting the agent's state."""
-        import matplotlib.pyplot as plt
-
         fig, ax = plt.subplots()
         angles = jnp.linspace(0, jnp.pi, 100)
         x, y = jnp.cos(angles), jnp.sin(angles)
@@ -202,9 +196,7 @@ def sample_agent_position(
 ) -> chex.Array:
     """Sample a random position in circle (or set position to center)."""
     rng_radius, rng_angle = jax.random.split(key)
-    sampled_radius = jax.random.uniform(
-        rng_radius, minval=0, maxval=circle_radius
-    )
+    sampled_radius = jax.random.uniform(rng_radius, minval=0, maxval=circle_radius)
     sampled_angle = jax.random.uniform(rng_angle, minval=0, maxval=jnp.pi)
 
     pos = jax.lax.select(

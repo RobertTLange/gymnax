@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python: ['3.7', '3.8', '3.9']
+        python: ['3.10']
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -28,7 +28,7 @@ jobs:
         pip install pytest pytest-timeout pytest-cov
         pip install flake8 black
         pip install -e .
-        pip install gym bsuite matplotlib
+        pip install gym bsuite matplotlib brax
         # Setup dependency for minatar tests
         git clone -n https://github.com/kenjyoung/MinAtar.git
         cd MinAtar

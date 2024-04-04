@@ -1,7 +1,9 @@
+"""Tests for evaluator wrapper."""
+
+import flax.linen as nn
 import jax
 import jax.numpy as jnp
-import flax.linen as nn
-from gymnax.experimental import RolloutWrapper
+from gymnax.experimental import rollout
 
 
 class MLP(nn.Module):
@@ -18,6 +20,7 @@ class MLP(nn.Module):
 
 
 def test_rollout():
+    """Test rollout wrapper."""
     rng = jax.random.PRNGKey(0)
     model = MLP()
     pholder = jnp.zeros((3,))
@@ -26,21 +29,17 @@ def test_rollout():
         x=pholder,
         rng=rng,
     )
-    manager = RolloutWrapper(
+    manager = rollout.RolloutWrapper(
         model.apply, env_name="Pendulum-v1", num_env_steps=200
     )
 
     # Test simple single episode rollout
-    obs, action, reward, next_obs, done, cum_return = manager.single_rollout(
-        rng, policy_params
-    )
+    obs, _, _, _, _, _ = manager.single_rollout(rng, policy_params)
     assert obs.shape == (200, 3)
 
     # Test multiple rollouts for same network (different random numbers)
     rng_batch = jax.random.split(rng, 10)
-    obs, action, reward, next_obs, done, cum_return = manager.batch_rollout(
-        rng_batch, policy_params
-    )
+    obs, _, _, _, _, _ = manager.batch_rollout(rng_batch, policy_params)
     assert obs.shape == (10, 200, 3)
 
     # Test multiple rollouts for different networks
@@ -51,10 +50,10 @@ def test_rollout():
     # print(jax.tree_map(lambda x: x.shape, batch_params))
     (
         obs,
-        action,
-        reward,
-        next_obs,
-        done,
-        cum_return,
+        _,
+        _,
+        _,
+        _,
+        _,
     ) = manager.population_rollout(rng_batch, batch_params)
     assert obs.shape == (5, 10, 200, 3)

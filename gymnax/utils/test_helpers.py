@@ -1,14 +1,16 @@
+"""Helper functions for testing."""
+
+from typing import Any
 import jax
 import jaxlib
 import numpy as np
-from .state_translate import np_state_to_jax
+from gymnax.utils import state_translate
 
 
-def assert_correct_state(
-    env_gym, env_name: str, state_jax: dict, atol: float = 1e-4
-):
+def assert_correct_state(env_gym, env_name: str, state_jax: Any, atol: float = 1e-4):
     """Check that numpy-based env state is same as JAX dict."""
-    state_gym = np_state_to_jax(env_gym, env_name)
+
+    state_gym = state_translate.np_state_to_jax(env_gym, env_name)
     # print(state_gym)
     # Loop over keys and assert that individual entries are same/close
     for k in state_gym.keys():
@@ -16,8 +18,8 @@ def assert_correct_state(
         # print(k, jax_value, state_gym[k])
         if k not in ["time", "terminal"]:
             if type(jax_value) in [
-                jax.interpreters.xla._DeviceArray,
-                jaxlib.xla_extension.Buffer,
+                jax.Array,
+                # jaxlib.xla_extension.Buffer,
                 jaxlib.xla_extension.ArrayImpl,
                 np.ndarray,
             ]:
@@ -28,8 +30,8 @@ def assert_correct_state(
                 if type(state_gym[k]) in [
                     float,
                     np.float64,
-                    jax.interpreters.xla._DeviceArray,
-                    jaxlib.xla_extension.Buffer,
+                    jax.Array,
+                    # jaxlib.xla_extension.Buffer,
                     np.ndarray,
                     jaxlib.xla_extension.ArrayImpl,
                 ]:
@@ -52,7 +54,7 @@ def assert_correct_transit(
     if not done_gym:
         assert np.allclose(obs_gym, obs_jax, atol=atol)
     assert np.allclose(reward_gym, reward_jax, atol=atol)
-    assert np.alltrue(done_gym == done_jax)
+    assert np.all(done_gym == done_jax)
 
 
 def minatar_action_map(action_jax: int, env_name: str):

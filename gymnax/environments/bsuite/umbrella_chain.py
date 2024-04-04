@@ -1,14 +1,24 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX Compatible version of UmbrellaChain bsuite environment.
+
+
+Source:
+github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     need_umbrella: jnp.int32
     has_umbrella: jnp.int32
     total_regret: jnp.int32
@@ -16,16 +26,13 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     chain_length: int = 10
     max_steps_in_episode: int = 100
 
 
-class UmbrellaChain(environment.Environment):
-    """
-    JAX Compatible version of UmbrellaChain bsuite environment. Source:
-    github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py
-    """
+class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of UmbrellaChain bsuite environment."""
 
     def __init__(self, n_distractor: int = 0):
         super().__init__()
@@ -37,12 +44,14 @@ class UmbrellaChain(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
-        has_umbrella = lax.select(
-            state.time + 1 == 1, action, state.has_umbrella
-        )
+        has_umbrella = lax.select(state.time + 1 == 1, action, state.has_umbrella)
         reward = 0
         # Check if chain is full/up
         chain_full = state.time + 1 == params.chain_length
@@ -59,16 +68,18 @@ class UmbrellaChain(environment.Environment):
         reward += (1 - chain_full) * random_rew
 
         state = EnvState(
-            jnp.int32(state.need_umbrella),
-            jnp.int32(has_umbrella),
-            jnp.int32(total_regret),
-            state.time + 1,
+            need_umbrella=jnp.int32(state.need_umbrella),
+            has_umbrella=jnp.int32(has_umbrella),
+            total_regret=jnp.int32(total_regret),
+            time=state.time + 1,
         )
         # Check game condition & no. steps for termination condition
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state, key_distractor, params)),
+            lax.stop_gradient(
+                self.get_obs(state=state, key=key_distractor, params=params)
+            ),
             lax.stop_gradient(state),
             reward,
             done,
@@ -80,12 +91,15 @@ class UmbrellaChain(environment.Environment):
     ) -> Tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         key_need, key_has, key_distractor = jax.random.split(key, 3)
-        need_umbrella = jnp.int32(
-            jax.random.bernoulli(key_need, p=0.5, shape=())
-        )
+        need_umbrella = jnp.int32(jax.random.bernoulli(key_need, p=0.5, shape=()))
         has_umbrella = jnp.int32(jax.random.bernoulli(key_has, p=0.5, shape=()))
-        state = EnvState(need_umbrella, has_umbrella, 0, 0)
-        return self.get_obs(state, key_distractor, params), state
+        state = EnvState(
+            need_umbrella=need_umbrella,
+            has_umbrella=has_umbrella,
+            total_regret=0,
+            time=0,
+        )
+        return self.get_obs(state=state, key=key_distractor, params=params), state
 
     def get_obs(
         self, state: EnvState, key: chex.PRNGKey, params: EnvParams
@@ -100,7 +114,7 @@ class UmbrellaChain(environment.Environment):
         )
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         done_chain = state.time == params.chain_length
@@ -116,9 +130,7 @@ class UmbrellaChain(environment.Environment):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 

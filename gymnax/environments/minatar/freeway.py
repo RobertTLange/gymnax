@@ -1,14 +1,39 @@
-import jax
-import jax.numpy as jnp
-from jax import lax
-from gymnax.environments import environment, spaces
-from typing import Tuple, Optional
+"""JAX compatible version of Freeway MinAtar environment.
+
+
+Source:
+github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py
+
+
+ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
+- Player starts at bottom of screen and can travel up/down.
+- Player speed is restricted s.t. player only moves every 3 frames.
+- Reward +1 given when player reaches top of screen -> returns to bottom.
+- 8 cars travel horizontally on screen and teleport to other side at edge.
+- When player is hit by a car, he is returned to the bottom of the screen.
+- Car direction and speed are indicated by 5 trail channels.
+- Each time player reaches top of screen, car speeds are randomized.
+- Termination occurs after 2500 frames.
+- Channels are encoded as follows: 'chicken':0, 'car':1, 'speed1':2,
+- 'speed2':3, 'speed3':4, 'speed4':5, 'speed5':6
+- Observation has dimensionality (10, 10, 4)
+- Actions are encoded as follows: ['n', 'u', 'd']
+"""
+
+from typing import Any, Dict, Optional, Tuple, Union
+
+
 import chex
 from flax import struct
+import jax
+from jax import lax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from gymnax.environments import spaces
 
 
 @struct.dataclass
-class EnvState:
+class EnvState(environment.EnvState):
     pos: int
     cars: chex.Array
     move_timer: int
@@ -17,30 +42,13 @@ class EnvState:
 
 
 @struct.dataclass
-class EnvParams:
+class EnvParams(environment.EnvParams):
     player_speed: int = 3
     max_steps_in_episode: int = 2500
 
 
-class MinFreeway(environment.Environment):
-    """
-    JAX Compatible version of Freeway MinAtar environment. Source:
-    github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py
-
-    ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
-    - Player starts at bottom of screen and can travel up/down.
-    - Player speed is restricted s.t. player only moves every 3 frames.
-    - Reward +1 given when player reaches top of screen -> returns to bottom.
-    - 8 cars travel horizontally on screen and teleport to other side at edge.
-    - When player is hit by a car, he is returned to the bottom of the screen.
-    - Car direction and speed are indicated by 5 trail channels.
-    - Each time player reaches top of screen, car speeds are randomized.
-    - Termination occurs after 2500 frames.
-    - Channels are encoded as follows: 'chicken':0, 'car':1, 'speed1':2,
-    - 'speed2':3, 'speed3':4, 'speed4':5, 'speed5':6
-    - Observation has dimensionality (10, 10, 4)
-    - Actions are encoded as follows: ['n', 'u', 'd']
-    """
+class MinFreeway(environment.Environment[EnvState, EnvParams]):
+    """JAX Compatible version of Freeway MinAtar environment."""
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -62,8 +70,12 @@ class MinFreeway(environment.Environment):
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         # 1. Update position of agent only if timer condition is met!
         a = self.action_set[action]
@@ -76,9 +88,7 @@ class MinFreeway(environment.Environment):
         speeds = jax.random.randint(key_speed, shape=(8,), minval=1, maxval=6)
         directions = jax.random.choice(key_dirs, jnp.array([-1, 1]), shape=(8,))
         win_cars = randomize_cars(speeds, directions, state.cars, False)
-        state = state.replace(
-            cars=jax.lax.select(win_cond, win_cars, state.cars)
-        )
+        state = state.replace(cars=jax.lax.select(win_cond, win_cars, state.cars))
 
         # 3. Update cars and check for collisions! - respawn agent at bottom
         state = step_cars(state)
@@ -106,16 +116,14 @@ class MinFreeway(environment.Environment):
         directions = jax.random.choice(key_dirs, jnp.array([-1, 1]), shape=(8,))
         state = EnvState(
             pos=9,
-            cars=randomize_cars(
-                speeds, directions, jnp.zeros((8, 4), dtype=int), True
-            ),
+            cars=randomize_cars(speeds, directions, jnp.zeros((8, 4), dtype=int), True),
             move_timer=params.player_speed,
             time=0,
             terminal=False,
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the chicken agent, cars, and trails
@@ -124,9 +132,7 @@ class MinFreeway(environment.Environment):
             car = state.cars[car_id]
             obs = obs.at[car[1], car[0], 1].set(1)
             # Boundary conditions for cars
-            back_x = (car[3] > 0) * (car[0] - 1) + (1 - (car[3] > 0)) * (
-                car[0] + 1
-            )
+            back_x = (car[3] > 0) * (car[0] - 1) + (1 - (car[3] > 0)) * (car[0] + 1)
             left_out = back_x < 0
             right_out = back_x > 9
             back_x = left_out * 9 + (1 - left_out) * back_x
@@ -142,10 +148,10 @@ class MinFreeway(environment.Environment):
             obs = obs.at[car[1], back_x, trail_channel].set(1)
         return obs.astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> bool:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
-        return done_steps
+        return jnp.array(done_steps)
 
     @property
     def name(self) -> str:
@@ -157,9 +163,7 @@ class MinFreeway(environment.Environment):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(
-        self, params: Optional[EnvParams] = None
-    ) -> spaces.Discrete:
+    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -181,23 +185,21 @@ class MinFreeway(environment.Environment):
 
 
 def step_agent(
-    action: int, state: EnvState, params: EnvParams
-) -> Tuple[EnvState, float, bool]:
+    action: jnp.ndarray, state: EnvState, params: EnvParams
+) -> Tuple[EnvState, jnp.ndarray, bool]:
     """Perform 1st part of step transition for agent."""
     cond_up = jnp.logical_and(action == 2, state.move_timer == 0)
     cond_down = jnp.logical_and(action == 4, state.move_timer == 0)
     any_cond = jnp.logical_or(cond_up, cond_down)
     state_up = jnp.maximum(0, state.pos - 1)
     state_down = jnp.minimum(9, state.pos + 1)
-    pos = (
-        (1 - any_cond) * state.pos + cond_up * state_up + cond_down * state_down
-    )
+    pos = (1 - any_cond) * state.pos + cond_up * state_up + cond_down * state_down
     move_timer = jax.lax.select(any_cond, params.player_speed, state.move_timer)
     # Check win cond. - increase reward, randomize cars, reset agent position
     win_cond = pos == 0
     reward = win_cond * 1.0
     pos = jax.lax.select(win_cond, 9, pos)
-    return state.replace(pos=pos, move_timer=move_timer), reward, win_cond
+    return state.replace(pos=pos, move_timer=move_timer), reward, win_cond.item()
 
 
 def step_cars(state: EnvState) -> EnvState:
@@ -216,9 +218,7 @@ def step_cars(state: EnvState) -> EnvState:
 
         # Check for exiting frame, reset car and then check collision again
         car_cond = cars[car_id][2] == 0
-        upd_2 = jax.lax.select(
-            car_cond, jnp.abs(cars[car_id][3]), cars[car_id][2]
-        )
+        upd_2 = jax.lax.select(car_cond, jnp.abs(cars[car_id][3]), cars[car_id][2])
 
         cars = cars.at[car_id, 2].set(upd_2)
         upd_0 = jax.lax.select(
@@ -248,9 +248,7 @@ def step_cars(state: EnvState) -> EnvState:
         cond_pos = jnp.logical_and(car_cond, collision_cond)
         pos = jax.lax.select(cond_pos, 9, pos)
         # Move car if no previous car_cond update
-        alt_upd_2 = jax.lax.select(
-            car_cond, cars[car_id][2], cars[car_id][2] - 1
-        )
+        alt_upd_2 = jax.lax.select(car_cond, cars[car_id][2], cars[car_id][2] - 1)
         cars = cars.at[car_id, 2].set(alt_upd_2)
     # 4. Update various timers
     move_timer = state.move_timer - (state.move_timer > 0)
