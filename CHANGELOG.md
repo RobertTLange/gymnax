@@ -1,3 +1,16 @@
+### [v0.0.7] - 04/04/2024
+
+1. Fixed most of the typing issues under pylint --strict.
+1.1 This required unifying the interface of `step`, `step_env`, `get_obs`, 'is_terminal` for proper inheritance. 
+
+2. `spaces` now depends on `gymnasium` instead of `gym`, adding an additional dependency. Maybe later on `gym` dependency can be completely removed since it's not maintained anymore? haven't looked into that.
+3. Removed `_DeviceArray` from the tests as it's deprecated. Uses jax version `0.4.24`
+4. Ran everything in `python 3.10` so technically you could support that too now.
+5. In `wrapper/brax.py`, `GymnaxtoBraxWrapper` has two new methods `backend` and `observation_size`, as its required to be defined under newest brax version. Used brax version `0.10.0`.
+
+Thanks to @Aidandos !
+
+
 ### [v0.0.6] - 12/04/2023
 
 ##### Added
