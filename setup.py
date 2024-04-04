@@ -17,9 +17,7 @@ with open(os.path.join(CURRENT_DIR, "README.md"), encoding="utf-8") as f:
 def parse_requirements(path: str) -> List[str]:
     with open(os.path.join(CURRENT_DIR, path)) as f:
         return [
-            line.rstrip()
-            for line in f
-            if not (line.isspace() or line.startswith("#"))
+            line.rstrip() for line in f if not (line.isspace() or line.startswith("#"))
         ]
 
 
@@ -47,8 +45,6 @@ setup(
     url="https://github.com/RobertTLange/gymnax",
     download_url=git_tar,
     classifiers=[
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -58,7 +54,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     platforms="any",
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=requires,
     tests_require=test_requires,
 )
