@@ -1,3 +1,7 @@
+### [v0.0.8] - 21/04/2024
+
+Fix import errors for `matplotlib` and `seaborn` visualization.
+
 ### [v0.0.7] - 04/04/2024
 
 1. Fixed most of the typing issues under pylint --strict.
