@@ -332,7 +332,7 @@ def step_entities(
     return (
         state.replace(entities=entities, move_timer=move_timer),
         reward,
-        bool(done > 0),
+        jnp.bool_(done > 0),
     )
 
 
