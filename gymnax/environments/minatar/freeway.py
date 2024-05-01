@@ -199,7 +199,7 @@ def step_agent(
     win_cond = pos == 0
     reward = win_cond * 1.0
     pos = jax.lax.select(win_cond, 9, pos)
-    return state.replace(pos=pos, move_timer=move_timer), reward, win_cond.item()
+    return state.replace(pos=pos, move_timer=move_timer), reward, win_cond
 
 
 def step_cars(state: EnvState) -> EnvState:
