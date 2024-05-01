@@ -5,6 +5,7 @@ from typing import Any, Optional
 import jax
 import jax.numpy as jnp
 import gymnax
+from gymnax.environments.environment import Environment
 
 
 class RolloutWrapper(object):
@@ -13,21 +14,25 @@ class RolloutWrapper(object):
     def __init__(
         self,
         model_forward=None,
-        env_name: str = "Pendulum-v1",
+        env_name: Environment | str = "Pendulum-v1",
         num_env_steps: Optional[int] = None,
         env_kwargs: Any | None = None,
         env_params: Any | None = None,
     ):
         """Wrapper to define batch evaluation for generation parameters."""
-        self.env_name = env_name
         # Define the RL environment & network forward function
         if env_kwargs is None:
             env_kwargs = {}
         if env_params is None:
             env_params = {}
-        self.env, self.env_params = gymnax.make(self.env_name, **env_kwargs)
+        if isinstance(env_name, Environment):
+            self.env = env_name
+            self.env_params = self.env.default_params
+        else:
+            self.env, self.env_params = gymnax.make(env_name, **env_kwargs)
         self.env_params = self.env_params.replace(**env_params)
         self.model_forward = model_forward
+        self.env_name = self.env.name
 
         if num_env_steps is None:
             self.num_env_steps = self.env_params.max_steps_in_episode
