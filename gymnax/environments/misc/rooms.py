@@ -118,7 +118,7 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
         new_pos = jax.lax.select(in_map, p, state.pos)
         reward = jnp.logical_and(
             new_pos[0] == state.goal[0], new_pos[1] == state.goal[1]
-        )
+        ) * 1.0
 
         # Update state dict and evaluate termination conditions
         state = EnvState(pos=new_pos, goal=state.goal, time=state.time + 1)
