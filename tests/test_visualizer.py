@@ -1,14 +1,14 @@
 """Tests for the visualizer."""
 
 import os
+from pathlib import Path
 import jax
 import jax.numpy as jnp
 import gymnax
 from gymnax.visualize import visualizer
 
 
-
-def test_visualizer(viz_env_name: str):
+def test_visualizer(viz_env_name: str, tmp_path: Path):
     """Tests the visualizer."""
     rng = jax.random.PRNGKey(0)
     env, env_params = gymnax.make(viz_env_name)
@@ -31,5 +31,8 @@ def test_visualizer(viz_env_name: str):
 
     cum_rewards = jnp.cumsum(jnp.array(reward_seq))
     vis = visualizer.Visualizer(env, env_params, state_seq, cum_rewards)
-    vis.animate("anim.gif")
-    assert os.path.exists("anim.gif")
+    fig_path = tmp_path / f"anim_{viz_env_name}.gif"
+    # Uncomment if you want to check out the animations more easily:
+    # fig_path = Path(f"anim_{viz_env_name}.gif")
+    vis.animate(str(fig_path))
+    assert fig_path.exists()
