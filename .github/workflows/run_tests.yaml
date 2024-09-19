@@ -27,15 +27,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-timeout pytest-cov
         pip install flake8 black
-        pip install -e .
-        pip install gym bsuite matplotlib brax
+        pip install -e .[test]
         # Setup dependency for minatar tests
-        git clone -n https://github.com/kenjyoung/MinAtar.git
-        cd MinAtar
-        git checkout c645454f07a3dfa5dd8dc81228b36d8256305cf0
-        rm minatar/__init__.py
-        pip install -e .
-        cd ..
+        pip install git+https://github.com/kenjyoung/MinAtar.git@c645454f07a3dfa5dd8dc81228b36d8256305cf0
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
