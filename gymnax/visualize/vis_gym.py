@@ -48,10 +48,8 @@ def get_gym_state(state, env_name):
 
 def init_gym(ax, env, state, params):
     """Initialize gym environment."""
-    if env.name == "Pendulum-v1":
-        gym_env = gym.make("Pendulum-v0", render_mode="rgb_array")
-    else:
-        gym_env = gym.make(env.name, render_mode="rgb_array")
+    # todo: double-check for Pendulum-v1 (why did it need pendulum-v0 from old gym?)
+    gym_env = gym.make(env.name, render_mode="rgb_array")
     gym_env.reset()
     set_gym_params(gym_env, env.name, params)
     gym_state = get_gym_state(state, env.name)
@@ -67,10 +65,8 @@ def init_gym(ax, env, state, params):
 
 def update_gym(im, env, state):
     """Update gym environment."""
-    if env.name == "Pendulum-v1":
-        gym_env = gym.make("Pendulum-v0", render_mode="rgb_array")
-    else:
-        gym_env = gym.make(env.name, render_mode="rgb_array")
+    # todo: double-check for Pendulum-v1 (why did it need pendulum-v0 from old gym?)
+    gym_env = gym.make(env.name, render_mode="rgb_array")
     gym_state = get_gym_state(state, env.name)
     gym_env.reset()  # Gymnasium made this necessary before .render() can be called.
     if env.name == "Pendulum-v1":

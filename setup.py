@@ -42,7 +42,13 @@ requires = [
     "matplotlib",
     "seaborn",
 ]
-test_requires = ["bsuite", "minatar", "brax"]
+test_requires = [
+    "bsuite",
+    "matplotlib",
+    "minatar",
+    "brax",
+    "gymnasium[classic-control]",
+]
 
 setup(
     name="gymnax",
@@ -65,6 +71,7 @@ setup(
     zip_safe=False,
     platforms="any",
     python_requires=">=3.10",
+    extras_require={"test": test_requires},
     install_requires=requires,
     tests_require=test_requires,
 )
