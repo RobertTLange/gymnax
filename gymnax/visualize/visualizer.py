@@ -102,7 +102,9 @@ class Visualizer(object):
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-            self.im = vis_gym.update_gym(self.im, self.env, self.state_seq[frame])
+            self.im = vis_gym.update_gym(
+                self.im, self.env, state=self.state_seq[frame], params=self.env_params
+            )
         elif self.env.name == "Catch-bsuite":
             self.im = vis_catch.update_catch(self.im, self.env, self.state_seq[frame])
         elif self.env.name in [
