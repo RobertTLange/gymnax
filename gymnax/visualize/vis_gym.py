@@ -29,9 +29,6 @@ from gymnasium.envs.classic_control import (
 
 from gymnax.wrappers.purerl import GymnaxWrapper
 
-import gymnasium as gym
-import numpy as np
-
 
 def init_gym(
     ax: matplotlib.axes.Axes,
@@ -53,7 +50,6 @@ def update_gym(
     params: TEnvParams,
 ):
     """Update gym environment."""
-    # todo: double-check for Pendulum-v1 (why did it need pendulum-v0 from old gym?)
     rgb_array = render_env(env, state=state, params=params)
     im.set_data(rgb_array)
     return im
@@ -154,7 +150,6 @@ def render_pendulum(
     env: pendulum.Pendulum, state: pendulum.EnvState, params: pendulum.EnvParams
 ):
     gym_env = gym.make("Pendulum-v1", g=params.g, render_mode="rgb_array").unwrapped
-    # TODO
     assert isinstance(gym_env, gym_pendulum.PendulumEnv)
     gym_env.max_speed = params.max_speed  # type: ignore
     gym_env.max_torque = params.max_torque
