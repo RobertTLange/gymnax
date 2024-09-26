@@ -29,6 +29,16 @@ from gymnasium.envs.classic_control import (
 
 from gymnax.wrappers.purerl import GymnaxWrapper
 
+_make_gym_env = functools.lru_cache(maxsize=1)(gym.make)
+
+
+def _get_gym_env(*args, **kwargs):
+    # Create the environment only once.
+    env = _make_gym_env(*args, **kwargs)
+    # We could also copy it the rest of the time if we want to be extra safe.
+    # env = copy.deepcopy(env)
+    return env
+
 
 def init_gym(
     ax: matplotlib.axes.Axes,
@@ -89,7 +99,7 @@ def render_acrobot(
     params: acrobot.EnvParams,
     state: acrobot.EnvState,
 ):
-    gym_env = gym.make("Acrobot-v1", render_mode="rgb_array").unwrapped
+    gym_env = _get_gym_env("Acrobot-v1", render_mode="rgb_array").unwrapped
     assert isinstance(gym_env, gym_acrobot.AcrobotEnv)
     gym_env.reset(seed=0)
 
@@ -124,7 +134,7 @@ def render_acrobot(
 def get_gym_cartpole_env_with_same_state(
     env: cartpole.CartPole, state: cartpole.EnvState, params: cartpole.EnvParams
 ):
-    gym_env = gym.make("CartPole-v1", render_mode="rgb_array").unwrapped
+    gym_env = _get_gym_env("CartPole-v1", render_mode="rgb_array").unwrapped
     assert isinstance(gym_env, gym_cartpole.CartPoleEnv)
 
     gym_env.gravity = params.gravity
@@ -149,7 +159,7 @@ def get_gym_cartpole_env_with_same_state(
 def render_pendulum(
     env: pendulum.Pendulum, state: pendulum.EnvState, params: pendulum.EnvParams
 ):
-    gym_env = gym.make("Pendulum-v1", g=params.g, render_mode="rgb_array").unwrapped
+    gym_env = _get_gym_env("Pendulum-v1", g=params.g, render_mode="rgb_array").unwrapped
     assert isinstance(gym_env, gym_pendulum.PendulumEnv)
     gym_env.max_speed = params.max_speed  # type: ignore
     gym_env.max_torque = params.max_torque
@@ -169,7 +179,7 @@ def render_mountain_car(
     state: mountain_car.EnvState,
     params: mountain_car.EnvParams,
 ):
-    gym_env = gym.make("MountainCar-v0", render_mode="rgb_array").unwrapped
+    gym_env = _get_gym_env("MountainCar-v0", render_mode="rgb_array").unwrapped
     assert isinstance(gym_env, gym_mountain_car.MountainCarEnv)
 
     gym_env.max_position = params.max_position
@@ -199,7 +209,9 @@ def render_mountain_car_continuous(
     state: continuous_mountain_car.EnvState,
     params: continuous_mountain_car.EnvParams,
 ):
-    gym_env = gym.make("MountainCarContinuous-v0", render_mode="rgb_array").unwrapped
+    gym_env = _get_gym_env(
+        "MountainCarContinuous-v0", render_mode="rgb_array"
+    ).unwrapped
     assert isinstance(gym_env, gym_continuous_mountain_car.Continuous_MountainCarEnv)
 
     gym_env.min_action = params.min_action
