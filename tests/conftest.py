@@ -64,6 +64,11 @@ def pytest_generate_tests(metafunc):
                     "PointRobot-misc",
                     "Catch-bsuite",
                     "SpaceInvaders-MinAtar",
+                    "Pendulum-v1",
+                    "Acrobot-v1",
+                    "CartPole-v1",
+                    "MountainCar-v0",
+                    "MountainCarContinuous-v0",
                 ],
             )
         else:

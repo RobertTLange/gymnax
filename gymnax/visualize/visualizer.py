@@ -18,7 +18,6 @@ class Visualizer(object):
     """Visualizer for Gymnax environments."""
 
     def __init__(self, env_arg, env_params_arg, state_seq_arg, reward_seq_arg=None):
-
         self.env = env_arg
         self.env_params = env_params_arg
         self.state_seq = state_seq_arg
@@ -67,9 +66,7 @@ class Visualizer(object):
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-
             # Animations have to use older gym version and pyglet!
-            assert gym.__version__ == "0.19.0"
             self.im = vis_gym.init_gym(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
@@ -105,7 +102,9 @@ class Visualizer(object):
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-            self.im = vis_gym.update_gym(self.im, self.env, self.state_seq[frame])
+            self.im = vis_gym.update_gym(
+                self.im, self.env, state=self.state_seq[frame], params=self.env_params
+            )
         elif self.env.name == "Catch-bsuite":
             self.im = vis_catch.update_catch(self.im, self.env, self.state_seq[frame])
         elif self.env.name in [
