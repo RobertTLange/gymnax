@@ -8,8 +8,9 @@ import matplotlib.axes
 import matplotlib.axis
 import matplotlib.image
 import matplotlib.pyplot
-import numpy as np
 
+import jax.numpy as jnp
+import numpy as np
 from gymnax import EnvParams, EnvState
 from gymnax.environments.classic_control import (
     acrobot,
@@ -68,7 +69,7 @@ def update_gym(
 def _render_and_close(env: gym.Env):
     with env:
         rgb_array = env.render()
-    if not isinstance(rgb_array, np.ndarray):
+    if not isinstance(rgb_array, (np.ndarray, jnp.ndarray)):
         raise RuntimeError(
             f"Unable to render gym env {env}: `render()` didnt return an ndarray: {rgb_array}"
         )
