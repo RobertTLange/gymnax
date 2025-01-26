@@ -82,7 +82,7 @@ class LogWrapper(GymnaxWrapper):
         self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
     ) -> Tuple[chex.Array, LogEnvState]:
         obs, env_state = self._env.reset(key, params)
-        state = LogEnvState(env_state, 0, 0, 0, 0)
+        state = LogEnvState(env_state, 0.0, 0, 0.0, 0)
         return obs, state
 
     @functools.partial(jax.jit, static_argnums=(0,))
