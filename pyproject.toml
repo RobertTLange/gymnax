@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gymnax"
+version = "0.0.8"
+description = "JAX-compatible version of Open AI's gym environments"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "chex>=0.1.88",
+    "flax>=0.10.3",
+    "gymnasium>=1.0.0",
+    "jax>=0.5.0",
+    "matplotlib>=3.10.0",
+    "seaborn>=0.13.2",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+urls = { homepage = "https://github.com/RobertTLange/gymnax" }
+
+[project.optional-dependencies]
+test = ["bsuite>=0.3.5", "minatar>=1.0.15", "brax>=0.12.1"]

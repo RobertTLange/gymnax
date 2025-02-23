@@ -21,10 +21,6 @@ comment:
   require_changes: true
 
 ignore:
-  - "tests/.*"
-  - "_version.py"
-  - "setup.py"
-  - "requirements/*"
-  - "notebooks/*"
-  - "examples/*"
+  - "tests/"
+  - "examples/"
   - "docs/"
