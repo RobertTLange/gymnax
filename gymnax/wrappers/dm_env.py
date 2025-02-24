@@ -2,10 +2,12 @@
 
 import functools
 from typing import Optional, Union
+
 import chex
-from flax import struct
 import jax
 import jax.numpy as jnp
+from flax import struct
+
 from gymnax.environments import environment
 from gymnax.wrappers import purerl
 

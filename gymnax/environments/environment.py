@@ -1,12 +1,13 @@
 """Abstract base class for all gymnax Environments."""
 
 import functools
-from typing import Any, Dict, Generic, Optional, Tuple, TypeVar, Union, overload
+from typing import (Any, Dict, Generic, Optional, Tuple, TypeVar, Union,
+                    overload)
+
 import chex
-from flax import struct
 import jax
 import jax.numpy as jnp
-
+from flax import struct
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
 TEnvParams = TypeVar("TEnvParams", bound="EnvParams")

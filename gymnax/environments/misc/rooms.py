@@ -7,15 +7,14 @@ automatically resets env at done, we abstract different resets
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from flax import struct
+from jax import lax
+
+from gymnax.environments import environment, spaces
 
 
 @struct.dataclass

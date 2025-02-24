@@ -1,15 +1,16 @@
 """Utility wrapper to port gymnax env to evoJAX tasks."""
 
 from typing import Tuple
+
 import chex
+import jax
 from flax import struct
+
 import gymnax
 from gymnax.environments import environment
-import jax
 
 try:
-    from evojax.task.base import VectorizedTask
-    from evojax.task.base import TaskState
+    from evojax.task.base import TaskState, VectorizedTask
 except Exception as exc:
     raise ImportError("You need to additionally install EvoJAX.") from exc
 

@@ -1,8 +1,8 @@
 """Visualize Minatar environments."""
 
-from matplotlib import colors
 import numpy as np
 import seaborn as sns
+from matplotlib import colors
 
 
 def init_minatar(ax, env, state):

@@ -2,8 +2,10 @@
 
 import functools
 from typing import Any, Optional
+
 import jax
 import jax.numpy as jnp
+
 import gymnax
 
 

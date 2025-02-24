@@ -3,14 +3,13 @@
 import functools
 from typing import Any, Dict, Optional, Tuple, Union
 
-
 import chex
-from flax import struct
 import jax
 import jax.numpy as jnp
 import numpy as np
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from flax import struct
+
+from gymnax.environments import environment, spaces
 
 
 class GymnaxWrapper(object):

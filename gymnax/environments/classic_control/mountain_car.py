@@ -7,14 +7,13 @@ github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
 
 from typing import Any, Dict, Optional, Tuple, Union
 
-
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from flax import struct
+from jax import lax
+
+from gymnax.environments import environment, spaces
 
 
 @struct.dataclass

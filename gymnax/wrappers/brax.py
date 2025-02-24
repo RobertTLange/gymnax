@@ -2,10 +2,10 @@
 
 from typing import Any, Dict, Optional, Union
 
-
 import chex
-from flax import struct
 import jax
+from flax import struct
+
 from gymnax.environments import environment
 
 try:

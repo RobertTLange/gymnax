@@ -1,11 +1,10 @@
 try:
-    from setuptools import setup, find_packages
+    from setuptools import find_packages, setup
 except ImportError:
     from distutils.core import setup, find_packages
 
-
-import re
 import os
+import re
 from typing import List
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))

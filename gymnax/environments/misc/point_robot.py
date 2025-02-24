@@ -2,15 +2,14 @@
 
 from typing import Any, Dict, Optional, Tuple, Union
 
-
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from flax import struct
+from jax import lax
+
+from gymnax.environments import environment, spaces
 
 
 @struct.dataclass

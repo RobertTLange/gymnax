@@ -25,12 +25,11 @@ and https://github.com/deepmind/bsuite/blob/master/bsuite/utils/datasets.py
 import array
 import gzip
 import os
-from os import path
 import struct
+from os import path
 
-
-from absl import logging
 import numpy as np
+from absl import logging
 from six.moves.urllib.request import urlretrieve
 
 

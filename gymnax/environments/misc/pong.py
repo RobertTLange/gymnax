@@ -8,17 +8,16 @@ Actions are encoded as: ['n', 'u', 'd']
 
 from typing import Any, Dict, Optional, Tuple, Union
 
-
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from matplotlib import colors
 import matplotlib.pyplot as plt
 import seaborn as sns
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from flax import struct
+from jax import lax
+from matplotlib import colors
+
+from gymnax.environments import environment, spaces
 
 
 @struct.dataclass

@@ -1,8 +1,6 @@
 """Utility functions for Gymnax."""
 
-from gymnax.utils import state_translate
-from gymnax.utils import test_helpers
-
+from gymnax.utils import state_translate, test_helpers
 
 np_state_to_jax = state_translate.np_state_to_jax
 assert_correct_state = test_helpers.assert_correct_state

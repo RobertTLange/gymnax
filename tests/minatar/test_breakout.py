@@ -1,14 +1,12 @@
 """Tests for the breakout environment."""
 
+import breakout_helpers
 import jax
 from minatar import environment
 
-import breakout_helpers
 import gymnax
 from gymnax.environments.minatar import breakout
-from gymnax.utils import state_translate
-from gymnax.utils import test_helpers
-
+from gymnax.utils import state_translate, test_helpers
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "breakout", "Breakout-MinAtar"

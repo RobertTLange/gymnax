@@ -3,14 +3,12 @@
 import freeway_helpers
 import jax
 import jax.numpy as jnp
-from minatar import environment
 import numpy as np
+from minatar import environment
 
 import gymnax
 from gymnax.environments.minatar import freeway
-from gymnax.utils import state_translate
-from gymnax.utils import test_helpers
-
+from gymnax.utils import state_translate, test_helpers
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "freeway", "Freeway-MinAtar"

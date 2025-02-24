@@ -7,12 +7,13 @@ github.com/deepmind/bsuite/blob/master/bsuite/environments/discounting_chain.py.
 
 import dataclasses
 from typing import Any, Dict, Optional, Tuple, Union
+
 import chex
+import jax.numpy as jnp
 from flax import struct
 from jax import lax
-import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+
+from gymnax.environments import environment, spaces
 
 
 @struct.dataclass

@@ -2,10 +2,9 @@
 
 import gym
 import jax
-import gymnax
-from gymnax.utils import state_translate
-from gymnax.utils import test_helpers
 
+import gymnax
+from gymnax.utils import state_translate, test_helpers
 
 num_episodes, num_steps, tolerance = 10, 150, 1e-04
 

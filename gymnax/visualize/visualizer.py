@@ -1,17 +1,16 @@
 """Visualizer for Gymnax environments."""
 
 from typing import Optional
+
 import gym
 import jax
 import jax.numpy as jnp
-from matplotlib import animation
 import matplotlib.pyplot as plt
+from matplotlib import animation
+
 import gymnax
-from gymnax.visualize import vis_catch
-from gymnax.visualize import vis_circle
-from gymnax.visualize import vis_gym
-from gymnax.visualize import vis_maze
-from gymnax.visualize import vis_minatar
+from gymnax.visualize import (vis_catch, vis_circle, vis_gym, vis_maze,
+                              vis_minatar)
 
 
 class Visualizer(object):

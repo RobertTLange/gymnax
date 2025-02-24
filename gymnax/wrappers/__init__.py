@@ -1,9 +1,6 @@
 """Wrappers for Gymnax environments."""
 
-from gymnax.wrappers import dm_env
-from gymnax.wrappers import gym
-from gymnax.wrappers import purerl
-
+from gymnax.wrappers import dm_env, gym, purerl
 
 GymnaxToDmEnvWrapper = dm_env.GymnaxToDmEnvWrapper
 GymnaxToGymWrapper = gym.GymnaxToGymWrapper

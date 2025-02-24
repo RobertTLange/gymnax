@@ -2,6 +2,7 @@
 
 import chex
 import jax
+
 import gymnax
 from gymnax.wrappers import dm_env
 
