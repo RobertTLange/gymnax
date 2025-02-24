@@ -4,19 +4,23 @@
 Source: github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py.
 """
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     ball_x: chex.Array
     ball_y: chex.Array
@@ -26,7 +30,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 1000
 

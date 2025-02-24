@@ -1,16 +1,32 @@
 """A JAX-version of OpenAI's infamous env.make(env_name)."""
 
-from gymnax.environments.bsuite import (bandit, catch, deep_sea,
-                                        discounting_chain, memory_chain, mnist,
-                                        umbrella_chain)
-from gymnax.environments.classic_control import (acrobot, cartpole,
-                                                 continuous_mountain_car,
-                                                 mountain_car, pendulum)
-from gymnax.environments.minatar import (asterix, breakout, freeway,
-                                         space_invaders)
-from gymnax.environments.misc import (bernoulli_bandit, gaussian_bandit,
-                                      meta_maze, point_robot, pong, reacher,
-                                      rooms, swimmer)
+from gymnax.environments.bsuite import (
+    bandit,
+    catch,
+    deep_sea,
+    discounting_chain,
+    memory_chain,
+    mnist,
+    umbrella_chain,
+)
+from gymnax.environments.classic_control import (
+    acrobot,
+    cartpole,
+    continuous_mountain_car,
+    mountain_car,
+    pendulum,
+)
+from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
+from gymnax.environments.misc import (
+    bernoulli_bandit,
+    gaussian_bandit,
+    meta_maze,
+    point_robot,
+    pong,
+    reacher,
+    rooms,
+    swimmer,
+)
 
 # =============================================================================
 

@@ -5,26 +5,30 @@ Source: Comparable to https://github.com/howardh/gym-fourrooms Since gymnax
 automatically resets env at done, we abstract different resets
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     pos: chex.Array
     goal: chex.Array
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     fail_prob: float = 1.0 / 3
     resample_init_pos: bool = False

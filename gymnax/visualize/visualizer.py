@@ -1,6 +1,6 @@
 """Visualizer for Gymnax environments."""
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import gym
 import jax
@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 
 import gymnax
-from gymnax.visualize import (vis_catch, vis_circle, vis_gym, vis_maze,
-                              vis_minatar)
+from gymnax.visualize import vis_catch, vis_circle, vis_gym, vis_maze, vis_minatar
 
 
 class Visualizer(object):

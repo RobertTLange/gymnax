@@ -1,18 +1,22 @@
 """DM env API wrapper for gymnax environment."""
 
 import functools
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
 
 from gymnax.environments import environment
 from gymnax.wrappers import purerl
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class TimeStep:
     state: environment.EnvState
     reward: chex.Array

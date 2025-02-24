@@ -1,24 +1,28 @@
 """JAX compatible version of the bandit environment from bsuite."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     rewards: Union[chex.Array, float]
     total_regret: float
     time: Union[float, chex.Array]
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     optimal_return: float = 1.0
     max_steps_in_episode: int = 100

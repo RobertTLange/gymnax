@@ -2,14 +2,23 @@
 
 import jax.numpy as jnp
 
-from gymnax.environments.bsuite import (bandit, catch, deep_sea,
-                                        discounting_chain, memory_chain, mnist,
-                                        umbrella_chain)
-from gymnax.environments.classic_control import (acrobot, cartpole,
-                                                 continuous_mountain_car,
-                                                 mountain_car, pendulum)
-from gymnax.environments.minatar import (asterix, breakout, freeway,
-                                         space_invaders)
+from gymnax.environments.bsuite import (
+    bandit,
+    catch,
+    deep_sea,
+    discounting_chain,
+    memory_chain,
+    mnist,
+    umbrella_chain,
+)
+from gymnax.environments.classic_control import (
+    acrobot,
+    cartpole,
+    continuous_mountain_car,
+    mountain_car,
+    pendulum,
+)
+from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
 
 # from gymnax.environments.minatar import seaquest
 

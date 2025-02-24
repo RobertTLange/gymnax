@@ -1,21 +1,24 @@
 """Utility wrapper to port gymnax env to evoJAX tasks."""
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import chex
 import jax
-from flax import struct
 
 import gymnax
 from gymnax.environments import environment
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 try:
     from evojax.task.base import TaskState, VectorizedTask
 except Exception as exc:
     raise ImportError("You need to additionally install EvoJAX.") from exc
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class GymState(TaskState):
     state: environment.EnvState
     obs: chex.Array

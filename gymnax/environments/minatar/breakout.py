@@ -1,17 +1,21 @@
 """JAX compatible version of Breakout MinAtar environment."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     ball_y: jnp.ndarray
     ball_x: jnp.ndarray
@@ -25,7 +29,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 1000
 

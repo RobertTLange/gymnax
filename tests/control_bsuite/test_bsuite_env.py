@@ -1,8 +1,15 @@
 """Tests for bsuite environments."""
 
 import jax
-from bsuite.environments import (bandit, catch, deep_sea, discounting_chain,
-                                 memory_chain, mnist, umbrella_chain)
+from bsuite.environments import (
+    bandit,
+    catch,
+    deep_sea,
+    discounting_chain,
+    memory_chain,
+    mnist,
+    umbrella_chain,
+)
 
 import gymnax
 from gymnax.utils import state_translate, test_helpers

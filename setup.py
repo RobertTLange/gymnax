@@ -5,7 +5,7 @@ except ImportError:
 
 import os
 import re
-from typing import List
+from typing import TYPE_CHECKING, List
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -34,7 +34,6 @@ requires = [
     "jax",
     "jaxlib",
     "chex",
-    "flax",
     "pyyaml",
     "gym>=0.26",
     "gymnasium",

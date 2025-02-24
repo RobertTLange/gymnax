@@ -1,7 +1,7 @@
 """Wrappers for Gymnax environments to be used in Gym."""
 
 import copy
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import chex
 import gymnasium as gym

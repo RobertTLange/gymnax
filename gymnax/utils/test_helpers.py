@@ -1,6 +1,6 @@
 """Helper functions for testing."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax
 import jaxlib

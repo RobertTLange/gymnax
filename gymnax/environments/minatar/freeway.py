@@ -20,18 +20,22 @@ ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
 - Actions are encoded as follows: ['n', 'u', 'd']
 """
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     pos: int
     cars: chex.Array
@@ -40,7 +44,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     player_speed: int = 3
     max_steps_in_episode: int = 2500

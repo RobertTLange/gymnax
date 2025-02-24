@@ -1,8 +1,12 @@
 """Classic control environments."""
 
-from gymnax.environments.classic_control import (acrobot, cartpole,
-                                                 continuous_mountain_car,
-                                                 mountain_car, pendulum)
+from gymnax.environments.classic_control import (
+    acrobot,
+    cartpole,
+    continuous_mountain_car,
+    mountain_car,
+    pendulum,
+)
 
 Acrobot = acrobot.Acrobot
 CartPole = cartpole.CartPole

@@ -5,19 +5,23 @@ Source: Comparable to
 github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py
 """
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     last_action: int
     last_reward: jnp.ndarray
@@ -26,7 +30,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     # github.com/uber-research/backpropamine/blob/180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431
     reward: float = 10.0

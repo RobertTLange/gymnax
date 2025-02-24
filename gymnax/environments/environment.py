@@ -1,24 +1,37 @@
 """Abstract base class for all gymnax Environments."""
 
 import functools
-from typing import (Any, Dict, Generic, Optional, Tuple, TypeVar, Union,
-                    overload)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
 TEnvParams = TypeVar("TEnvParams", bound="EnvParams")
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState:
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams:
     max_steps_in_episode: int = 1
 

@@ -1,17 +1,21 @@
 """JAX compatible version of CartPole-v1 OpenAI gym environment."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
 from jax import lax
 
 from gymnax.environments import environment, spaces
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     x: jnp.ndarray
     x_dot: jnp.ndarray
@@ -20,7 +24,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     gravity: float = 9.8
     masscart: float = 1.0

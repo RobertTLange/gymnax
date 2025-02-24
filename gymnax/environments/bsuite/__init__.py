@@ -1,8 +1,14 @@
 """Bsuite environments."""
 
-from gymnax.environments.bsuite import (bandit, catch, deep_sea,
-                                        discounting_chain, memory_chain, mnist,
-                                        umbrella_chain)
+from gymnax.environments.bsuite import (
+    bandit,
+    catch,
+    deep_sea,
+    discounting_chain,
+    memory_chain,
+    mnist,
+    umbrella_chain,
+)
 
 SimpleBandit = bandit.SimpleBandit
 Catch = catch.Catch
