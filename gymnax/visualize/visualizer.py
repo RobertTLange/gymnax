@@ -1,7 +1,6 @@
 """Visualizer for Gymnax environments."""
 
 from typing import Optional
-import gym
 import jax
 import jax.numpy as jnp
 from matplotlib import animation
@@ -68,8 +67,6 @@ class Visualizer(object):
             "MountainCarContinuous-v0",
         ]:
 
-            # Animations have to use older gym version and pyglet!
-            assert gym.__version__ == "0.19.0"
             self.im = vis_gym.init_gym(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
