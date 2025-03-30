@@ -44,21 +44,31 @@ def get_gym_state(state, env_name):
         return np.array([state.position, state.velocity])
     elif env_name == "MountainCarContinuous-v0":
         return np.array([state.position, state.velocity])
-
+    
+def _get_bottom_env(env):
+    """Traverse through gym env wrapper classes to get the real impl."""
+    while not hasattr(env, 'state'):
+        env = env.env
+    return env
+    
+def set_gym_env_state(env, state):
+    """Set the state vector on the underlying impl given a wrapped gym env."""
+    env = _get_bottom_env(env)
+    env.state = state
 
 def init_gym(ax, env, state, params):
     """Initialize gym environment."""
     if env.name == "Pendulum-v1":
-        gym_env = gym.make("Pendulum-v0")
+        gym_env = gym.make("Pendulum-v0", render_mode="rgb_array")
     else:
-        gym_env = gym.make(env.name)
+        gym_env = gym.make(env.name, render_mode="rgb_array")
     gym_env.reset()
     set_gym_params(gym_env, env.name, params)
     gym_state = get_gym_state(state, env.name)
     if env.name == "Pendulum-v1":
         gym_env.env.last_u = gym_state[-1]
-    gym_env.env.state = gym_state
-    rgb_array = gym_env.render(mode="rgb_array")
+    set_gym_env_state(gym_env, gym_state)
+    rgb_array = gym_env.render()
     ax.set_xticks([])
     ax.set_yticks([])
     gym_env.close()
@@ -68,14 +78,16 @@ def init_gym(ax, env, state, params):
 def update_gym(im, env, state):
     """Update gym environment."""
     if env.name == "Pendulum-v1":
-        gym_env = gym.make("Pendulum-v0")
+        gym_env = gym.make("Pendulum-v0", render_mode="rgb_array")
     else:
-        gym_env = gym.make(env.name)
+        gym_env = gym.make(env.name, render_mode="rgb_array")
+    gym_env.reset()
     gym_state = get_gym_state(state, env.name)
     if env.name == "Pendulum-v1":
         gym_env.env.last_u = gym_state[-1]
-    gym_env.env.state = gym_state
-    rgb_array = gym_env.render(mode="rgb_array")
+    set_gym_env_state(gym_env, gym_state)
+    rgb_array = gym_env.render()
     im.set_data(rgb_array)
     gym_env.close()
     return im
+
