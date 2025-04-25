@@ -197,5 +197,5 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
     ) -> Optional[Union[core.RenderFrame, List[core.RenderFrame]]]:
         """use underlying environment rendering if it exists (for first environment), otherwise return None."""
         return getattr(self._env, "render", lambda x, y: None)(
-            jax.tree_map(lambda x: x[0], self.env_state), self.env_params
+            jax.tree.map(lambda x: x[0], self.env_state), self.env_params
         )

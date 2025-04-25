@@ -195,7 +195,7 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   )
 
   # Multiple rollouts for different networks + rng (e.g. for ES)
-  batch_params = jax.tree_map(  # Stack parameters or use different
+  batch_params = jax.tree.map(  # Stack parameters or use different
       lambda x: jnp.tile(x, (5, 1)).reshape(5, *x.shape), policy_params
   )
   obs, action, reward, next_obs, done, cum_ret = manager.population_rollout(
