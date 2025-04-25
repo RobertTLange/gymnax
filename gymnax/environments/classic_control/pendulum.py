@@ -4,19 +4,22 @@
 Source: github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
 """
 
-from typing import Any, Dict, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from jax import lax
+
+from gymnax.environments import environment, spaces
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     theta: jnp.ndarray
     theta_dot: jnp.ndarray
@@ -24,7 +27,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     max_speed: float = 8.0
     max_torque: float = 2.0

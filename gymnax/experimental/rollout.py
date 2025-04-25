@@ -1,9 +1,11 @@
 """Rollout wrapper for gymnax environments."""
 
 import functools
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
 import jax
 import jax.numpy as jnp
+
 import gymnax
 
 

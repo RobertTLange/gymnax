@@ -1,14 +1,12 @@
 """Tests for the Space Invaders environment."""
 
-import space_invaders_helpers
 import jax
+import space_invaders_helpers
 from minatar import environment
 
 import gymnax
 from gymnax.environments.minatar import space_invaders
-from gymnax.utils import state_translate
-from gymnax.utils import test_helpers
-
+from gymnax.utils import state_translate, test_helpers
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "space_invaders", "SpaceInvaders-MinAtar"

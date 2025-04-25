@@ -6,22 +6,25 @@ https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py -
 Actions are encoded as: ['n', 'u', 'd']
 """
 
-from typing import Any, Dict, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from matplotlib import colors
 import matplotlib.pyplot as plt
 import seaborn as sns
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from jax import lax
+from matplotlib import colors
+
+from gymnax.environments import environment, spaces
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     paddle_centers: chex.Array
     ball_position: chex.Array
@@ -31,7 +34,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     ball_max_y_speed: int = 3
     paddle_y_speed: int = 1

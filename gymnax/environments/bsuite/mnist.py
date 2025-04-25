@@ -1,26 +1,29 @@
 """MNIST bandit environment."""
 
-from typing import Any, Dict, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from jax import lax
+
+from gymnax.environments import environment, spaces
 from gymnax.utils import load_mnist
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
-@struct.dataclass
+
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     correct_label: chex.Array
     regret: chex.Array
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     optimal_return: int = 1
     max_steps_in_episode: int = 1

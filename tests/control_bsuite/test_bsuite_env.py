@@ -1,17 +1,18 @@
 """Tests for bsuite environments."""
 
 import jax
-import gymnax
-from bsuite.environments import bandit
-from bsuite.environments import catch
-from bsuite.environments import deep_sea
-from bsuite.environments import discounting_chain
-from bsuite.environments import memory_chain
-from bsuite.environments import mnist
-from bsuite.environments import umbrella_chain
-from gymnax.utils import state_translate
-from gymnax.utils import test_helpers
+from bsuite.environments import (
+    bandit,
+    catch,
+    deep_sea,
+    discounting_chain,
+    memory_chain,
+    mnist,
+    umbrella_chain,
+)
 
+import gymnax
+from gymnax.utils import state_translate, test_helpers
 
 num_episodes, num_steps, tolerance = 10, 150, 1e-04
 

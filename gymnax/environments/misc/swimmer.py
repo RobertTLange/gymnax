@@ -1,18 +1,21 @@
 """Swimmer environment."""
 
-from typing import Any, Dict, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from jax import lax
+
+from gymnax.environments import environment, spaces
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     urchin_xys: chex.Array
     xy: chex.Array
@@ -21,7 +24,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     dt: float = 0.05
     max_steps_in_episode: int = 500  # Steps in an episode (constant goal)

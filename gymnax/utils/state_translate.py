@@ -1,22 +1,24 @@
 """Helper functions to translate gym state to JAX state."""
 
 import jax.numpy as jnp
-from gymnax.environments.bsuite import bandit
-from gymnax.environments.bsuite import catch
-from gymnax.environments.bsuite import deep_sea
-from gymnax.environments.bsuite import discounting_chain
-from gymnax.environments.bsuite import memory_chain
-from gymnax.environments.bsuite import mnist
-from gymnax.environments.bsuite import umbrella_chain
-from gymnax.environments.classic_control import acrobot
-from gymnax.environments.classic_control import cartpole
-from gymnax.environments.classic_control import continuous_mountain_car
-from gymnax.environments.classic_control import mountain_car
-from gymnax.environments.classic_control import pendulum
-from gymnax.environments.minatar import asterix
-from gymnax.environments.minatar import breakout
-from gymnax.environments.minatar import freeway
-from gymnax.environments.minatar import space_invaders
+
+from gymnax.environments.bsuite import (
+    bandit,
+    catch,
+    deep_sea,
+    discounting_chain,
+    memory_chain,
+    mnist,
+    umbrella_chain,
+)
+from gymnax.environments.classic_control import (
+    acrobot,
+    cartpole,
+    continuous_mountain_car,
+    mountain_car,
+    pendulum,
+)
+from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
 
 # from gymnax.environments.minatar import seaquest
 
