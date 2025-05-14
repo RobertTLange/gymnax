@@ -13,22 +13,11 @@ else:
     from chex import dataclass
 try:
     from brax import envs
+    from brax.envs import State
 except ImportError as exc:
     raise ModuleNotFoundError(
         "You need to install `brax` to use the brax wrapper."
     ) from exc
-
-
-@dataclass(frozen=True)
-class State:  # Lookalike for brax.envs.env.State.
-    qp: environment.EnvState  # Brax QP is roughly equivalent to our EnvState
-    obs: Any  # depends on environment
-    reward: float
-    done: bool
-    metrics: Dict[str, Union[chex.Array, chex.Scalar]] = struct.field(
-        default_factory=dict
-    )
-    info: Dict[str, Any] = struct.field(default_factory=dict)
 
 
 class GymnaxToBraxWrapper(envs.Env):
@@ -51,12 +40,12 @@ class GymnaxToBraxWrapper(envs.Env):
             params = self.env.default_params
         obs, env_state = self.env.reset(rng, params)
         return State(
-            env_state,
-            obs,
-            0.0,
-            False,
-            {},
-            {"_rng": jax.random.split(rng)[0], "_env_params": params},
+            pipeline_state=env_state,
+            obs=obs,
+            reward=jax.numpy.array(0.0),
+            done=jax.numpy.array(False),
+            metrics={},
+            info={"_rng": jax.random.split(rng)[0], "_env_params": params},
         )
 
     def step(
@@ -70,8 +59,13 @@ class GymnaxToBraxWrapper(envs.Env):
         if params is None:
             params = self.env.default_params
         state.info.update(_rng=rng, _env_params=params)
-        o, env_state, r, d, _ = self.env.step(step_rng, state.qp, action, params)
-        return state.replace(qp=env_state, obs=o, reward=r, done=d)
+        o, env_state, r, d, _ = self.env.step(step_rng, state.pipeline_state, action, params)
+        return state.replace(
+            pipeline_state=env_state,
+            obs=o,
+            reward=jax.numpy.array(r),
+            done=jax.numpy.array(d)
+        )
 
     def action_size(self) -> int:
         """DEFAULT size of action vector expected by step."""
