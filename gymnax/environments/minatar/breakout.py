@@ -1,6 +1,6 @@
 """JAX compatible version of Breakout MinAtar environment."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -79,9 +79,9 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         a = self.action_set[action]
         state, new_x, new_y = step_agent(state, a)
@@ -102,7 +102,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
@@ -144,7 +144,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -173,7 +173,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
 def step_agent(
     state: EnvState,
     action: jnp.ndarray,
-) -> Tuple[EnvState, jnp.ndarray, jnp.ndarray]:
+) -> tuple[EnvState, jnp.ndarray, jnp.ndarray]:
     """Helper that steps the agent and checks boundary conditions."""
     # Update player position
     pos = (
@@ -222,7 +222,7 @@ def step_agent(
 
 def step_ball_brick(
     state: EnvState, new_x: jnp.ndarray, new_y: jnp.ndarray
-) -> Tuple[EnvState, jnp.ndarray]:
+) -> tuple[EnvState, jnp.ndarray]:
     """Helper that computes reward and termination cond. from brickmap."""
 
     reward = 0

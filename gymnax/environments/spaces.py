@@ -1,7 +1,8 @@
 """Gymnax space classes."""
 
 import collections
-from typing import Any, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 import chex
 import jax
@@ -48,8 +49,8 @@ class Box(Space):
 
     def __init__(
         self,
-        low: Union[jnp.ndarray, float],
-        high: Union[jnp.ndarray, float],
+        low: jnp.ndarray | float,
+        high: jnp.ndarray | float,
         shape: Any,  # Tuple[int],
         dtype: jnp.dtype = jnp.float32,
     ):

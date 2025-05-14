@@ -14,11 +14,7 @@ def set_gym_params(gym_env, env_name, params):
         gym_env.env.length = params.length
     elif env_name == "Pendulum-v1":
         pass
-    elif env_name == "MountainCar-v0":
-        gym_env.env.max_position = params.max_position
-        gym_env.env.min_position = params.min_position
-        gym_env.env.goal_position = params.goal_position
-    elif env_name == "MountainCarContinuous-v0":
+    elif env_name == "MountainCar-v0" or env_name == "MountainCarContinuous-v0":
         gym_env.env.max_position = params.max_position
         gym_env.env.min_position = params.min_position
         gym_env.env.goal_position = params.goal_position
@@ -40,9 +36,7 @@ def get_gym_state(state, env_name):
         return np.array([state.x, state.x_dot, state.theta, state.theta_dot])
     elif env_name == "Pendulum-v1":
         return np.array([state.theta, state.theta_dot, state.last_u])
-    elif env_name == "MountainCar-v0":
-        return np.array([state.position, state.velocity])
-    elif env_name == "MountainCarContinuous-v0":
+    elif env_name == "MountainCar-v0" or env_name == "MountainCarContinuous-v0":
         return np.array([state.position, state.velocity])
 
 

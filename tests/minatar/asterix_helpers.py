@@ -25,13 +25,12 @@ def step_entities_numpy(env):
     r = 0
     for i in range(len(env.env.entities)):
         x = env.env.entities[i]
-        if x is not None:
-            if x[0:2] == [env.env.player_x, env.env.player_y]:
-                if env.env.entities[i][3]:
-                    env.env.entities[i] = None
-                    r += 1
-                else:
-                    env.env.terminal = True
+        if x is not None and x[0:2] == [env.env.player_x, env.env.player_y]:
+            if x[3]:  # x is env.env.entities[i]
+                env.env.entities[i] = None
+                r += 1
+            else:
+                env.env.terminal = True
 
     if env.env.move_timer == 0:
         env.env.move_timer = env.env.move_speed

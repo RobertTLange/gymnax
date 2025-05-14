@@ -1,7 +1,7 @@
 """Rollout wrapper for gymnax environments."""
 
 import functools
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -9,14 +9,14 @@ import jax.numpy as jnp
 import gymnax
 
 
-class RolloutWrapper(object):
+class RolloutWrapper:
     """Wrapper to define batch evaluation for generation parameters."""
 
     def __init__(
         self,
         model_forward=None,
         env_name: str = "Pendulum-v1",
-        num_env_steps: Optional[int] = None,
+        num_env_steps: int | None = None,
         env_kwargs: Any | None = None,
         env_params: Any | None = None,
     ):

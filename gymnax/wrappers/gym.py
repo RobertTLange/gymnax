@@ -1,7 +1,7 @@
 """Wrappers for Gymnax environments to be used in Gym."""
 
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import chex
 import gymnasium as gym
@@ -18,8 +18,8 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
     def __init__(
         self,
         env: environment.Environment,
-        params: Optional[environment.EnvParams] = None,
-        seed: Optional[int] = None,
+        params: environment.EnvParams | None = None,
+        seed: int | None = None,
     ):
         """Wrap Gymnax environment as OOP Gym environment.
 
@@ -57,13 +57,13 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
             self._env.observation_space(self.env_params)
         )
 
-    def _seed(self, seed: Optional[int] = None):
+    def _seed(self, seed: int | None = None):
         """Set RNG seed (or use 0)."""
         self.rng = jax.random.PRNGKey(seed or 0)
 
     def step(
         self, action: core.ActType
-    ) -> Tuple[core.ObsType, float, bool, bool, Dict[Any, Any]]:
+    ) -> tuple[core.ObsType, float, bool, bool, dict[Any, Any]]:
         """Step environment, follow new step API."""
         self.rng, step_key = jax.random.split(self.rng)
         o, self.env_state, r, d, info = self._env.step(
@@ -74,10 +74,10 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
     def reset(
         self,
         *,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         return_info: bool = False,
-        options: Optional[Any] = None,  # dict
-    ) -> Tuple[core.ObsType, Any]:  # dict]:
+        options: Any | None = None,  # dict
+    ) -> tuple[core.ObsType, Any]:  # dict]:
         """Reset environment, update parameters and seed if provided."""
         if seed is not None:
             self._seed(seed)
@@ -89,9 +89,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         o, self.env_state = self._env.reset(reset_key, self.env_params)
         return o, {}
 
-    def render(
-        self, mode="human"
-    ) -> Optional[Union[core.RenderFrame, List[core.RenderFrame]]]:
+    def render(self, mode="human") -> core.RenderFrame | list[core.RenderFrame] | None:
         """use underlying environment rendering if it exists, otherwise return None."""
         return getattr(self._env, "render", lambda x, y: None)(
             self.env_state, self.env_params
@@ -105,8 +103,8 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         self,
         env: environment.Environment,
         num_envs: int = 1,
-        params: Optional[environment.EnvParams] = None,
-        seed: Optional[int] = None,
+        params: environment.EnvParams | None = None,
+        seed: int | None = None,
     ):
         """Wrap Gymnax environment as OOP Gym Vector Environment.
 
@@ -158,7 +156,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         """Dynamically adjust state space depending on params."""
         return utils.batch_space(self.single_observation_space, self.num_envs)
 
-    def _seed(self, seed: Optional[int] = None):
+    def _seed(self, seed: int | None = None):
         """Set RNG seed (or use 0)."""
         self.rng = jax.random.split(
             jax.random.PRNGKey(seed or 0), self.num_envs
@@ -167,9 +165,9 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
     def reset(
         self,
         *,
-        seed: Optional[Union[int, List[int]]] = None,
+        seed: int | list[int] | None = None,
         return_info: bool = False,
-        options: Optional[Any] = None,  # dict
+        options: Any | None = None,  # dict
     ):  # -> Tuple[core.ObsType, Any]:  # dict]:
         """Reset environment, update parameters and seed if provided."""
         if seed is not None:
@@ -183,7 +181,8 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         return o, {}
 
     def step(
-        self, action  #: core.ActType
+        self,
+        action,  #: core.ActType
     ):  # -> Tuple[core.ObsType, float, bool, bool, Any]:  # dict]:
         """Step environment, follow new step API."""
         self.rng, step_key = self._batched_rng_split(self.rng)
@@ -192,10 +191,8 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         )
         return o, r, d, d, info
 
-    def render(
-        self, mode="human"
-    ) -> Optional[Union[core.RenderFrame, List[core.RenderFrame]]]:
-        """use underlying environment rendering if it exists (for first environment), otherwise return None."""
+    def render(self, mode="human") -> core.RenderFrame | list[core.RenderFrame] | None:
+        """Use underlying environment rendering if it exists, otherwise return None."""
         return getattr(self._env, "render", lambda x, y: None)(
             jax.tree.map(lambda x: x[0], self.env_state), self.env_params
         )

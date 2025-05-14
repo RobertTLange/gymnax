@@ -4,7 +4,7 @@
 Source: github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -52,9 +52,9 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Sample new init state each step & use if there was a reset!
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
@@ -99,7 +99,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
             key, self.rows, self.columns
@@ -139,7 +139,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 3
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 
@@ -186,7 +186,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
 def sample_init_state(
     key: chex.PRNGKey, rows: int, columns: int
-) -> Tuple[jnp.ndarray, jnp.ndarray, int, int]:
+) -> tuple[jnp.ndarray, jnp.ndarray, int, int]:
     """Sample a new initial state."""
     ball_x = jax.random.randint(key, shape=(), minval=0, maxval=columns)
     ball_y = 0

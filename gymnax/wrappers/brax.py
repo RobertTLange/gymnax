@@ -1,6 +1,6 @@
 """Wrappers for Gymnax environments to be compatible with Brax."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING
 
 import chex
 import jax
@@ -8,9 +8,9 @@ import jax
 from gymnax.environments import environment
 
 if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
+    pass
 else:
-    from chex import dataclass
+    pass
 try:
     from brax import envs
     from brax.envs import State
@@ -33,7 +33,7 @@ class GymnaxToBraxWrapper(envs.Env):
         self.env = env
 
     def reset(
-        self, rng: chex.PRNGKey, params: Optional[environment.EnvParams] = None
+        self, rng: chex.PRNGKey, params: environment.EnvParams | None = None
     ):  # -> State:
         """Reset, return brax State. Save rng and params in info field for step."""
         if params is None:
@@ -59,12 +59,14 @@ class GymnaxToBraxWrapper(envs.Env):
         if params is None:
             params = self.env.default_params
         state.info.update(_rng=rng, _env_params=params)
-        o, env_state, r, d, _ = self.env.step(step_rng, state.pipeline_state, action, params)
+        o, env_state, r, d, _ = self.env.step(
+            step_rng, state.pipeline_state, action, params
+        )
         return state.replace(
             pipeline_state=env_state,
             obs=o,
             reward=jax.numpy.array(r),
-            done=jax.numpy.array(d)
+            done=jax.numpy.array(d),
         )
 
     def action_size(self) -> int:

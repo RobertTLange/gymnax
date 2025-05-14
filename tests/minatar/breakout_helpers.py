@@ -30,7 +30,7 @@ def step_agent_numpy(env, action):
         new_x = env.env.ball_x - 1
         new_y = env.env.ball_y + 1
     else:
-        raise ValueError("Invalid ball dir: %s" % env.env.ball_dir)
+        raise ValueError(f"Invalid ball dir: {env.env.ball_dir}")
 
     if new_x < 0 or new_x > 9:
         if new_x < 0:

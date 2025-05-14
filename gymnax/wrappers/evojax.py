@@ -1,6 +1,6 @@
 """Utility wrapper to port gymnax env to evoJAX tasks."""
 
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import chex
 import jax
@@ -47,7 +47,7 @@ class GymnaxToEvoJaxTask(VectorizedTask):
 
         def step_fn(
             state: GymState, action: chex.Array
-        ) -> Tuple[GymState, chex.Array, chex.Array]:
+        ) -> tuple[GymState, chex.Array, chex.Array]:
             key_st, key_ep = jax.random.split(state.rng)
             obs, env_state, reward, done, _ = env.step(
                 key_st, state.state, action, env_params

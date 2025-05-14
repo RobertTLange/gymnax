@@ -5,7 +5,7 @@ Source: Comparable to
 github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -32,7 +32,13 @@ class EnvState(environment.EnvState):
 
 @dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
-    # github.com/uber-research/backpropamine/blob/180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431
+    """Parameters for the MetaMaze environment.
+
+    The default values are inspired by the SimpleMaze implementation:
+    github.com/uber-research/backpropamine/blob/
+    180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431
+    """
+
     reward: float = 10.0
     punishment: float = 0.0
     normalize_time: bool = False
@@ -106,9 +112,9 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         p = state.pos + self.directions[action]
         in_map = self.env_map[p[0], p[1]]
@@ -143,7 +149,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Reset both the agents position and the goal location
         goal = reset_goal(key, self.available_goals, params)
@@ -215,7 +221,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 4
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(4)
 

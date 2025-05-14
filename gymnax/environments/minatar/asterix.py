@@ -17,7 +17,7 @@ ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
 - Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -86,9 +86,9 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Spawn enemy if timer up - sample at each step & select based on timer
         spawn_entities_now = state.spawn_timer == 0
@@ -127,7 +127,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         state = EnvState(
             player_x=5,
@@ -180,7 +180,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -225,7 +225,7 @@ def step_agent(state: EnvState, action: jnp.ndarray) -> EnvState:
     return state.replace(player_x=player_x, player_y=player_y)
 
 
-def spawn_entity(key: chex.PRNGKey, state: EnvState) -> Tuple[chex.Array, jnp.ndarray]:
+def spawn_entity(key: chex.PRNGKey, state: EnvState) -> tuple[chex.Array, jnp.ndarray]:
     """Spawn new enemy or treasure at random location with random direction."""
     key_lr, key_gold, key_slot = jax.random.split(key, 3)
     lr = jax.random.choice(key_lr, jnp.array([1, 0]))
@@ -249,7 +249,7 @@ def spawn_entity(key: chex.PRNGKey, state: EnvState) -> Tuple[chex.Array, jnp.nd
 
 def while_sample_slots(
     key: chex.PRNGKey, state_entities: chex.Array
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Go through random order of slots until slot is found that is free."""
     init_val = jnp.array([0, 0])
     # Sample random order of slot entries to go through - hack around jnp.where
@@ -277,7 +277,7 @@ def while_sample_slots(
 
 def step_entities(
     state: EnvState,
-) -> Tuple[EnvState, jnp.ndarray, bool]:
+) -> tuple[EnvState, jnp.ndarray, bool]:
     """Update positions of the entities and return reward, done."""
     done, reward = 0, jnp.array(0)
     # Loop over entities and check for collisions - either gold or enemy

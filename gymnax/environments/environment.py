@@ -4,12 +4,8 @@ import functools
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Generic,
-    Optional,
-    Tuple,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -48,9 +44,9 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         self,
         key: chex.PRNGKey,
         state: TEnvState,
-        action: Union[int, float, chex.Array],
-        params: Optional[TEnvParams] = None,
-    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+        action: int | float | chex.Array,
+        params: TEnvParams | None = None,
+    ) -> tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Performs step transitions in the environment."""
         # Use default env parameters if no others specified
         if params is None:
@@ -67,8 +63,8 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
-        self, key: chex.PRNGKey, params: Optional[TEnvParams] = None
-    ) -> Tuple[chex.Array, TEnvState]:
+        self, key: chex.PRNGKey, params: TEnvParams | None = None
+    ) -> tuple[chex.Array, TEnvState]:
         """Performs resetting of environment."""
         # Use default env parameters if no others specified
         if params is None:
@@ -80,15 +76,15 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         self,
         key: chex.PRNGKey,
         state: TEnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: TEnvParams,
-    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Environment-specific step transition."""
         raise NotImplementedError
 
     def reset_env(
         self, key: chex.PRNGKey, params: TEnvParams
-    ) -> Tuple[chex.Array, TEnvState]:
+    ) -> tuple[chex.Array, TEnvState]:
         """Environment-specific reset."""
         raise NotImplementedError
 

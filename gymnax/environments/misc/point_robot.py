@@ -1,6 +1,6 @@
 """Point Robot environment."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -53,9 +53,9 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         a = jnp.clip(action, -params.max_force, params.max_force)
         pos = state.pos + a
@@ -88,7 +88,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
         rng_goal, rng_pos = jax.random.split(key)
@@ -133,7 +133,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Box:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Box:
         """Action space of the environment."""
         if params is None:
             params = self.default_params

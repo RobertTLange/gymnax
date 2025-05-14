@@ -27,15 +27,15 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.3.0",
-    "pytest-cov>=5.0.0",
-    "ruff>=0.6.0",
-    "mypy>=1.11.0",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
 ]
 test = [
     "flax",
-    "minatar",
     "brax",
+    "minatar",
 ]
 
 [project.urls]
@@ -46,7 +46,7 @@ where = ["."]
 include = ["gymnax*"]
 
 [tool.ruff]
-src = ["gymnax", "tests"]
+exclude = ["examples"]
 target-version = "py311"
 line-length = 88
 indent-width = 4
