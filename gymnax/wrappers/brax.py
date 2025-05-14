@@ -77,13 +77,13 @@ class GymnaxToBraxWrapper(envs.Env):
         """DEFAULT size of action vector expected by step."""
         a_space = self.env.action_space(self.env.default_params)
         example_a = a_space.sample(jax.random.PRNGKey(0))
-        return len(jax.tree_util.tree_flatten(example_a)[0])
+        return len(jax.tree.util.tree_flatten(example_a)[0])
 
     def observation_size(self) -> int:
         """DEFAULT size of observation vector expected by step."""
         o_space = self.env.observation_space(self.env.default_params)
         example_o = o_space.sample(jax.random.PRNGKey(0))
-        return len(jax.tree_util.tree_flatten(example_o)[0])
+        return len(jax.tree.util.tree_flatten(example_o)[0])
 
     def backend(self) -> str:
         """Return backend of the environment."""
