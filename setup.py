@@ -1,12 +1,11 @@
 try:
-    from setuptools import setup, find_packages
+    from setuptools import find_packages, setup
 except ImportError:
     from distutils.core import setup, find_packages
 
-
-import re
 import os
-from typing import List
+import re
+from typing import TYPE_CHECKING, List
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -35,7 +34,6 @@ requires = [
     "jax",
     "jaxlib",
     "chex",
-    "flax",
     "pyyaml",
     "gym>=0.26",
     "gymnasium",

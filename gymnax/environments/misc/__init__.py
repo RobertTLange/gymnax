@@ -1,14 +1,15 @@
 """Miscellaneous environments."""
 
-from gymnax.environments.misc import bernoulli_bandit
-from gymnax.environments.misc import gaussian_bandit
-from gymnax.environments.misc import meta_maze
-from gymnax.environments.misc import point_robot
-from gymnax.environments.misc import pong
-from gymnax.environments.misc import reacher
-from gymnax.environments.misc import rooms
-from gymnax.environments.misc import swimmer
-
+from gymnax.environments.misc import (
+    bernoulli_bandit,
+    gaussian_bandit,
+    meta_maze,
+    point_robot,
+    pong,
+    reacher,
+    rooms,
+    swimmer,
+)
 
 BernoulliBandit = bernoulli_bandit.BernoulliBandit
 GaussianBandit = gaussian_bandit.GaussianBandit

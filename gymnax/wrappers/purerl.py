@@ -1,16 +1,19 @@
 """Wrappers for pure RL."""
 
 import functools
-from typing import Any, Dict, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
 import jax
 import jax.numpy as jnp
 import numpy as np
-from gymnax.environments import environment
-from gymnax.environments import spaces
+
+from gymnax.environments import environment, spaces
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 
 class GymnaxWrapper(object):
@@ -62,7 +65,7 @@ class FlattenObservationWrapper(GymnaxWrapper):
         return obs, state, reward, done, info
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class LogEnvState:
     env_state: environment.EnvState
     episode_returns: float

@@ -3,6 +3,7 @@
 import chex
 import gymnasium as gym
 import jax
+
 import gymnax
 from gymnax.wrappers import gym as wrappers
 

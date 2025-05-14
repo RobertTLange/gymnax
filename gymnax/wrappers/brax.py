@@ -1,13 +1,16 @@
 """Wrappers for Gymnax environments to be compatible with Brax."""
 
-from typing import Any, Dict, Optional, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import chex
-from flax import struct
 import jax
+
 from gymnax.environments import environment
 
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 try:
     from brax import envs
 except ImportError as exc:
@@ -16,7 +19,7 @@ except ImportError as exc:
     ) from exc
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class State:  # Lookalike for brax.envs.env.State.
     qp: environment.EnvState  # Brax QP is roughly equivalent to our EnvState
     obs: Any  # depends on environment

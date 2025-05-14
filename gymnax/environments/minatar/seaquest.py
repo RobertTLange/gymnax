@@ -1,11 +1,14 @@
 # """JAX compatible version of Seaquest MinAtar environment."""
 
 
-# from typing import Any, Dict, Optional, Tuple, Union
+# from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 
 # import chex
-# from flax import struct
+# if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+#     from dataclasses import dataclass
+# else:
+#     from chex import dataclass
 # from gymnax.environments import environment
 # from gymnax.environments import spaces
 # import jax
@@ -13,7 +16,7 @@
 # import jax.numpy as jnp
 
 
-# @struct.dataclass
+# @dataclass(frozen=True)
 # class EnvState(environment.EnvState):
 #   """State of the environment."""
 
@@ -43,7 +46,7 @@
 #   terminal: bool
 
 
-# @struct.dataclass
+# @dataclass(frozen=True)
 # class EnvParams(environment.EnvParams):
 #   ramping: bool = True
 #   ramp_interval: int = 100

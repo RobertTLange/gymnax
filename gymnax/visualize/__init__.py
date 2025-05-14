@@ -2,7 +2,6 @@
 
 from gymnax.visualize import visualizer
 
-
 Visualizer = visualizer.Visualizer
 
 

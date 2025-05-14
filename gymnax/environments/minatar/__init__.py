@@ -1,9 +1,6 @@
 """Minatar environments."""
 
-from gymnax.environments.minatar import asterix
-from gymnax.environments.minatar import breakout
-from gymnax.environments.minatar import freeway
-from gymnax.environments.minatar import space_invaders
+from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
 
 # from gymnax.environments.minatar import seaquest
 

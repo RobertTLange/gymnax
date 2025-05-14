@@ -1,11 +1,12 @@
 """Tests for the visualizer."""
 
 import os
+
 import jax
 import jax.numpy as jnp
+
 import gymnax
 from gymnax.visualize import visualizer
-
 
 
 def test_visualizer(viz_env_name: str):

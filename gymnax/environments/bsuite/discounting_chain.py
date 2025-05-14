@@ -6,23 +6,28 @@ github.com/deepmind/bsuite/blob/master/bsuite/environments/discounting_chain.py.
 """
 
 import dataclasses
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+
 import chex
-from flax import struct
-from jax import lax
 import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from jax import lax
+
+from gymnax.environments import environment, spaces
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     rewards: chex.Array
     context: jnp.ndarray
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     reward_timestep: chex.Array = dataclasses.field(
         default_factory=lambda: jnp.array([1, 3, 10, 30, 100])

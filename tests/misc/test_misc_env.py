@@ -1,8 +1,8 @@
 """Tests for misc environments."""
 
 import jax
-import gymnax
 
+import gymnax
 
 num_episodes, num_steps, tolerance = 10, 100, 1e-04
 

@@ -17,19 +17,22 @@ ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
 - Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
 """
 
-from typing import Any, Dict, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
 import jax
-from jax import lax
 import jax.numpy as jnp
-from gymnax.environments import environment
-from gymnax.environments import spaces
+from jax import lax
+
+from gymnax.environments import environment, spaces
+
+if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
+    from dataclasses import dataclass
+else:
+    from chex import dataclass
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState(environment.EnvState):
     """State of the environment."""
 
@@ -47,7 +50,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     ramping: bool = True
     ramp_interval: int = 100

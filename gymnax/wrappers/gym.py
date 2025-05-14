@@ -1,16 +1,15 @@
 """Wrappers for Gymnax environments to be used in Gym."""
 
 import copy
-from typing import Any, Dict, List, Optional, Tuple, Union
-
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import chex
 import gymnasium as gym
+import jax.random
 from gymnasium import core
 from gymnasium.vector import utils
-import jax.random
-from gymnax.environments import environment
-from gymnax.environments import spaces
+
+from gymnax.environments import environment, spaces
 
 
 class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):

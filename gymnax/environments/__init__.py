@@ -1,11 +1,6 @@
 """Gymnax environments."""
 
-from gymnax.environments import bsuite
-from gymnax.environments import classic_control
-from gymnax.environments import environment
-from gymnax.environments import minatar
-from gymnax.environments import misc
-
+from gymnax.environments import bsuite, classic_control, environment, minatar, misc
 
 Catch = bsuite.Catch
 DeepSea = bsuite.DeepSea

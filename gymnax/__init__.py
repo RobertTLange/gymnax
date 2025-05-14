@@ -1,7 +1,6 @@
 """Gymnax: A library for creating and registering Gym environments."""
 
-from gymnax import environments
-from gymnax import registration
+from gymnax import environments, registration
 
 EnvParams = environments.EnvParams
 EnvState = environments.EnvState

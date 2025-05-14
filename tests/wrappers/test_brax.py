@@ -1,10 +1,11 @@
 """Tests for brax wrapper."""
 
-from brax import envs
 import chex
+import jax
+from brax import envs
+
 import gymnax
 from gymnax.wrappers import brax
-import jax
 
 
 def test_brax_wrapper():
