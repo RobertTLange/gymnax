@@ -1,7 +1,7 @@
 """Wrappers for pure RL."""
 
 import functools
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -16,7 +16,7 @@ else:
     from chex import dataclass
 
 
-class GymnaxWrapper(object):
+class GymnaxWrapper:
     """Base class for Gymnax wrappers."""
 
     def __init__(self, env):
@@ -34,9 +34,9 @@ class FlattenObservationWrapper(GymnaxWrapper):
     #     super().__init__(env)
 
     def observation_space(self, params) -> spaces.Box:
-        assert isinstance(
-            self._env.observation_space(params), spaces.Box
-        ), "Only Box spaces are supported for now."
+        assert isinstance(self._env.observation_space(params), spaces.Box), (
+            "Only Box spaces are supported for now."
+        )
         return spaces.Box(
             low=self._env.observation_space(params).low,
             high=self._env.observation_space(params).high,
@@ -46,8 +46,8 @@ class FlattenObservationWrapper(GymnaxWrapper):
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
-        self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
-    ) -> Tuple[chex.Array, environment.EnvState]:
+        self, key: chex.PRNGKey, params: environment.EnvParams | None = None
+    ) -> tuple[chex.Array, environment.EnvState]:
         obs, state = self._env.reset(key, params)
         obs = jnp.reshape(obs, (-1,))
         return obs, state
@@ -57,9 +57,9 @@ class FlattenObservationWrapper(GymnaxWrapper):
         self,
         key: chex.PRNGKey,
         state: environment.EnvState,
-        action: Union[int, float],
-        params: Optional[environment.EnvParams] = None,
-    ) -> Tuple[chex.Array, environment.EnvState, float, bool, Any]:  # dict]:
+        action: int | float,
+        params: environment.EnvParams | None = None,
+    ) -> tuple[chex.Array, environment.EnvState, float, bool, Any]:  # dict]:
         obs, state, reward, done, info = self._env.step(key, state, action, params)
         obs = jnp.reshape(obs, (-1,))
         return obs, state, reward, done, info
@@ -82,8 +82,8 @@ class LogWrapper(GymnaxWrapper):
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
-        self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
-    ) -> Tuple[chex.Array, LogEnvState]:
+        self, key: chex.PRNGKey, params: environment.EnvParams | None = None
+    ) -> tuple[chex.Array, LogEnvState]:
         obs, env_state = self._env.reset(key, params)
         state = LogEnvState(env_state, 0, 0, 0, 0)
         return obs, state
@@ -93,9 +93,9 @@ class LogWrapper(GymnaxWrapper):
         self,
         key: chex.PRNGKey,
         state: LogEnvState,
-        action: Union[int, float],
-        params: Optional[environment.EnvParams] = None,
-    ) -> Tuple[chex.Array, LogEnvState, jnp.ndarray, bool, Dict[Any, Any]]:
+        action: int | float,
+        params: environment.EnvParams | None = None,
+    ) -> tuple[chex.Array, LogEnvState, jnp.ndarray, bool, dict[Any, Any]]:
         """Step the environment.
 
 

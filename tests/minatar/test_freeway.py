@@ -16,7 +16,7 @@ env_name_gym, env_name_jax = "freeway", "Freeway-MinAtar"
 
 def test_step():
     """Test a step transition for the env."""
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     env_gym = environment.Environment(env_name_gym, sticky_action_prob=0.0)
     env_jax, env_params = gymnax.make(env_name_jax)
 
@@ -56,7 +56,7 @@ def test_step():
 def test_reset():
     """Test reset obs/state is in space of NumPy version."""
     # env_gym = Environment(env_name_gym, sticky_action_prob=0.0)
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     env_jax, env_params = gymnax.make(env_name_jax)
     for _ in range(num_episodes):
         rng, rng_input = jax.random.split(rng)
@@ -68,7 +68,7 @@ def test_reset():
 
 def test_get_obs():
     """Test observation function."""
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     env_gym = environment.Environment(env_name_gym, sticky_action_prob=0.0)
     env_jax, env_params = gymnax.make(env_name_jax)
 

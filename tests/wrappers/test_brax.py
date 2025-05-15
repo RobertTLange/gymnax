@@ -20,7 +20,7 @@ def test_brax_wrapper():
         envs.wrappers.training.EpisodeWrapper(brax_env, 100, 1)
     )
     b = 16
-    keys = jax.random.split(jax.random.PRNGKey(0), b)
+    keys = jax.random.split(jax.random.key(0), b)
     action = jax.vmap(env.action_space(env_params).sample)(keys)
     reset_fn = jax.jit(wrapped_env.reset)
     _, env_state = jax.vmap(env.reset)(keys)
@@ -29,6 +29,6 @@ def test_brax_wrapper():
     chex.assert_trees_all_equal_shapes(o, state.obs)
     chex.assert_trees_all_equal_shapes(r, state.reward)
     chex.assert_trees_all_equal_shapes(d, state.done)
-    chex.assert_trees_all_equal_structs(new_env_state, state.qp)
+    chex.assert_trees_all_equal_structs(new_env_state, state.pipeline_state)
     step_fn = jax.jit(wrapped_env.step)
     _ = step_fn(state, action)

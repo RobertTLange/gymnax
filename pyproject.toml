@@ -1,0 +1,64 @@
+[project]
+name = "gymnax"
+version = "0.0.8"
+description = "JAX-compatible version of Open AI's gym environments"
+authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "jax",
+    "chex",
+    "pyyaml",
+    "gym>=0.26",
+    "gymnasium",
+    "matplotlib",
+    "seaborn",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+test = [
+    "flax",
+    "brax",
+    "minatar",
+]
+
+[project.urls]
+Homepage = "https://github.com/RobertTLange/gymnax"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gymnax*"]
+
+[tool.ruff]
+exclude = ["examples"]
+target-version = "py311"
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "SIM", "UP", "W"]
+ignore = ["N801", "N802", "N803", "N806", "N815", "W191"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"**/*.ipynb" = [
+    "F811",  # Redefinition of unused variable
+]

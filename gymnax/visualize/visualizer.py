@@ -1,7 +1,5 @@
 """Visualizer for Gymnax environments."""
 
-from typing import TYPE_CHECKING, Optional
-
 import gym
 import jax
 import jax.numpy as jnp
@@ -12,11 +10,10 @@ import gymnax
 from gymnax.visualize import vis_catch, vis_circle, vis_gym, vis_maze, vis_minatar
 
 
-class Visualizer(object):
+class Visualizer:
     """Visualizer for Gymnax environments."""
 
     def __init__(self, env_arg, env_params_arg, state_seq_arg, reward_seq_arg=None):
-
         self.env = env_arg
         self.env_params = env_params_arg
         self.state_seq = state_seq_arg
@@ -35,7 +32,7 @@ class Visualizer(object):
 
     def animate(
         self,
-        save_fname: Optional[str] = "test.gif",
+        save_fname: str | None = "test.gif",
         view: bool = False,
     ):
         """Anim for 2D fct - x (#steps, #pop, 2) & fitness (#steps, #pop)."""
@@ -65,7 +62,6 @@ class Visualizer(object):
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-
             # Animations have to use older gym version and pyglet!
             assert gym.__version__ == "0.19.0"
             self.im = vis_gym.init_gym(
@@ -123,16 +119,19 @@ class Visualizer(object):
         if self.reward_seq is None:
             self.ax.set_title(f"{self.env.name} - Step {frame + 1}", fontsize=15)
         else:
+            # Construct the title string separately to avoid a long line
+            title_str = (
+                f"{self.env.name}: Step {frame + 1:4d}"
+                f" - Return {self.reward_seq[frame]:7.2f}"
+            )
             self.ax.set_title(
-                "{}: Step {:4.0f} - Return {:7.2f}".format(
-                    self.env.name, frame + 1, self.reward_seq[frame]
-                ),
+                title_str,
                 fontsize=15,
             )
 
 
 if __name__ == "__main__":
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     env, env_params = gymnax.make("Pong-misc")
 
     state_seq, reward_seq = [], []

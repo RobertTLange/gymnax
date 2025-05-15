@@ -1,7 +1,7 @@
 """DM env API wrapper for gymnax environment."""
 
 import functools
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import chex
 import jax
@@ -23,26 +23,36 @@ class TimeStep:
     discount: chex.Array
     observation: chex.Array
 
+    def __init__(self, *, state, reward, discount, observation):
+        object.__setattr__(self, "state", state)
+        object.__setattr__(self, "reward", reward)
+        object.__setattr__(self, "discount", discount)
+        object.__setattr__(self, "observation", observation)
+
 
 class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
     """DM env API wrapper for gymnax environment."""
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
-        self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
+        self, key: chex.PRNGKey, params: environment.EnvParams | None = None
     ) -> TimeStep:
         obs, state = self._env.reset(key, params)
-        return TimeStep(state, jnp.array(0.0), jnp.array(1.0), obs)
+        return TimeStep(
+            state=state, reward=jnp.array(0.0), discount=jnp.array(1.0), observation=obs
+        )
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,
         timestep: TimeStep,
-        action: Union[int, float],
-        params: Optional[environment.EnvParams] = None,
+        action: int | float,
+        params: environment.EnvParams | None = None,
     ) -> TimeStep:
         obs, state, reward, done, _ = self._env.step(
             key, timestep.state, action, params
         )
-        return TimeStep(state, reward, 1.0 - done, obs)
+        return TimeStep(
+            state=state, reward=reward, discount=1.0 - done, observation=obs
+        )

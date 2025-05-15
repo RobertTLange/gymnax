@@ -21,7 +21,6 @@ Adapted from https://github.com/google/jax/blob/master/examples/datasets.py
 and https://github.com/deepmind/bsuite/blob/master/bsuite/utils/datasets.py
 """
 
-
 import array
 import gzip
 import os

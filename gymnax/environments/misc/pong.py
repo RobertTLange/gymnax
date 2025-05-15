@@ -6,7 +6,7 @@ https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py -
 Actions are encoded as: ['n', 'u', 'd']
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -69,9 +69,9 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         last_ball_position = state.ball_position
 
@@ -105,7 +105,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         paddle_centers = jnp.array([self.height / 2, self.height / 2])
         ball_position = jnp.array([self.height / 2, self.width / 2])
@@ -145,9 +145,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
         obs = obs.at[
             expanded_paddles, jnp.array([0, self.width - 1]).reshape((2, 1)), 0
-        ].set(
-            1
-        )  # paddle
+        ].set(1)  # paddle
         return obs.reshape((self.height, self.width, 3)).astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
@@ -167,7 +165,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 

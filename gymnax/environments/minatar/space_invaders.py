@@ -22,7 +22,7 @@ ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
 - Actions are encoded as follows: ['n','l','r','f']
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -90,9 +90,9 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Resolve player action - fire, left, right.
         a = self.action_set[action]
@@ -144,7 +144,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         state = EnvState(
             pos=5,
@@ -194,7 +194,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -298,7 +298,7 @@ def step_aliens(state: EnvState) -> EnvState:
     )
 
 
-def step_shoot(state: EnvState, params: EnvParams) -> Tuple[EnvState, jnp.ndarray]:
+def step_shoot(state: EnvState, params: EnvParams) -> tuple[EnvState, jnp.ndarray]:
     """Update aliens - shooting check and calculate rewards."""
     reward = 0
     alien_shot_cond = state.alien_shot_timer == 0
@@ -336,7 +336,7 @@ def step_shoot(state: EnvState, params: EnvParams) -> Tuple[EnvState, jnp.ndarra
 
 def get_nearest_alien(
     pos: int, alien_map: chex.Array
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Find alien closest to player in manhattan distance -> shot target."""
     ids = jnp.array([jnp.abs(jnp.array([i for i in range(10)]) - pos)])
     search_order = jnp.argsort(ids).squeeze()
@@ -345,8 +345,7 @@ def get_nearest_alien(
 
     # Work around for np.where via element-wise multiplication with ids
     # The output has 3 dims: [alien_exists, location, id]
-    counter = 0
-    for i in search_order[::-1]:
+    for counter, i in enumerate(search_order[::-1]):
         locations = alien_map[:, i] * jnp.arange(alien_map[:, i].shape[0])
         aliens_loc = jnp.max(locations)
         results_temp = (
@@ -354,7 +353,6 @@ def get_nearest_alien(
             * results_temp.at[:].set(jnp.array([aliens_exist[i], aliens_loc, i]))
             + (1 - aliens_exist[i]) * results_temp
         )
-        counter += 1
     results_temp = jnp.array(results_temp, dtype=int)
     # Loop over results in reverse order
     return results_temp[0], results_temp[1], results_temp[2]

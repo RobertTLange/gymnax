@@ -1,6 +1,6 @@
 """Helper functions for testing."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import jax
 import jaxlib
@@ -15,7 +15,7 @@ def assert_correct_state(env_gym, env_name: str, state_jax: Any, atol: float = 1
     state_gym = state_translate.np_state_to_jax(env_gym, env_name)
     # print(state_gym)
     # Loop over keys and assert that individual entries are same/close
-    for k in state_gym.keys():
+    for k in state_gym:
         jax_value = getattr(state_jax, k)
         # print(k, jax_value, state_gym[k])
         if k not in ["time", "terminal"]:

@@ -11,7 +11,7 @@ from gymnax.visualize import visualizer
 
 def test_visualizer(viz_env_name: str):
     """Tests the visualizer."""
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     env, env_params = gymnax.make(viz_env_name)
     state_seq, reward_seq = [], []
     rng, rng_reset = jax.random.split(rng)

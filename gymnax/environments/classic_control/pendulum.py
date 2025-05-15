@@ -4,7 +4,7 @@
 Source: github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -32,9 +32,9 @@ class EnvParams(environment.EnvParams):
     max_speed: float = 8.0
     max_torque: float = 2.0
     dt: float = 0.05
-    g: float = 10.0  # gravity
-    m: float = 1.0  # mass
-    l: float = 1.0  # length
+    g: float = 10.0
+    m: float = 1.0
+    l: float = 1.0  # noqa: E741
     max_steps_in_episode: int = 200
 
 
@@ -54,9 +54,9 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Integrate pendulum ODE and return transition."""
         u = jnp.clip(action, -params.max_torque, params.max_torque)
         reward = -(
@@ -95,7 +95,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling theta, theta_dot."""
         high = jnp.array([jnp.pi, 1])
         state = jax.random.uniform(key, shape=(2,), minval=-high, maxval=high)
@@ -130,7 +130,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 1
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Box:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Box:
         """Action space of the environment."""
         if params is None:
             params = self.default_params

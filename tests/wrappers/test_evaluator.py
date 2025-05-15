@@ -22,7 +22,7 @@ class MLP(nn.Module):
 
 def test_rollout():
     """Test rollout wrapper."""
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     model = MLP()
     pholder = jnp.zeros((3,))
     policy_params = model.init(
@@ -44,11 +44,11 @@ def test_rollout():
     assert obs.shape == (10, 200, 3)
 
     # Test multiple rollouts for different networks
-    batch_params = jax.tree_map(
+    batch_params = jax.tree.map(
         lambda x: jnp.tile(x, (5, 1)).reshape(5, *x.shape), policy_params
     )
-    # print(jax.tree_map(lambda x: x.shape, policy_params))
-    # print(jax.tree_map(lambda x: x.shape, batch_params))
+    # print(jax.tree.map(lambda x: x.shape, policy_params))
+    # print(jax.tree.map(lambda x: x.shape, batch_params))
     (
         obs,
         _,

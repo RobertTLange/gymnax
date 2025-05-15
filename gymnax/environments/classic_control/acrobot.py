@@ -6,7 +6,7 @@ Note that we only implement the default 'book' version.
 """
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -67,9 +67,9 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         torque = params.available_torque[action]
         # Add noise to force action - always sample - conditionals in JAX
@@ -119,7 +119,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(4,), minval=-0.1, maxval=0.1)
         state = EnvState(
@@ -167,7 +167,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 3
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(3)
 

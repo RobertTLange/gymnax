@@ -1,6 +1,6 @@
 """Gaussian bandit environment as in Lange & Sprekeler (2022)."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -33,7 +33,7 @@ class EnvParams(environment.EnvParams):
 
 
 class GaussianBandit(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Gaussian bandit environment as in Lange & Sprekeler (2022).
+    """JAX implementation of Gaussian bandit as in Lange & Sprekeler (2022).
 
 
     - 2 arm bandit in which the first arm is fixed to have 0 mean and variance
@@ -53,9 +53,9 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         # Reparametrization sampling of reward
         reward_arm_1 = 0.0
@@ -79,7 +79,7 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
         mu = (
@@ -114,7 +114,7 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 

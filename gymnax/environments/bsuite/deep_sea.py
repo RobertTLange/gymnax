@@ -1,6 +1,6 @@
 """DeepSea bsuite environment."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -58,9 +58,9 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Pull out randomness for easier testing
         rng_reward, rng_trans = jax.random.split(key)
@@ -103,7 +103,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         optimal_no_cost = (1 - params.deterministic) * (1 - 1 / self.size) ** (
             self.size - 1
@@ -163,7 +163,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 2
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(2)
 
@@ -199,7 +199,7 @@ def step_reward(
     rand_reward: jnp.ndarray,
     size: int,
     params: EnvParams,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Get the reward for the selected action."""
     reward = 0.0
     # Reward calculation.
@@ -218,7 +218,7 @@ def step_reward(
 
 def step_transition(
     state: EnvState, action_right: bool, right_cond: jnp.ndarray, size: int
-) -> Tuple[jnp.ndarray, int, jnp.ndarray]:
+) -> tuple[jnp.ndarray, int, jnp.ndarray]:
     """Get the state transition for the selected action."""
     # Standard right path transition
     column = jax.lax.select(

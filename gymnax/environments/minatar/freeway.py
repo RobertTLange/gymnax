@@ -20,7 +20,7 @@ ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
 - Actions are encoded as follows: ['n', 'u', 'd']
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -76,9 +76,9 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # 1. Update position of agent only if timer condition is met!
         a = self.action_set[action]
@@ -111,7 +111,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample the initial speeds and directions of the cars
         key_speed, key_dirs = jax.random.split(key)
@@ -166,7 +166,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return len(self.action_set)
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(len(self.action_set))
 
@@ -189,7 +189,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
 
 def step_agent(
     action: jnp.ndarray, state: EnvState, params: EnvParams
-) -> Tuple[EnvState, jnp.ndarray, bool]:
+) -> tuple[EnvState, jnp.ndarray, bool]:
     """Perform 1st part of step transition for agent."""
     cond_up = jnp.logical_and(action == 2, state.move_timer == 0)
     cond_down = jnp.logical_and(action == 4, state.move_timer == 0)

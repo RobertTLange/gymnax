@@ -94,10 +94,8 @@ def control_np_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False)
             "time": 0,
         }
         if get_jax:
-
             return continuous_mountain_car.EnvState(**state_gym_to_jax)
     elif env_name == "Acrobot-v1":
-
         state_gym_to_jax = {
             "joint_angle1": env.state[0],
             "joint_angle2": env.state[1],
@@ -106,7 +104,6 @@ def control_np_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False)
             "time": 0,
         }
         if get_jax:
-
             return acrobot.EnvState(**state_gym_to_jax)
     return state_gym_to_jax
 
@@ -124,7 +121,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": 0,
         }
         if get_jax:
-
             return catch.EnvState(**state_gym_to_jax)
     elif env_name == "DeepSea-bsuite":
         state_gym_to_jax = {
@@ -138,7 +134,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": 0,
         }
         if get_jax:
-
             return deep_sea.EnvState(**state_gym_to_jax)
     elif env_name == "DiscountingChain-bsuite":
         state_gym_to_jax = {
@@ -147,7 +142,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": env._timestep,
         }
         if get_jax:
-
             return discounting_chain.EnvState(**state_gym_to_jax)
     elif env_name == "MemoryChain-bsuite":
         state_gym_to_jax = {
@@ -158,7 +152,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": env._timestep,
         }
         if get_jax:
-
             return memory_chain.EnvState(**state_gym_to_jax)
     elif env_name == "UmbrellaChain-bsuite":
         state_gym_to_jax = {
@@ -168,7 +161,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": env._timestep,
         }
         if get_jax:
-
             return umbrella_chain.EnvState(**state_gym_to_jax)
     elif env_name == "MNISTBandit-bsuite":
         state_gym_to_jax = {
@@ -177,7 +169,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": 0,
         }
         if get_jax:
-
             return mnist.EnvState(**state_gym_to_jax)
     elif env_name == "SimpleBandit-bsuite":
         state_gym_to_jax = {
@@ -186,7 +177,6 @@ def bsuite_np_to_jax(env, env_name: str = "Catch-bsuite", get_jax: bool = False)
             "time": 0,
         }
         if get_jax:
-
             return bandit.EnvState(**state_gym_to_jax)
     return state_gym_to_jax
 
@@ -215,7 +205,6 @@ def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar", get_jax: bool = Fa
             "terminal": False,
         }
         if get_jax:
-
             return asterix.EnvState(**state_gym_to_jax)
     elif env_name == "Breakout-MinAtar":
         state_gym_to_jax = {
@@ -231,7 +220,6 @@ def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar", get_jax: bool = Fa
             "terminal": False,
         }
         if get_jax:
-
             return breakout.EnvState(**state_gym_to_jax)
     elif env_name == "Freeway-MinAtar":
         state_gym_to_jax = {
@@ -242,7 +230,6 @@ def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar", get_jax: bool = Fa
             "terminal": False,
         }
         if get_jax:
-
             return freeway.EnvState(**state_gym_to_jax)
     # elif env_name == "Seaquest-MinAtar":
     #   f_bullets = np.zeros((100, 3))
@@ -306,6 +293,5 @@ def minatar_np_to_jax(env, env_name: str = "Asterix-MinAtar", get_jax: bool = Fa
             "terminal": False,
         }
         if get_jax:
-
             return space_invaders.EnvState(**state_gym_to_jax)
     return state_gym_to_jax

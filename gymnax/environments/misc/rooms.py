@@ -5,7 +5,7 @@ Source: Comparable to https://github.com/howardh/gym-fourrooms Since gymnax
 automatically resets env at done, we abstract different resets
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import chex
 import jax
@@ -66,8 +66,8 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
     def __init__(
         self,
         use_visual_obs: bool = False,
-        goal_fixed: List[int] | None = None,
-        pos_fixed: List[int] | None = None,
+        goal_fixed: list[int] | None = None,
+        pos_fixed: list[int] | None = None,
     ):
         super().__init__()
         self.env_map = string_to_bool_map(four_rooms_map)
@@ -105,9 +105,9 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
         self,
         key: chex.PRNGKey,
         state: EnvState,
-        action: Union[int, float, chex.Array],
+        action: int | float | chex.Array,
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         key_random, key_action = jax.random.split(key)
         # Sample whether to choose a random action
@@ -136,7 +136,7 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
 
     def reset_env(
         self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    ) -> tuple[chex.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Reset both the agents position and the goal location
         rng_goal, rng_pos = jax.random.split(key, 2)
@@ -188,7 +188,7 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
         """Number of actions possible in environment."""
         return 4
 
-    def action_space(self, params: Optional[EnvParams] = None) -> spaces.Discrete:
+    def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
         """Action space of the environment."""
         return spaces.Discrete(4)
 
