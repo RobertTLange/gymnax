@@ -19,7 +19,7 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 import jax
 import gymnax
 
-rng = jax.random.PRNGKey(0)
+rng = jax.random.key(0)
 rng, key_reset, key_act, key_step = jax.random.split(rng, 4)
 
 # Instantiate the environment & its settings.

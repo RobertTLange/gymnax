@@ -41,7 +41,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
                 ),
             }
         )
-        self.rng: chex.PRNGKey = jax.random.PRNGKey(0)  # Placeholder
+        self.rng: chex.PRNGKey = jax.random.key(0)  # Placeholder
         self._seed(seed)
         _, self.env_state = self._env.reset(self.rng, self.env_params)
 
@@ -59,7 +59,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
 
     def _seed(self, seed: int | None = None):
         """Set RNG seed (or use 0)."""
-        self.rng = jax.random.PRNGKey(seed or 0)
+        self.rng = jax.random.key(seed or 0)
 
     def step(
         self, action: core.ActType
@@ -122,7 +122,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         self.new_step_api = True
         self.closed = False
         self.viewer = None
-        self.rng: chex.PRNGKey = jax.random.PRNGKey(0)  # Placeholder
+        self.rng: chex.PRNGKey = jax.random.key(0)  # Placeholder
         self._seed(seed)
         # Jit-of-vmap is faster than vmap-of-jit.
         # Map over leading axis of all but env params
@@ -159,7 +159,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
     def _seed(self, seed: int | None = None):
         """Set RNG seed (or use 0)."""
         self.rng = jax.random.split(
-            jax.random.PRNGKey(seed or 0), self.num_envs
+            jax.random.key(seed or 0), self.num_envs
         )  # 1 RNG per env
 
     def reset(

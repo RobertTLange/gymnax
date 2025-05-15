@@ -103,6 +103,6 @@ class RolloutWrapper:
     @property
     def input_shape(self):
         """Get the shape of the observation."""
-        rng = jax.random.PRNGKey(0)
+        rng = jax.random.key(0)
         obs, _ = self.env.reset(rng, self.env_params)
         return obs.shape

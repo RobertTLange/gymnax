@@ -11,7 +11,7 @@ def test_dmenv_wrapper():
     """Wrap a Gymnax environment in dm_env style."""
     env, env_params = gymnax.make("CartPole-v1")
     wrapped_env = dm_env.GymnaxToDmEnvWrapper(env)
-    keys = jax.random.split(jax.random.PRNGKey(0), 16)
+    keys = jax.random.split(jax.random.key(0), 16)
     action = jax.vmap(env.action_space(env_params).sample)(keys)
     _, env_state = jax.vmap(env.reset)(keys)
     o, _, r, d, _ = jax.vmap(env.step)(keys, env_state, action)

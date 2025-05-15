@@ -22,7 +22,7 @@ class MLP(nn.Module):
 
 def test_rollout():
     """Test rollout wrapper."""
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     model = MLP()
     pholder = jnp.zeros((3,))
     policy_params = model.init(

@@ -131,7 +131,7 @@ class Visualizer:
 
 
 if __name__ == "__main__":
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.key(0)
     env, env_params = gymnax.make("Pong-misc")
 
     state_seq, reward_seq = [], []
