@@ -7,7 +7,6 @@ from gymnax.utils.test_helpers import (
     minatar_action_map,
 )
 
-
 __all__ = [
     "np_state_to_jax",
     "assert_correct_state",
