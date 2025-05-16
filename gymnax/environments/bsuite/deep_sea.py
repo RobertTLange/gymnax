@@ -57,10 +57,10 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
     ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Pull out randomness for easier testing
-        rng_reward, rng_trans = jax.random.split(key)
-        rand_reward = jax.random.normal(rng_reward, shape=())
+        key_reward, key_trans = jax.random.split(key)
+        rand_reward = jax.random.normal(key_reward, shape=())
         rand_trans_cond = (
-            jax.random.uniform(rng_trans, shape=(), minval=0, maxval=1) > 1 / self.size
+            jax.random.uniform(key_trans, shape=(), minval=0, maxval=1) > 1 / self.size
         )
 
         action_right = action == state.action_mapping[state.row, state.column]

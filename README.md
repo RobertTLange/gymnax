@@ -19,8 +19,8 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 import jax
 import gymnax
 
-rng = jax.random.key(0)
-rng, key_reset, key_act, key_step = jax.random.split(rng, 4)
+key = jax.random.key(0)
+key, key_reset, key_act, key_step = jax.random.split(key, 4)
 
 # Instantiate the environment & its settings.
 env, env_params = gymnax.make("Pendulum-v1")
@@ -103,8 +103,8 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   jit_step = jax.jit(env.step)
 
   # map (vmap/pmap) across random keys for batch rollouts
-  reset_rng = jax.vmap(env.reset, in_axes=(0, None))
-  step_rng = jax.vmap(env.step, in_axes=(0, 0, 0, None))
+  reset_key = jax.vmap(env.reset, in_axes=(0, None))
+  step_key = jax.vmap(env.step, in_axes=(0, 0, 0, None))
 
   # map (vmap/pmap) across env parameters (e.g. for meta-learning)
   reset_params = jax.vmap(env.reset, in_axes=(None, 0))
@@ -115,27 +115,27 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
 - **Scan through entire episode rollouts**: You can also `lax.scan` through entire `reset`, `step` episode loops for fast compilation:
 
   ```python
-  def rollout(rng_input, policy_params, env_params, steps_in_episode):
+  def rollout(key_input, policy_params, env_params, steps_in_episode):
       """Rollout a jitted gymnax episode with lax.scan."""
       # Reset the environment
-      rng_reset, rng_episode = jax.random.split(rng_input)
-      obs, state = env.reset(rng_reset, env_params)
+      key_reset, key_episode = jax.random.split(key_input)
+      obs, state = env.reset(key_reset, env_params)
 
       def policy_step(state_input, tmp):
           """lax.scan compatible step transition in jax env."""
-          obs, state, policy_params, rng = state_input
-          rng, rng_step, rng_net = jax.random.split(rng, 3)
+          obs, state, policy_params, key = state_input
+          key, key_step, key_net = jax.random.split(key, 3)
           action = model.apply(policy_params, obs)
           next_obs, next_state, reward, done, _ = env.step(
-              rng_step, state, action, env_params
+              key_step, state, action, env_params
           )
-          carry = [next_obs, next_state, policy_params, rng]
+          carry = [next_obs, next_state, policy_params, key]
           return carry, [obs, action, reward, next_obs, done]
 
       # Scan over episode step loop
       _, scan_out = jax.lax.scan(
           policy_step,
-          [obs, state, policy_params, rng_episode],
+          [obs, state, policy_params, key_episode],
           (),
           steps_in_episode
       )
@@ -149,14 +149,14 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   from gymnax.visualize import Visualizer
 
   state_seq, reward_seq = [], []
-  rng, rng_reset = jax.random.split(rng)
-  obs, env_state = env.reset(rng_reset, env_params)
+  key, key_reset = jax.random.split(key)
+  obs, env_state = env.reset(key_reset, env_params)
   while True:
       state_seq.append(env_state)
-      rng, rng_act, rng_step = jax.random.split(rng, 3)
-      action = env.action_space(env_params).sample(rng_act)
+      key, key_act, key_step = jax.random.split(key, 3)
+      action = env.action_space(env_params).sample(key_act)
       next_obs, next_env_state, reward, done, info = env.step(
-          rng_step, env_state, action, env_params
+          key_step, env_state, action, env_params
       )
       reward_seq.append(reward)
       if done:
@@ -180,20 +180,20 @@ In order to use JAX on your accelerators, you can find more details in the [JAX 
   manager = RolloutWrapper(model.apply, env_name="Pendulum-v1")
 
   # Simple single episode rollout for policy
-  obs, action, reward, next_obs, done, cum_ret = manager.single_rollout(rng, policy_params)
+  obs, action, reward, next_obs, done, cum_ret = manager.single_rollout(key, policy_params)
 
-  # Multiple rollouts for same network (different rng, e.g. eval)
-  rng_batch = jax.random.split(rng, 10)
+  # Multiple rollouts for same network (different key, e.g. eval)
+  key_batch = jax.random.split(key, 10)
   obs, action, reward, next_obs, done, cum_ret = manager.batch_rollout(
-      rng_batch, policy_params
+      key_batch, policy_params
   )
 
-  # Multiple rollouts for different networks + rng (e.g. for ES)
+  # Multiple rollouts for different networks + key (e.g. for ES)
   batch_params = jax.tree.map(  # Stack parameters or use different
       lambda x: jnp.tile(x, (5, 1)).reshape(5, *x.shape), policy_params
   )
   obs, action, reward, next_obs, done, cum_ret = manager.population_rollout(
-      rng_batch, batch_params
+      key_batch, batch_params
   )
   ```
 

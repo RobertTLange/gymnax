@@ -80,14 +80,14 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
     ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
-        rng_urchin, rng_xy, rng_goal = jax.random.split(key, 3)
+        key_urchin, key_xy, key_goal = jax.random.split(key, 3)
 
         urchin_xys = jax.random.uniform(
-            rng_urchin, minval=-1, maxval=1, shape=(self.num_urchins, 2)
+            key_urchin, minval=-1, maxval=1, shape=(self.num_urchins, 2)
         )
-        xy = jax.random.uniform(rng_xy, minval=-1, maxval=1, shape=(2,))
+        xy = jax.random.uniform(key_xy, minval=-1, maxval=1, shape=(2,))
         xy_vel = jnp.zeros((2,))
-        goal_xy = jax.random.uniform(rng_goal, minval=-1, maxval=1, shape=(2,))
+        goal_xy = jax.random.uniform(key_goal, minval=-1, maxval=1, shape=(2,))
 
         state = EnvState(
             urchin_xys=urchin_xys,

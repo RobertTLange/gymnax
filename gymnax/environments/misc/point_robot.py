@@ -85,13 +85,13 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
     ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
-        rng_goal, rng_pos = jax.random.split(key)
-        angle = jax.random.uniform(rng_goal, minval=0, maxval=jnp.pi)
+        key_goal, key_pos = jax.random.split(key)
+        angle = jax.random.uniform(key_goal, minval=0, maxval=jnp.pi)
         xs = params.circle_radius * jnp.cos(angle)
         ys = params.circle_radius * jnp.sin(angle)
         goal = jnp.array([xs, ys])
         sampled_pos = sample_agent_position(
-            rng_pos, params.circle_radius, params.center_init
+            key_pos, params.circle_radius, params.center_init
         )
 
         state = EnvState(
@@ -192,9 +192,9 @@ def sample_agent_position(
     key: jax.Array, circle_radius: float, center_init: bool
 ) -> jax.Array:
     """Sample a random position in circle (or set position to center)."""
-    rng_radius, rng_angle = jax.random.split(key)
-    sampled_radius = jax.random.uniform(rng_radius, minval=0, maxval=circle_radius)
-    sampled_angle = jax.random.uniform(rng_angle, minval=0, maxval=jnp.pi)
+    key_radius, key_angle = jax.random.split(key)
+    sampled_radius = jax.random.uniform(key_radius, minval=0, maxval=circle_radius)
+    sampled_angle = jax.random.uniform(key_angle, minval=0, maxval=jnp.pi)
 
     pos = jax.lax.select(
         center_init,

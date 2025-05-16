@@ -5,7 +5,6 @@ Source:
 github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
@@ -22,7 +21,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     min_action: float = -1.0
     max_action: float = 1.0

@@ -27,7 +27,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
             env: Gymnax Environment instance
             params: If provided, gymnax EnvParams for environment (otherwise uses
               default)
-            seed: If provided, seed for JAX PRNG (otherwise picks 0)
+            seed: If provided, seed for JAX Pkey (otherwise picks 0)
         """
         super().__init__()
         self._env = copy.deepcopy(env)
@@ -57,7 +57,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         )
 
     def _seed(self, seed: int | None = None):
-        """Set RNG seed (or use 0)."""
+        """Set key seed (or use 0)."""
         self.key = jax.random.key(seed or 0)
 
     def step(
@@ -113,7 +113,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
             num_envs: Desired number of environments to run in parallel
             params: If provided, gymnax EnvParams for environment (otherwise uses
               default)
-            seed: If provided, seed for JAX PRNG (otherwise picks 0)
+            seed: If provided, seed for JAX Pkey (otherwise picks 0)
         """
         self._env = copy.deepcopy(env)
         self.num_envs = num_envs
@@ -156,10 +156,10 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         return utils.batch_space(self.single_observation_space, self.num_envs)
 
     def _seed(self, seed: int | None = None):
-        """Set RNG seed (or use 0)."""
+        """Set key seed (or use 0)."""
         self.key = jax.random.split(
             jax.random.key(seed or 0), self.num_envs
-        )  # 1 RNG per env
+        )  # 1 key per env
 
     def reset(
         self,

@@ -1,12 +1,12 @@
 """Wrappers for pure RL."""
 
-from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
@@ -60,7 +60,7 @@ class FlattenObservationWrapper(GymnaxWrapper):
         return obs, state, reward, done, info
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class LogEnvState:
     env_state: environment.EnvState
     episode_returns: float
@@ -95,7 +95,7 @@ class LogWrapper(GymnaxWrapper):
 
 
         Args:
-          key: PRNG key.
+          key: Pkey key.
           state: The current state of the environment.
           action: The action to take.
           params: The parameters of the environment.

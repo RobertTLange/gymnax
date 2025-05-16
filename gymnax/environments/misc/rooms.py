@@ -133,12 +133,12 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
     ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Reset both the agents position and the goal location
-        rng_goal, rng_pos = jax.random.split(key, 2)
-        goal_new = reset_goal(rng_goal, self.available_goals, params)
+        key_goal, key_pos = jax.random.split(key, 2)
+        goal_new = reset_goal(key_goal, self.available_goals, params)
         # Only use resampled position if specified in EnvParams
         goal = jax.lax.select(params.resample_goal_pos, goal_new, self.goal_fixed)
 
-        pos_new = reset_pos(rng_pos, self.coords, goal)
+        pos_new = reset_pos(key_pos, self.coords, goal)
         pos = jax.lax.select(params.resample_init_pos, pos_new, self.pos_fixed)
         state = EnvState(pos=pos, goal=goal, time=0)
         return self.get_obs(state), state
@@ -239,16 +239,16 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
         return fig, ax
 
 
-def reset_goal(rng: jax.Array, available_goals: jax.Array, _: EnvParams) -> jax.Array:
+def reset_goal(key: jax.Array, available_goals: jax.Array, _: EnvParams) -> jax.Array:
     """Reset the goal state/position in the environment."""
-    goal_index = jax.random.randint(rng, (), 0, available_goals.shape[0])
+    goal_index = jax.random.randint(key, (), 0, available_goals.shape[0])
     goal = available_goals[goal_index][:]
     return goal
 
 
-def reset_pos(rng: jax.Array, coords: jax.Array, goal: jax.Array) -> jax.Array:
+def reset_pos(key: jax.Array, coords: jax.Array, goal: jax.Array) -> jax.Array:
     """Reset the position of the agent."""
-    pos_index = jax.random.randint(rng, (), 0, coords.shape[0] - 1)
+    pos_index = jax.random.randint(key, (), 0, coords.shape[0] - 1)
     collision = jnp.logical_and(
         coords[pos_index][0] == goal[0], coords[pos_index][1] == goal[1]
     )

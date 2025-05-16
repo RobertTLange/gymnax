@@ -83,16 +83,16 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
     ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
-        rng_angle, rng_angle_v, rng_goal = jax.random.split(key, 3)
+        key_angle, key_angle_v, key_goal = jax.random.split(key, 3)
 
         angles = jax.random.uniform(
-            rng_angle, minval=-jnp.pi, maxval=jnp.pi, shape=(self.num_joints,)
+            key_angle, minval=-jnp.pi, maxval=jnp.pi, shape=(self.num_joints,)
         )
         angle_vels = jax.random.uniform(
-            rng_angle_v, minval=-1, maxval=1, shape=(self.num_joints,)
+            key_angle_v, minval=-1, maxval=1, shape=(self.num_joints,)
         )
         goal_xy = jax.random.uniform(
-            rng_goal,
+            key_goal,
             minval=-self.num_joints,
             maxval=self.num_joints,
             shape=(2,),

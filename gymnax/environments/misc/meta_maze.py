@@ -263,16 +263,16 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         )
 
 
-def reset_goal(rng: jax.Array, available_goals: jax.Array, _: EnvParams) -> jax.Array:
+def reset_goal(key: jax.Array, available_goals: jax.Array, _: EnvParams) -> jax.Array:
     """Reset the goal state/position in the environment."""
-    goal_index = jax.random.randint(rng, (), 0, available_goals.shape[0])
+    goal_index = jax.random.randint(key, (), 0, available_goals.shape[0])
     goal = available_goals[goal_index][:]
     return goal
 
 
-def reset_pos(rng: jax.Array, coords: jax.Array) -> jax.Array:
+def reset_pos(key: jax.Array, coords: jax.Array) -> jax.Array:
     """Reset the position of the agent."""
-    pos_index = jax.random.randint(rng, (), 0, coords.shape[0])
+    pos_index = jax.random.randint(key, (), 0, coords.shape[0])
     return coords[pos_index][:]
 
 

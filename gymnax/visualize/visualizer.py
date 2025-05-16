@@ -1,6 +1,5 @@
 """Visualizer for Gymnax environments."""
 
-import gym
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -62,8 +61,6 @@ class Visualizer:
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-            # Animations have to use older gym version and pyglet!
-            assert gym.__version__ == "0.19.0"
             self.im = vis_gym.init_gym(
                 self.ax, self.env, self.state_seq[0], self.env_params
             )
@@ -131,18 +128,18 @@ class Visualizer:
 
 
 if __name__ == "__main__":
-    rng = jax.random.key(0)
+    key = jax.random.key(0)
     env, env_params = gymnax.make("Pong-misc")
 
     state_seq, reward_seq = [], []
-    rng, rng_reset = jax.random.split(rng)
-    obs, env_state = env.reset(rng_reset, env_params)
+    key, key_reset = jax.random.split(key)
+    obs, env_state = env.reset(key_reset, env_params)
     while True:
         state_seq.append(env_state)
-        rng, rng_act, rng_step = jax.random.split(rng, 3)
-        action = env.action_space(env_params).sample(rng_act)
+        key, key_act, key_step = jax.random.split(key, 3)
+        action = env.action_space(env_params).sample(key_act)
         next_obs, next_env_state, reward, done, info = env.step(
-            rng_step, env_state, action, env_params
+            key_step, env_state, action, env_params
         )
         reward_seq.append(reward)
         if done:
