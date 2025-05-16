@@ -1,24 +1,24 @@
-"""Classic control environments."""
+"""Classic control environments in JAX.
 
-from gymnax.environments.classic_control import (
-    acrobot,
-    cartpole,
-    continuous_mountain_car,
-    mountain_car,
-    pendulum,
-)
+This module provides JAX implementations of classic control environments
+from OpenAI Gym, including:
+- Acrobot
+- CartPole
+- MountainCar
+- ContinuousMountainCar
+- Pendulum
+"""
 
-Acrobot = acrobot.Acrobot
-CartPole = cartpole.CartPole
-ContinuousMountainCar = continuous_mountain_car.ContinuousMountainCar
-MountainCar = mountain_car.MountainCar
-Pendulum = pendulum.Pendulum
-
+from .acrobot import Acrobot
+from .cartpole import CartPole
+from .continuous_mountain_car import ContinuousMountainCar
+from .mountain_car import MountainCar
+from .pendulum import Pendulum
 
 __all__ = [
-    "Pendulum",
+    "Acrobot",
     "CartPole",
     "MountainCar",
     "ContinuousMountainCar",
-    "Acrobot",
+    "Pendulum",
 ]

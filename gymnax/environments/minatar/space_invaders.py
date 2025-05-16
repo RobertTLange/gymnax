@@ -1,4 +1,4 @@
-"""JAX Compatible version of Space Invaders MinAtar environment.
+"""JAX implementation of Space Invaders MinAtar environment.
 
 
 Source:
@@ -22,29 +22,23 @@ ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
 - Actions are encoded as follows: ['n','l','r','f']
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     """State of the environment."""
 
     pos: int
-    f_bullet_map: chex.Array
-    e_bullet_map: chex.Array
-    alien_map: chex.Array
+    f_bullet_map: jax.Array
+    e_bullet_map: jax.Array
+    alien_map: jax.Array
     alien_dir: int
     enemy_move_interval: int
     alien_move_timer: int
@@ -56,7 +50,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     shot_cool_down: int = 5
     enemy_move_interval: int = 12
@@ -65,7 +59,7 @@ class EnvParams(environment.EnvParams):
 
 
 class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Space Invaders MinAtar environment."""
+    """JAX implementation of Space Invaders MinAtar environment."""
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -88,11 +82,11 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Resolve player action - fire, left, right.
         a = self.action_set[action]
@@ -135,16 +129,16 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
 
         info = {"discount": 1 - done}
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward.astype(jnp.float32),
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         state = EnvState(
             pos=5,
@@ -163,7 +157,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((10, 10, 6), dtype=bool)
         # Update cannon, aliens - left + right dir, friendly + enemy bullet
@@ -179,7 +173,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         obs = obs.at[:, :, 5].set(state.e_bullet_map)
         return obs.astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         return jnp.logical_or(done_steps, state.terminal)
@@ -223,7 +217,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         )
 
 
-def step_agent(action: jnp.ndarray, state: EnvState, params: EnvParams) -> EnvState:
+def step_agent(action: jax.Array, state: EnvState, params: EnvParams) -> EnvState:
     """Resolve player action - fire, left, right."""
     fire_cond = jnp.logical_and(action == 5, state.shot_timer == 0)
     left_cond, right_cond = (action == 1), (action == 3)
@@ -298,7 +292,7 @@ def step_aliens(state: EnvState) -> EnvState:
     )
 
 
-def step_shoot(state: EnvState, params: EnvParams) -> tuple[EnvState, jnp.ndarray]:
+def step_shoot(state: EnvState, params: EnvParams) -> tuple[EnvState, jax.Array]:
     """Update aliens - shooting check and calculate rewards."""
     reward = 0
     alien_shot_cond = state.alien_shot_timer == 0
@@ -335,8 +329,8 @@ def step_shoot(state: EnvState, params: EnvParams) -> tuple[EnvState, jnp.ndarra
 
 
 def get_nearest_alien(
-    pos: int, alien_map: chex.Array
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    pos: int, alien_map: jax.Array
+) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Find alien closest to player in manhattan distance -> shot target."""
     ids = jnp.array([jnp.abs(jnp.array([i for i in range(10)]) - pos)])
     search_order = jnp.argsort(ids).squeeze()

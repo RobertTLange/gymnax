@@ -20,8 +20,6 @@ from gymnax.environments.classic_control import (
 )
 from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
 
-# from gymnax.environments.minatar import seaquest
-
 
 def np_state_to_jax(env, env_name: str = "Pendulum-v1", get_jax: bool = False):
     """Helper that collects env state into dict for JAX `step`."""

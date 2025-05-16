@@ -1,36 +1,30 @@
-"""MNIST bandit environment."""
+"""JAX implementation of MNIST bandit environment."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 from gymnax.utils import load_mnist
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    correct_label: chex.Array
-    regret: chex.Array
+    correct_label: jax.Array
+    regret: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     optimal_return: int = 1
     max_steps_in_episode: int = 1
 
 
 class MNISTBandit(environment.Environment[EnvState, EnvParams]):
-    """MNIST bandit environment."""
+    """JAX implementation of MNIST bandit environment."""
 
     def __init__(self, fraction: float = 1.0):
         super().__init__()
@@ -48,14 +42,14 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         correct = action == state.correct_label
-        reward = lax.select(correct, 1.0, -1.0)
+        reward = jax.lax.select(correct, 1.0, -1.0)
         observation = jnp.zeros(shape=self.image_shape, dtype=jnp.float32)
         state = EnvState(
             correct_label=state.correct_label,
@@ -66,16 +60,16 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(observation),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(observation),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         idx = jax.random.randint(key, minval=0, maxval=self.num_data, shape=())
         image = self.images[idx].astype(jnp.float32) / 255
@@ -86,14 +80,10 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
         )
         return image, state
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Every step transition is terminal! No long term credit assignment!
         return jnp.array(True)
-
-    # def get_obs(self, state: EnvState, params=None) -> None:
-    #   """Return observation from raw state trafo."""
-    #   # Leave empty - not used here!
 
     @property
     def name(self) -> str:

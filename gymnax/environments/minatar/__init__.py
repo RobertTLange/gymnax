@@ -1,21 +1,20 @@
-"""Minatar environments."""
+"""Minatar environments in JAX.
 
-from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
+This module provides JAX implementations of MinAtar environments, including:
+- Asterix
+- Breakout
+- Freeway
+- Space Invaders
+"""
 
-# from gymnax.environments.minatar import seaquest
-
-
-MinAsterix = asterix.MinAsterix
-MinBreakout = breakout.MinBreakout
-MinFreeway = freeway.MinFreeway
-# MinSeaquest = seaquest.MinSeaquest
-MinSpaceInvaders = space_invaders.MinSpaceInvaders
-
+from .asterix import MinAsterix
+from .breakout import MinBreakout
+from .freeway import MinFreeway
+from .space_invaders import MinSpaceInvaders
 
 __all__ = [
     "MinAsterix",
     "MinBreakout",
     "MinFreeway",
-    # "MinSeaquest",
     "MinSpaceInvaders",
 ]

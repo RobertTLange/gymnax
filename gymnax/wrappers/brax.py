@@ -1,16 +1,9 @@
 """Wrappers for Gymnax environments to be compatible with Brax."""
 
-from typing import TYPE_CHECKING
-
-import chex
 import jax
 
 from gymnax.environments import environment
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    pass
-else:
-    pass
 try:
     from brax import envs
     from brax.envs import State
@@ -33,34 +26,34 @@ class GymnaxToBraxWrapper(envs.Env):
         self.env = env
 
     def reset(
-        self, rng: chex.PRNGKey, params: environment.EnvParams | None = None
+        self, key: jax.Array, params: environment.EnvParams | None = None
     ):  # -> State:
-        """Reset, return brax State. Save rng and params in info field for step."""
+        """Reset, return brax State. Save key and params in info field for step."""
         if params is None:
             params = self.env.default_params
-        obs, env_state = self.env.reset(rng, params)
+        obs, env_state = self.env.reset(key, params)
         return State(
             pipeline_state=env_state,
             obs=obs,
             reward=jax.numpy.array(0.0),
             done=jax.numpy.array(False),
             metrics={},
-            info={"_rng": jax.random.split(rng)[0], "_env_params": params},
+            info={"_key": jax.random.split(key)[0], "_env_params": params},
         )
 
     def step(
         self,
         state,  #: State,
-        action,  #: Union[chex.Scalar, chex.Array],
+        action,  #: Union[jax.Array, jax.Array],
         params=None,  #: Optional[environment.EnvParams] = None,
     ):  # -> State:
-        """Step brax State. Update stored rng and params in info field."""
-        rng, step_rng = jax.random.split(state.info["_rng"])
+        """Step brax State. Update stored key and params in info field."""
+        key, step_key = jax.random.split(state.info["_key"])
         if params is None:
             params = self.env.default_params
-        state.info.update(_rng=rng, _env_params=params)
+        state.info.update(_key=key, _env_params=params)
         o, env_state, r, d, _ = self.env.step(
-            step_rng, state.pipeline_state, action, params
+            step_key, state.pipeline_state, action, params
         )
         return state.replace(
             pipeline_state=env_state,

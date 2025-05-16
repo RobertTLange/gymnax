@@ -1,21 +1,15 @@
-"""DeepSea bsuite environment."""
+"""JAX implementation of DeepSea bsuite environment."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     row: int
     column: int
@@ -23,11 +17,11 @@ class EnvState(environment.EnvState):
     total_bad_episodes: int
     denoised_return: int
     optimal_return: float
-    action_mapping: chex.Array
+    action_mapping: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     deterministic: bool = True
     sample_action_map: bool = False
@@ -37,7 +31,7 @@ class EnvParams(environment.EnvParams):
 
 
 class DeepSea(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of DeepSea bsuite environment.
+    """JAX implementation of DeepSea bsuite environment.
 
 
     Source:
@@ -56,17 +50,17 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Pull out randomness for easier testing
-        rng_reward, rng_trans = jax.random.split(key)
-        rand_reward = jax.random.normal(rng_reward, shape=())
+        key_reward, key_trans = jax.random.split(key)
+        rand_reward = jax.random.normal(key_reward, shape=())
         rand_trans_cond = (
-            jax.random.uniform(rng_trans, shape=(), minval=0, maxval=1) > 1 / self.size
+            jax.random.uniform(key_trans, shape=(), minval=0, maxval=1) > 1 / self.size
         )
 
         action_right = action == state.action_mapping[state.row, state.column]
@@ -94,16 +88,16 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         )
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         optimal_no_cost = (1 - params.deterministic) * (1 - 1 / self.size) ** (
             self.size - 1
@@ -139,14 +133,14 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs_end = jnp.zeros(shape=(self.size, self.size), dtype=jnp.float32)
         end_cond = state.row >= self.size
         obs_upd = obs_end.at[state.row, state.column].set(1.0)
         return jax.lax.select(end_cond, obs_end, obs_upd)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_row = state.row == self.size
         done_steps = state.time >= params.max_steps_in_episode
@@ -195,11 +189,11 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 def step_reward(
     state: EnvState,
     action_right: bool,
-    right_cond: jnp.ndarray,
-    rand_reward: jnp.ndarray,
+    right_cond: jax.Array,
+    rand_reward: jax.Array,
     size: int,
     params: EnvParams,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
+) -> tuple[jax.Array, jax.Array]:
     """Get the reward for the selected action."""
     reward = 0.0
     # Reward calculation.
@@ -217,8 +211,8 @@ def step_reward(
 
 
 def step_transition(
-    state: EnvState, action_right: bool, right_cond: jnp.ndarray, size: int
-) -> tuple[jnp.ndarray, int, jnp.ndarray]:
+    state: EnvState, action_right: bool, right_cond: jax.Array, size: int
+) -> tuple[jax.Array, int, jax.Array]:
     """Get the state transition for the selected action."""
     # Standard right path transition
     column = jax.lax.select(

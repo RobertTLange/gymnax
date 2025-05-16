@@ -1,4 +1,4 @@
-"""A JAX-version of OpenAI's infamous env.make(env_name)."""
+"""A JAX implementation of OpenAI's infamous env.make(env_name)."""
 
 from gymnax.environments.bsuite import (
     bandit,
@@ -107,7 +107,6 @@ def make(env_id: str, **env_kwargs):
     else:
         raise ValueError("Environment ID is not registered.")
 
-    # Create a jax PRNG key for random seed control
     return env, env.default_params
 
 

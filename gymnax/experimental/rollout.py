@@ -1,6 +1,6 @@
 """Rollout wrapper for gymnax environments."""
 
-import functools
+from functools import partial
 from typing import Any
 
 import jax
@@ -36,37 +36,37 @@ class RolloutWrapper:
         else:
             self.num_env_steps = num_env_steps
 
-    @functools.partial(jax.jit, static_argnums=(0,))
-    def population_rollout(self, rng_eval, policy_params):
+    @partial(jax.jit, static_argnames=("self",))
+    def population_rollout(self, key_eval, policy_params):
         """Reshape parameter vector and evaluate the generation."""
-        # Evaluate population of nets on gymnax task - vmap over rng & params
+        # Evaluate population of nets on gymnax task - vmap over key & params
         pop_rollout = jax.vmap(self.batch_rollout, in_axes=(None, 0))
-        return pop_rollout(rng_eval, policy_params)
+        return pop_rollout(key_eval, policy_params)
 
-    @functools.partial(jax.jit, static_argnums=(0,))
-    def batch_rollout(self, rng_eval, policy_params):
+    @partial(jax.jit, static_argnames=("self",))
+    def batch_rollout(self, key_eval, policy_params):
         """Evaluate a generation of networks on RL/Supervised/etc. task."""
         # vmap over different MC fitness evaluations for single network
         batch_rollout = jax.vmap(self.single_rollout, in_axes=(0, None))
-        return batch_rollout(rng_eval, policy_params)
+        return batch_rollout(key_eval, policy_params)
 
-    @functools.partial(jax.jit, static_argnums=(0,))
-    def single_rollout(self, rng_input, policy_params):
+    @partial(jax.jit, static_argnames=("self",))
+    def single_rollout(self, key_input, policy_params):
         """Rollout a pendulum episode with lax.scan."""
         # Reset the environment
-        rng_reset, rng_episode = jax.random.split(rng_input)
-        obs, state = self.env.reset(rng_reset, self.env_params)
+        key_reset, key_episode = jax.random.split(key_input)
+        obs, state = self.env.reset(key_reset, self.env_params)
 
         def policy_step(state_input, _):
             """lax.scan compatible step transition in jax env."""
-            obs, state, policy_params, rng, cum_reward, valid_mask = state_input
-            rng, rng_step, rng_net = jax.random.split(rng, 3)
+            obs, state, policy_params, key, cum_reward, valid_mask = state_input
+            key, key_step, key_net = jax.random.split(key, 3)
             if self.model_forward is not None:
-                action = self.model_forward(policy_params, obs, rng_net)
+                action = self.model_forward(policy_params, obs, key_net)
             else:
-                action = self.env.action_space(self.env_params).sample(rng_net)
+                action = self.env.action_space(self.env_params).sample(key_net)
             next_obs, next_state, reward, done, _ = self.env.step(
-                rng_step, state, action, self.env_params
+                key_step, state, action, self.env_params
             )
             new_cum_reward = cum_reward + reward * valid_mask
             new_valid_mask = valid_mask * (1 - done)
@@ -74,7 +74,7 @@ class RolloutWrapper:
                 next_obs,
                 next_state,
                 policy_params,
-                rng,
+                key,
                 new_cum_reward,
                 new_valid_mask,
             ]
@@ -88,7 +88,7 @@ class RolloutWrapper:
                 obs,
                 state,
                 policy_params,
-                rng_episode,
+                key_episode,
                 jnp.array([0.0]),
                 jnp.array([1.0]),
             ],
@@ -103,6 +103,6 @@ class RolloutWrapper:
     @property
     def input_shape(self):
         """Get the shape of the observation."""
-        rng = jax.random.key(0)
-        obs, _ = self.env.reset(rng, self.env_params)
+        key = jax.random.key(0)
+        obs, _ = self.env.reset(key, self.env_params)
         return obs.shape

@@ -1,4 +1,4 @@
-"""JAX compatible version of Freeway MinAtar environment.
+"""JAX implementation of Freeway MinAtar environment.
 
 
 Source:
@@ -20,38 +20,32 @@ ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
 - Actions are encoded as follows: ['n', 'u', 'd']
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     pos: int
-    cars: chex.Array
+    cars: jax.Array
     move_timer: int
     time: int
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     player_speed: int = 3
     max_steps_in_episode: int = 2500
 
 
 class MinFreeway(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Freeway MinAtar environment."""
+    """JAX implementation of Freeway MinAtar environment."""
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -74,11 +68,11 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # 1. Update position of agent only if timer condition is met!
         a = self.action_set[action]
@@ -102,16 +96,16 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         state = state.replace(terminal=done)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward.astype(jnp.float32),
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample the initial speeds and directions of the cars
         key_speed, key_dirs = jax.random.split(key)
@@ -126,7 +120,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the chicken agent, cars, and trails
@@ -151,7 +145,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
             obs = obs.at[car[1], back_x, trail_channel].set(1)
         return obs.astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         return jnp.array(done_steps)
@@ -188,8 +182,8 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
 
 
 def step_agent(
-    action: jnp.ndarray, state: EnvState, params: EnvParams
-) -> tuple[EnvState, jnp.ndarray, bool]:
+    action: jax.Array, state: EnvState, params: EnvParams
+) -> tuple[EnvState, jax.Array, bool]:
     """Perform 1st part of step transition for agent."""
     cond_up = jnp.logical_and(action == 2, state.move_timer == 0)
     cond_down = jnp.logical_and(action == 4, state.move_timer == 0)
@@ -259,11 +253,11 @@ def step_cars(state: EnvState) -> EnvState:
 
 
 def randomize_cars(
-    speeds: chex.Array,
-    directions: chex.Array,
-    old_cars: chex.Array,
+    speeds: jax.Array,
+    directions: jax.Array,
+    old_cars: jax.Array,
     initialize: bool,
-) -> chex.Array:
+) -> jax.Array:
     """Randomize car speeds & directions. Reset position if initialize."""
     speeds_new = directions * speeds
     new_cars = jnp.zeros((8, 4), dtype=int)

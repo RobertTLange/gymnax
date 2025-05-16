@@ -11,7 +11,7 @@ class MLP(nn.Module):
     """Simple MLP Wrapper with flexible output head."""
 
     @nn.compact
-    def __call__(self, x, rng):
+    def __call__(self, x, key):
         # Loop over dense layers in forward pass
         x = nn.Dense(features=8)(x)
         x = nn.relu(x)
@@ -22,25 +22,25 @@ class MLP(nn.Module):
 
 def test_rollout():
     """Test rollout wrapper."""
-    rng = jax.random.key(0)
+    key = jax.random.key(0)
     model = MLP()
     pholder = jnp.zeros((3,))
     policy_params = model.init(
-        rng,
+        key,
         x=pholder,
-        rng=rng,
+        key=key,
     )
     manager = rollout.RolloutWrapper(
         model.apply, env_name="Pendulum-v1", num_env_steps=200
     )
 
     # Test simple single episode rollout
-    obs, _, _, _, _, _ = manager.single_rollout(rng, policy_params)
+    obs, _, _, _, _, _ = manager.single_rollout(key, policy_params)
     assert obs.shape == (200, 3)
 
     # Test multiple rollouts for same network (different random numbers)
-    rng_batch = jax.random.split(rng, 10)
-    obs, _, _, _, _, _ = manager.batch_rollout(rng_batch, policy_params)
+    key_batch = jax.random.split(key, 10)
+    obs, _, _, _, _, _ = manager.batch_rollout(key_batch, policy_params)
     assert obs.shape == (10, 200, 3)
 
     # Test multiple rollouts for different networks
@@ -56,5 +56,5 @@ def test_rollout():
         _,
         _,
         _,
-    ) = manager.population_rollout(rng_batch, batch_params)
+    ) = manager.population_rollout(key_batch, batch_params)
     assert obs.shape == (5, 10, 200, 3)

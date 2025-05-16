@@ -1,25 +1,24 @@
-"""Miscellaneous environments."""
+"""Miscellaneous environments in JAX.
 
-from gymnax.environments.misc import (
-    bernoulli_bandit,
-    gaussian_bandit,
-    meta_maze,
-    point_robot,
-    pong,
-    reacher,
-    rooms,
-    swimmer,
-)
+This module provides JAX implementations of miscellaneous environments, including:
+- BernoulliBandit
+- GaussianBandit
+- FourRooms
+- MetaMaze
+- PointRobot
+- Reacher
+- Swimmer
+- Pong
+"""
 
-BernoulliBandit = bernoulli_bandit.BernoulliBandit
-GaussianBandit = gaussian_bandit.GaussianBandit
-MetaMaze = meta_maze.MetaMaze
-PointRobot = point_robot.PointRobot
-Pong = pong.Pong
-Reacher = reacher.Reacher
-Swimmer = swimmer.Swimmer
-FourRooms = rooms.FourRooms
-
+from .bernoulli_bandit import BernoulliBandit
+from .gaussian_bandit import GaussianBandit
+from .meta_maze import MetaMaze
+from .point_robot import PointRobot
+from .pong import Pong
+from .reacher import Reacher
+from .rooms import FourRooms
+from .swimmer import Swimmer
 
 __all__ = [
     "BernoulliBandit",

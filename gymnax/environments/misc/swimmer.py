@@ -1,37 +1,31 @@
-"""Swimmer environment."""
+"""JAX implementation of Swimmer environment."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    urchin_xys: chex.Array
-    xy: chex.Array
-    xy_vel: chex.Array
-    goal_xy: chex.Array
+    urchin_xys: jax.Array
+    xy: jax.Array
+    xy_vel: jax.Array
+    goal_xy: jax.Array
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     dt: float = 0.05
     max_steps_in_episode: int = 500  # Steps in an episode (constant goal)
 
 
 class Swimmer(environment.Environment[EnvState, EnvParams]):
-    """Swimmer environment.
+    """JAX implementation of Swimmer environment.
 
 
     Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py
@@ -48,11 +42,11 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         xy_vel = state.xy_vel + params.dt * action
         xy = state.xy + params.dt * xy_vel
@@ -74,26 +68,26 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
 
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state, params)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state, params)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
-        rng_urchin, rng_xy, rng_goal = jax.random.split(key, 3)
+        key_urchin, key_xy, key_goal = jax.random.split(key, 3)
 
         urchin_xys = jax.random.uniform(
-            rng_urchin, minval=-1, maxval=1, shape=(self.num_urchins, 2)
+            key_urchin, minval=-1, maxval=1, shape=(self.num_urchins, 2)
         )
-        xy = jax.random.uniform(rng_xy, minval=-1, maxval=1, shape=(2,))
+        xy = jax.random.uniform(key_xy, minval=-1, maxval=1, shape=(2,))
         xy_vel = jnp.zeros((2,))
-        goal_xy = jax.random.uniform(rng_goal, minval=-1, maxval=1, shape=(2,))
+        goal_xy = jax.random.uniform(key_goal, minval=-1, maxval=1, shape=(2,))
 
         state = EnvState(
             urchin_xys=urchin_xys,
@@ -104,7 +98,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
         """Concatenate reward, one-hot action and time stamp."""
         ob = (
             jnp.reshape(state.urchin_xys, (-1, 2)),
@@ -115,7 +109,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
         ob = jnp.concatenate(ob, axis=0)
         return jnp.reshape(ob, (-1,))
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode

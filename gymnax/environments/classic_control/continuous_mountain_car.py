@@ -1,33 +1,27 @@
-"""JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment.
+"""JAX implementation of MountainCarContinuous-v0 OpenAI gym environment.
 
 
 Source:
 github.com/openai/gym/blob/master/gym/envs/classic_control/continuous_mountain_car.py
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    position: jnp.ndarray
-    velocity: jnp.ndarray
+    position: jax.Array
+    velocity: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     min_action: float = -1.0
     max_action: float = 1.0
@@ -51,11 +45,11 @@ class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         force = jnp.clip(action, params.min_action, params.max_action)
         velocity = (
@@ -81,26 +75,26 @@ class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
         )
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(), minval=-0.6, maxval=-0.4)
         state = EnvState(position=init_state, velocity=jnp.array(0.0), time=0)
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         return jnp.array([state.position, state.velocity]).squeeze()
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done1 = (state.position >= params.goal_position) * (
             state.velocity >= params.goal_velocity

@@ -1,4 +1,4 @@
-"""JAX Compatible version of Acrobot-v1 OpenAI gym environment.
+"""JAX implementation of Acrobot-v1 OpenAI gym environment.
 
 
 Source: github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py
@@ -6,35 +6,29 @@ Note that we only implement the default 'book' version.
 """
 
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    joint_angle1: jnp.ndarray
-    joint_angle2: jnp.ndarray
-    velocity_1: jnp.ndarray
-    velocity_2: jnp.ndarray
+    joint_angle1: jax.Array
+    joint_angle2: jax.Array
+    velocity_1: jax.Array
+    velocity_2: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     """Environment parameters for Acrobot."""
 
-    available_torque: chex.Array = dataclasses.field(
+    available_torque: jax.Array = dataclasses.field(
         default_factory=lambda: jnp.array([-1.0, 0.0, +1.0])
     )
     dt: float = 0.2
@@ -52,7 +46,7 @@ class EnvParams(environment.EnvParams):
 
 
 class Acrobot(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Acrobot-v1 OpenAI gym environment."""
+    """JAX implementation of Acrobot-v1 OpenAI gym environment."""
 
     def __init__(self):
         super().__init__()
@@ -65,11 +59,11 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         torque = params.available_torque[action]
         # Add noise to force action - always sample - conditionals in JAX
@@ -110,16 +104,16 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
 
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         init_state = jax.random.uniform(key, shape=(4,), minval=-0.1, maxval=0.1)
         state = EnvState(
@@ -131,7 +125,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         return jnp.array(
             [
@@ -144,7 +138,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
             ]
         )
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check termination and construct updated state
         done_angle = (
@@ -208,7 +202,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
         )
 
 
-def dsdt(s_augmented: chex.Array, _: float, params: EnvParams) -> chex.Array:
+def dsdt(s_augmented: jax.Array, _: float, params: EnvParams) -> jax.Array:
     """Compute time derivative of the state change - Use for ODE int."""
     m1, m2 = params.link_mass_1, params.link_mass_2
     l1 = params.link_length_1
@@ -234,7 +228,7 @@ def dsdt(s_augmented: chex.Array, _: float, params: EnvParams) -> chex.Array:
     return jnp.array([dtheta1, dtheta2, ddtheta1, ddtheta2, 0.0])
 
 
-def wrap(x: float, m: float, big_m: float) -> jnp.ndarray:
+def wrap(x: float, m: float, big_m: float) -> jax.Array:
     """For example, m = -180, M = 180 (degrees), x = 360 --> returns 0."""
     diff = big_m - m
     go_up = x < m  # Wrap if x is outside the left bound
@@ -249,7 +243,7 @@ def wrap(x: float, m: float, big_m: float) -> jnp.ndarray:
     return x_out
 
 
-def rk4(y0: chex.Array, params: EnvParams):
+def rk4(y0: jax.Array, params: EnvParams):
     """Runge-Kutta integration of ODE - Difference to OpenAI: Only 1 step!"""
     dt2 = params.dt / 2.0
     k1 = dsdt(y0, 0, params)

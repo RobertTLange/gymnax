@@ -1,23 +1,22 @@
-"""Bsuite environments."""
+"""Bsuite environments in JAX.
 
-from gymnax.environments.bsuite import (
-    bandit,
-    catch,
-    deep_sea,
-    discounting_chain,
-    memory_chain,
-    mnist,
-    umbrella_chain,
-)
+This module provides JAX implementations of bsuite environments, including:
+- Catch
+- DeepSea
+- DiscountingChain
+- MemoryChain
+- UmbrellaChain
+- MNISTBandit
+- SimpleBandit
+"""
 
-SimpleBandit = bandit.SimpleBandit
-Catch = catch.Catch
-DeepSea = deep_sea.DeepSea
-DiscountingChain = discounting_chain.DiscountingChain
-MemoryChain = memory_chain.MemoryChain
-MNISTBandit = mnist.MNISTBandit
-UmbrellaChain = umbrella_chain.UmbrellaChain
-
+from .bandit import SimpleBandit
+from .catch import Catch
+from .deep_sea import DeepSea
+from .discounting_chain import DiscountingChain
+from .memory_chain import MemoryChain
+from .mnist import MNISTBandit
+from .umbrella_chain import UmbrellaChain
 
 __all__ = [
     "Catch",

@@ -1,28 +1,23 @@
 """Utility wrapper to port gymnax env to evoJAX tasks."""
 
-from typing import TYPE_CHECKING
-
-import chex
 import jax
 
 import gymnax
 from gymnax.environments import environment
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 try:
     from evojax.task.base import TaskState, VectorizedTask
 except Exception as exc:
     raise ImportError("You need to additionally install EvoJAX.") from exc
 
+from flax import struct
 
-@dataclass(frozen=True)
+
+@struct.dataclass
 class GymState(TaskState):
     state: environment.EnvState
-    obs: chex.Array
-    rng: chex.PRNGKey
+    obs: jax.Array
+    key: jax.Array
 
 
 class GymnaxToEvoJaxTask(VectorizedTask):
@@ -37,28 +32,28 @@ class GymnaxToEvoJaxTask(VectorizedTask):
         self.act_shape = env.num_actions
         self.num_actions = env.num_actions
 
-        def reset_fn(key: chex.PRNGKey) -> GymState:
+        def reset_fn(key: jax.Array) -> GymState:
             key_re, key_ep = jax.random.split(key)
             obs, state = env.reset(key_re, env_params)
-            state = GymState(state=state, obs=obs, rng=key_ep)
+            state = GymState(state=state, obs=obs, key=key_ep)
             return state
 
         self._reset_fn = jax.jit(jax.vmap(reset_fn))
 
         def step_fn(
-            state: GymState, action: chex.Array
-        ) -> tuple[GymState, chex.Array, chex.Array]:
-            key_st, key_ep = jax.random.split(state.rng)
+            state: GymState, action: jax.Array
+        ) -> tuple[GymState, jax.Array, jax.Array]:
+            key_st, key_ep = jax.random.split(state.key)
             obs, env_state, reward, done, _ = env.step(
                 key_st, state.state, action, env_params
             )
-            state = state.replace(rng=key_ep, state=env_state, obs=obs)
+            state = state.replace(key=key_ep, state=env_state, obs=obs)
             return state, reward, done
 
         self._step_fn = jax.jit(jax.vmap(step_fn))
 
-    def reset(self, key: chex.PRNGKey) -> GymState:
+    def reset(self, key: jax.Array) -> GymState:
         return self._reset_fn(key)
 
-    def step(self, state, action):  # -> Tuple[GymState, chex.Array, chex.Array]:
+    def step(self, state, action):  # -> Tuple[GymState, jax.Array, jax.Array]:
         return self._step_fn(state, action)

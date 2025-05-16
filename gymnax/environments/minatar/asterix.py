@@ -1,4 +1,4 @@
-"""JAX compatible version of Asterix MinAtar environment.
+"""JAX implementation of Asterix MinAtar environment.
 
 
 Source:
@@ -17,22 +17,16 @@ ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
 - Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     """State of the environment."""
 
@@ -45,12 +39,12 @@ class EnvState(environment.EnvState):
     move_timer: int
     ramp_timer: int
     ramp_index: int
-    entities: chex.Array
+    entities: jax.Array
     time: int
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     ramping: bool = True
     ramp_interval: int = 100
@@ -61,7 +55,7 @@ class EnvParams(environment.EnvParams):
 
 
 class MinAsterix(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Asterix MinAtar environment."""
+    """JAX implementation of Asterix MinAtar environment."""
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -84,21 +78,21 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Spawn enemy if timer up - sample at each step & select based on timer
         spawn_entities_now = state.spawn_timer == 0
         entity, slot = spawn_entity(key, state)
-        entities = lax.select(
+        entities = jax.lax.select(
             spawn_entities_now,
             state.entities.at[slot].set(entity),
             state.entities,
         )
-        spawn_timer = lax.select(
+        spawn_timer = jax.lax.select(
             spawn_entities_now, state.spawn_speed, state.spawn_timer
         )
         state = state.replace(entities=entities, spawn_timer=spawn_timer)
@@ -118,16 +112,16 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward.astype(jnp.float32),
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         state = EnvState(
             player_x=5,
@@ -145,7 +139,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         # Add a 5th channel to help with not used entities
         obs = jnp.zeros((10, 10, 5), dtype=bool)
@@ -165,7 +159,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
             obs = obs.at[x[1], back_x, c_eff].set(leave_trail)
         return obs[:, :, :4].astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         return jnp.logical_or(done_steps, state.terminal)
@@ -208,7 +202,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
         )
 
 
-def step_agent(state: EnvState, action: jnp.ndarray) -> EnvState:
+def step_agent(state: EnvState, action: jax.Array) -> EnvState:
     """Update the position of the agent."""
     # Resolve player action via implicit conditional updates of coordinates
     player_x = (
@@ -225,7 +219,7 @@ def step_agent(state: EnvState, action: jnp.ndarray) -> EnvState:
     return state.replace(player_x=player_x, player_y=player_y)
 
 
-def spawn_entity(key: chex.PRNGKey, state: EnvState) -> tuple[chex.Array, jnp.ndarray]:
+def spawn_entity(key: jax.Array, state: EnvState) -> tuple[jax.Array, jax.Array]:
     """Spawn new enemy or treasure at random location with random direction."""
     key_lr, key_gold, key_slot = jax.random.split(key, 3)
     lr = jax.random.choice(key_lr, jnp.array([1, 0]))
@@ -248,8 +242,8 @@ def spawn_entity(key: chex.PRNGKey, state: EnvState) -> tuple[chex.Array, jnp.nd
 
 
 def while_sample_slots(
-    key: chex.PRNGKey, state_entities: chex.Array
-) -> tuple[jnp.ndarray, jnp.ndarray]:
+    key: jax.Array, state_entities: jax.Array
+) -> tuple[jax.Array, jax.Array]:
     """Go through random order of slots until slot is found that is free."""
     init_val = jnp.array([0, 0])
     # Sample random order of slot entries to go through - hack around jnp.where
@@ -277,7 +271,7 @@ def while_sample_slots(
 
 def step_entities(
     state: EnvState,
-) -> tuple[EnvState, jnp.ndarray, bool]:
+) -> tuple[EnvState, jax.Array, bool]:
     """Update positions of the entities and return reward, done."""
     done, reward = 0, jnp.array(0)
     # Loop over entities and check for collisions - either gold or enemy

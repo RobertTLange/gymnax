@@ -1,32 +1,26 @@
-"""Point Robot environment."""
+"""JAX implementation of Point Robot environment."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    last_action: chex.Array
-    last_reward: jnp.ndarray
-    pos: chex.Array
-    goal: chex.Array
+    last_action: jax.Array
+    last_reward: jax.Array
+    pos: jax.Array
+    goal: jax.Array
     goals_reached: int
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     max_force: float = 0.1  # Max action (+/-)
     circle_radius: float = 1.0  # Radius of semi-circle
@@ -38,7 +32,7 @@ class EnvParams(environment.EnvParams):
 
 
 class PointRobot(environment.Environment[EnvState, EnvParams]):
-    """2D Semi-Circle Point Robot environment similar to Dorfman et al.
+    """JAX implementation of 2D Semi-Circle Point Robot environment as in Dorfman et al.
 
 
     2021 https://openreview.net/pdf?id=IBdEfhLveS
@@ -51,11 +45,11 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         a = jnp.clip(action, -params.max_force, params.max_force)
         pos = state.pos + a
@@ -79,25 +73,25 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
 
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state, params)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state, params)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
-        rng_goal, rng_pos = jax.random.split(key)
-        angle = jax.random.uniform(rng_goal, minval=0, maxval=jnp.pi)
+        key_goal, key_pos = jax.random.split(key)
+        angle = jax.random.uniform(key_goal, minval=0, maxval=jnp.pi)
         xs = params.circle_radius * jnp.cos(angle)
         ys = params.circle_radius * jnp.sin(angle)
         goal = jnp.array([xs, ys])
         sampled_pos = sample_agent_position(
-            rng_pos, params.circle_radius, params.center_init
+            key_pos, params.circle_radius, params.center_init
         )
 
         state = EnvState(
@@ -110,14 +104,14 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
         """Concatenate reward, one-hot action and time stamp."""
         time_rep = jax.lax.select(
             params.normalize_time, time_normalization(state.time), state.time
         )
         return jnp.hstack([state.pos, state.last_reward, state.last_action, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
@@ -195,12 +189,12 @@ def time_normalization(
 
 
 def sample_agent_position(
-    key: chex.PRNGKey, circle_radius: float, center_init: bool
-) -> chex.Array:
+    key: jax.Array, circle_radius: float, center_init: bool
+) -> jax.Array:
     """Sample a random position in circle (or set position to center)."""
-    rng_radius, rng_angle = jax.random.split(key)
-    sampled_radius = jax.random.uniform(rng_radius, minval=0, maxval=circle_radius)
-    sampled_angle = jax.random.uniform(rng_angle, minval=0, maxval=jnp.pi)
+    key_radius, key_angle = jax.random.split(key)
+    sampled_radius = jax.random.uniform(key_radius, minval=0, maxval=circle_radius)
+    sampled_angle = jax.random.uniform(key_angle, minval=0, maxval=jnp.pi)
 
     pos = jax.lax.select(
         center_init,

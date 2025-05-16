@@ -1,4 +1,4 @@
-"""JAX compatible version of DiscountingChain bsuite environment.
+"""JAX implementation of DiscountingChain bsuite environment.
 
 
 Source:
@@ -6,30 +6,25 @@ github.com/deepmind/bsuite/blob/master/bsuite/environments/discounting_chain.py.
 """
 
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
+import jax
 import jax.numpy as jnp
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    rewards: chex.Array
-    context: jnp.ndarray
+    rewards: jax.Array
+    context: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
-    reward_timestep: chex.Array = dataclasses.field(
+    reward_timestep: jax.Array = dataclasses.field(
         default_factory=lambda: jnp.array([1, 3, 10, 30, 100])
     )
     optimal_return: float = 1.1
@@ -37,7 +32,7 @@ class EnvParams(environment.EnvParams):
 
 
 class DiscountingChain(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of DiscountingChain bsuite environment."""
+    """JAX implementation of DiscountingChain bsuite environment."""
 
     def __init__(self, n_actions: int = 5, mapping_seed: int = 0):
         super().__init__()
@@ -51,18 +46,18 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         state = EnvState(
             rewards=state.rewards,
-            context=lax.select(state.time == 0, action, state.context),
+            context=jax.lax.select(state.time == 0, action, state.context),
             time=state.time + 1,
         )
-        reward = lax.select(
+        reward = jax.lax.select(
             state.time == params.reward_timestep[state.context],
             state.rewards[state.context],
             0.0,
@@ -72,16 +67,16 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state, params)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state, params)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Setup reward fct from mapping seed - random sampling outside of env
         reward = (
@@ -90,7 +85,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
         state = EnvState(rewards=reward, context=jnp.array(-1), time=0)
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(shape=(2,), dtype=jnp.float32)
         obs = obs.at[0].set(state.context)
@@ -99,7 +94,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
         )
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done = state.time >= params.max_steps_in_episode
         return jnp.array(done)

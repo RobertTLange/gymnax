@@ -1,36 +1,30 @@
-"""JAX Compatible version of Catch bsuite environment.
+"""JAX implementation of Catch bsuite environment.
 
 
 Source: github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from jax import lax
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
-
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    ball_x: chex.Array
-    ball_y: chex.Array
+    ball_x: jax.Array
+    ball_y: jax.Array
     paddle_x: int
     paddle_y: int
     prev_done: bool
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 1000
 
@@ -50,11 +44,11 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Sample new init state each step & use if there was a reset!
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
@@ -90,16 +84,16 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         # Check number of steps in episode termination condition
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
             key, self.rows, self.columns
@@ -115,14 +109,14 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((self.rows, self.columns))
         obs = obs.at[state.ball_y, state.ball_x].set(1.0)
         obs = obs.at[state.paddle_y, state.paddle_x].set(1.0)
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_loose = state.ball_y == self.rows - 1
         done_steps = state.time >= params.max_steps_in_episode
@@ -185,8 +179,8 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
 
 def sample_init_state(
-    key: chex.PRNGKey, rows: int, columns: int
-) -> tuple[jnp.ndarray, jnp.ndarray, int, int]:
+    key: jax.Array, rows: int, columns: int
+) -> tuple[jax.Array, jax.Array, int, int]:
     """Sample a new initial state."""
     ball_x = jax.random.randint(key, shape=(), minval=0, maxval=columns)
     ball_y = 0
