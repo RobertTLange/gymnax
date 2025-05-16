@@ -6,23 +6,23 @@ github.com/deepmind/bsuite/blob/master/bsuite/environments/discounting_chain.py.
 """
 
 import dataclasses
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     rewards: jax.Array
     context: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     reward_timestep: jax.Array = dataclasses.field(
         default_factory=lambda: jnp.array([1, 3, 10, 30, 100])

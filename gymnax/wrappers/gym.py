@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 import gymnasium as gym
-import jax.random
+import jax
 from gymnasium import core
 from gymnasium.vector import utils
 

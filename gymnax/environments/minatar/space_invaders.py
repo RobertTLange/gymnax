@@ -22,16 +22,16 @@ ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
 - Actions are encoded as follows: ['n','l','r','f']
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     """State of the environment."""
 
@@ -50,7 +50,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     shot_cool_down: int = 5
     enemy_move_interval: int = 12

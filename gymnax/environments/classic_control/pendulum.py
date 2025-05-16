@@ -4,16 +4,16 @@
 Source: github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     theta: jax.Array
     theta_dot: jax.Array
@@ -21,7 +21,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     max_speed: float = 8.0
     max_torque: float = 2.0

@@ -5,24 +5,24 @@ Source: Comparable to https://github.com/howardh/gym-fourrooms Since gymnax
 automatically resets env at done, we abstract different resets
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     pos: jax.Array
     goal: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     fail_prob: float = 1.0 / 3
     resample_init_pos: bool = False

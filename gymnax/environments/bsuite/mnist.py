@@ -1,23 +1,23 @@
 """JAX implementation of MNIST bandit environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 from gymnax.utils import load_mnist
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     correct_label: jax.Array
     regret: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     optimal_return: int = 1
     max_steps_in_episode: int = 1

@@ -1,15 +1,15 @@
 """JAX implementation of Swimmer environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     urchin_xys: jax.Array
     xy: jax.Array
@@ -18,7 +18,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     dt: float = 0.05
     max_steps_in_episode: int = 500  # Steps in an episode (constant goal)

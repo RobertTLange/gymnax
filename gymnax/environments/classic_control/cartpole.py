@@ -1,15 +1,15 @@
 """JAX implementation of CartPole-v1 OpenAI gym environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     x: jax.Array
     x_dot: jax.Array
@@ -18,7 +18,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     gravity: float = 9.8
     masscart: float = 1.0

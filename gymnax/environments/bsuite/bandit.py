@@ -1,22 +1,22 @@
 """JAX implementation of the bandit environment from bsuite."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    rewards: jax.Array | float
+    rewards: float
     total_regret: float
-    time: float | jax.Array
+    time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     optimal_return: float = 1.0
     max_steps_in_episode: int = 100

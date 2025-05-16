@@ -5,25 +5,25 @@ Source:
 github.com/deepmind/bsuite/blob/master/bsuite/environments/memory_chain.py
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    context: jnp.int32
-    query: jnp.int32
+    context: int
+    query: int
     total_perfect: int
-    total_regret: jnp.float32
+    total_regret: float
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     memory_length: int = 5
     max_steps_in_episode: int = 1000

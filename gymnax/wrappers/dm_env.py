@@ -1,27 +1,21 @@
 """DM env API wrapper for gymnax environment."""
 
 from functools import partial
-from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment
 from gymnax.wrappers import purerl
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class TimeStep:
     state: environment.EnvState
     reward: jax.Array
     discount: jax.Array
     observation: jax.Array
-
-    def __init__(self, *, state, reward, discount, observation):
-        object.__setattr__(self, "state", state)
-        object.__setattr__(self, "reward", reward)
-        object.__setattr__(self, "discount", discount)
-        object.__setattr__(self, "observation", observation)
 
 
 class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):

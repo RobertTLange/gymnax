@@ -1,16 +1,16 @@
 """JAX implementation of Point Robot environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     last_action: jax.Array
     last_reward: jax.Array
@@ -20,7 +20,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     max_force: float = 0.1  # Max action (+/-)
     circle_radius: float = 1.0  # Radius of semi-circle

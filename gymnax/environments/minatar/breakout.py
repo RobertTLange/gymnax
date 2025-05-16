@@ -1,15 +1,15 @@
 """JAX implementation of Breakout MinAtar environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     ball_y: jax.Array
     ball_x: jax.Array
@@ -23,7 +23,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 1000
 

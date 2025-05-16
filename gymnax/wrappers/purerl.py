@@ -1,7 +1,7 @@
 """Wrappers for pure RL."""
 
-from functools import partial
 from dataclasses import dataclass
+from functools import partial
 from typing import Any
 
 import jax

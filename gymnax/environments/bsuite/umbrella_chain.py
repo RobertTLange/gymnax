@@ -5,24 +5,24 @@ Source:
 github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
-    need_umbrella: jnp.int32
-    has_umbrella: jnp.int32
-    total_regret: jnp.int32
+    need_umbrella: int
+    has_umbrella: int
+    total_regret: int
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     chain_length: int = 10
     max_steps_in_episode: int = 100

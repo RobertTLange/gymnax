@@ -1,7 +1,5 @@
 """Utility wrapper to port gymnax env to evoJAX tasks."""
 
-from dataclasses import dataclass
-
 import jax
 
 import gymnax
@@ -12,8 +10,10 @@ try:
 except Exception as exc:
     raise ImportError("You need to additionally install EvoJAX.") from exc
 
+from flax import struct
 
-@dataclass(frozen=True)
+
+@struct.dataclass
 class GymState(TaskState):
     state: environment.EnvState
     obs: jax.Array

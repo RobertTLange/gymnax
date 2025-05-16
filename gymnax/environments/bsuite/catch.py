@@ -4,17 +4,17 @@
 Source: github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py.
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     ball_x: jax.Array
     ball_y: jax.Array
@@ -24,7 +24,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 1000
 

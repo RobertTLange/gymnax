@@ -19,12 +19,12 @@ def test_gym_wrapper():
     chex.assert_trees_all_close(o, o_env)
     chex.assert_trees_all_close(env_state.__dict__, e.env_state.__dict__)
     chex.assert_trees_all_close(
-        jax.random.key_data(next_keys[0]), jax.random.key_data(e.rng)
+        jax.random.key_data(next_keys[0]), jax.random.key_data(e.key)
     )
     e.reset(seed=5)
     next_keys = jax.random.split(jax.random.key(5), 2)
     chex.assert_trees_all_close(
-        jax.random.key_data(next_keys[0]), jax.random.key_data(e.rng)
+        jax.random.key_data(next_keys[0]), jax.random.key_data(e.key)
     )
     _, _, _, _, _ = e.step(a_space.sample())
     e.render()
@@ -45,7 +45,7 @@ def test_gym_vector_wrapper():
     assert isinstance(single_a_space, gym.spaces.Discrete)
     assert isinstance(single_o_space, gym.spaces.Box)
     keys = jax.random.split(jax.random.key(0), b)
-    chex.assert_trees_all_close(jax.random.key_data(e.rng), jax.random.key_data(keys))
+    chex.assert_trees_all_close(jax.random.key_data(e.key), jax.random.key_data(keys))
     o, _ = e.reset()
     env_reset = jax.jit(jax.vmap(env.reset, in_axes=(0, None)))
     _ = jax.jit(jax.vmap(env.step, in_axes=(0, 0, 0, None)))

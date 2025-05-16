@@ -1,7 +1,6 @@
 """Abstract base class for all gymnax Environments."""
 
 from functools import partial
-from dataclasses import dataclass
 from typing import (
     Any,
     Generic,
@@ -10,17 +9,18 @@ from typing import (
 )
 
 import jax
+from flax import struct
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
 TEnvParams = TypeVar("TEnvParams", bound="EnvParams")
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState:
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams:
     max_steps_in_episode: int = 1
 
@@ -46,7 +46,9 @@ class Environment(Generic[TEnvState, TEnvParams]):
 
         # Step
         key_step, key_reset = jax.random.split(key)
-        obs_st, state_st, reward, done, info = self.step_env(key_step, state, action, params)
+        obs_st, state_st, reward, done, info = self.step_env(
+            key_step, state, action, params
+        )
         obs_re, state_re = self.reset_env(key_reset, params)
 
         # Auto-reset environment based on termination
@@ -104,7 +106,9 @@ class Environment(Generic[TEnvState, TEnvParams]):
         raise NotImplementedError
 
     @overload
-    def get_obs(self, state: TEnvState, key: jax.Array, params: TEnvParams) -> jax.Array:
+    def get_obs(
+        self, state: TEnvState, key: jax.Array, params: TEnvParams
+    ) -> jax.Array:
         """Applies observation function to state."""
         raise NotImplementedError
 

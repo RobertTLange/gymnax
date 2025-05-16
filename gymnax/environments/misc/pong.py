@@ -6,19 +6,19 @@ https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py -
 Actions are encoded as: ['n', 'u', 'd']
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import seaborn as sns
+from flax import struct
 from matplotlib import colors
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     paddle_centers: jax.Array
     ball_position: jax.Array
@@ -28,7 +28,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     ball_max_y_speed: int = 3
     paddle_y_speed: int = 1

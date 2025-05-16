@@ -5,23 +5,23 @@ Source:
 github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     position: jax.Array
     velocity: jax.Array
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     min_position: float = -1.2
     max_position: float = 0.6

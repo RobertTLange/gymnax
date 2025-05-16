@@ -1,15 +1,15 @@
 """JAX implementation of DeepSea bsuite environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     row: int
     column: int
@@ -21,7 +21,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     deterministic: bool = True
     sample_action_map: bool = False

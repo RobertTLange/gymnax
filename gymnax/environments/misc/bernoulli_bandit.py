@@ -1,15 +1,15 @@
 """JAX implementation of a Bernoulli bandit environment as in Wang et al. 2017."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     last_action: jax.Array
     last_reward: jax.Array
@@ -18,7 +18,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     reward_prob: float = 0.1
     normalize_time: bool = True

@@ -1,15 +1,15 @@
 """JAX implementation of Reacher environment."""
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     angles: jax.Array
     angle_vels: jax.Array
@@ -17,7 +17,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     torque_scale: float = 1.0
     dt: float = 0.05

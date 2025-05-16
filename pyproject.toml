@@ -8,6 +8,7 @@ license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
     "jax",
+    "flax",
     "gymnasium",
     "matplotlib",
     "seaborn",
@@ -56,8 +57,3 @@ ignore = ["N801", "N802", "N803", "N806", "N815", "W191"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-
-[tool.ruff.lint.per-file-ignores]
-"**/*.ipynb" = [
-    "F811",  # Redefinition of unused variable
-]

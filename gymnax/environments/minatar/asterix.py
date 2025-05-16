@@ -17,16 +17,16 @@ ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
 - Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     """State of the environment."""
 
@@ -44,7 +44,7 @@ class EnvState(environment.EnvState):
     terminal: bool
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     ramping: bool = True
     ramp_interval: int = 100

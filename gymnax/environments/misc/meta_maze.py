@@ -5,17 +5,17 @@ Source: Comparable to
 github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py
 """
 
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     last_action: int
     last_reward: jax.Array
@@ -24,7 +24,7 @@ class EnvState(environment.EnvState):
     time: float
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     """Parameters for the MetaMaze environment.
 

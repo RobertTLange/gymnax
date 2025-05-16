@@ -6,16 +6,16 @@ Note that we only implement the default 'book' version.
 """
 
 import dataclasses
-from dataclasses import dataclass
 from typing import Any
 
 import jax
 import jax.numpy as jnp
+from flax import struct
 
 from gymnax.environments import environment, spaces
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState(environment.EnvState):
     joint_angle1: jax.Array
     joint_angle2: jax.Array
@@ -24,7 +24,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams(environment.EnvParams):
     """Environment parameters for Acrobot."""
 
