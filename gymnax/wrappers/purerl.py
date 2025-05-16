@@ -1,19 +1,14 @@
 """Wrappers for pure RL."""
 
-import functools
-from typing import TYPE_CHECKING, Any
+from functools import partial
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
 import numpy as np
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 class GymnaxWrapper:
@@ -44,22 +39,22 @@ class FlattenObservationWrapper(GymnaxWrapper):
             dtype=self._env.observation_space(params).dtype,
         )
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def reset(
-        self, key: chex.PRNGKey, params: environment.EnvParams | None = None
-    ) -> tuple[chex.Array, environment.EnvState]:
+        self, key: jax.Array, params: environment.EnvParams | None = None
+    ) -> tuple[jax.Array, environment.EnvState]:
         obs, state = self._env.reset(key, params)
         obs = jnp.reshape(obs, (-1,))
         return obs, state
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def step(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: environment.EnvState,
         action: int | float,
         params: environment.EnvParams | None = None,
-    ) -> tuple[chex.Array, environment.EnvState, float, bool, Any]:  # dict]:
+    ) -> tuple[jax.Array, environment.EnvState, float, bool, Any]:  # dict]:
         obs, state, reward, done, info = self._env.step(key, state, action, params)
         obs = jnp.reshape(obs, (-1,))
         return obs, state, reward, done, info
@@ -80,22 +75,22 @@ class LogWrapper(GymnaxWrapper):
     #   def __init__(self, env: environment.Environment):
     #     super().__init__(env)
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def reset(
-        self, key: chex.PRNGKey, params: environment.EnvParams | None = None
-    ) -> tuple[chex.Array, LogEnvState]:
+        self, key: jax.Array, params: environment.EnvParams | None = None
+    ) -> tuple[jax.Array, LogEnvState]:
         obs, env_state = self._env.reset(key, params)
         state = LogEnvState(env_state, 0, 0, 0, 0)
         return obs, state
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def step(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: LogEnvState,
         action: int | float,
         params: environment.EnvParams | None = None,
-    ) -> tuple[chex.Array, LogEnvState, jnp.ndarray, bool, dict[Any, Any]]:
+    ) -> tuple[jax.Array, LogEnvState, jax.Array, bool, dict[Any, Any]]:
         """Step the environment.
 
 

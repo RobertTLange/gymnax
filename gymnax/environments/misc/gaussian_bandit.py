@@ -1,25 +1,19 @@
-"""Gaussian bandit environment as in Lange & Sprekeler (2022)."""
+"""JAX implementation of Gaussian bandit environment as in Lange & Sprekeler (2022)."""
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
     last_action: int
-    last_reward: jnp.ndarray
-    mu: jnp.ndarray
+    last_reward: jax.Array
+    mu: jax.Array
     time: float
 
 
@@ -51,11 +45,11 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         # Reparametrization sampling of reward
         reward_arm_1 = 0.0
@@ -70,16 +64,16 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
         )
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state, params)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state, params)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
         mu = (
@@ -90,7 +84,7 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
         state = EnvState(last_action=0, last_reward=jnp.array(0.0), mu=mu, time=0.0)
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
         """Concatenate reward, one-hot action and time stamp."""
         action_one_hot = jax.nn.one_hot(state.last_action, self.num_actions).squeeze()
         time_rep = jax.lax.select(
@@ -98,7 +92,7 @@ class GaussianBandit(environment.Environment[EnvState, EnvParams]):
         )
         return jnp.hstack([state.last_reward, action_one_hot, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode

@@ -1,23 +1,17 @@
-"""JAX Compatible version of MemoryChain bsuite environment.
+"""JAX implementation of MemoryChain bsuite environment.
 
 
 Source:
 github.com/deepmind/bsuite/blob/master/bsuite/environments/memory_chain.py
 """
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
@@ -36,7 +30,7 @@ class EnvParams(environment.EnvParams):
 
 
 class MemoryChain(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of MemoryChain bsuite environment."""
+    """JAX implementation of MemoryChain bsuite environment."""
 
     def __init__(self, num_bits: int = 1):
         super().__init__()
@@ -49,11 +43,11 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         obs = self.get_obs(state, params)
 
@@ -78,16 +72,16 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(obs),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(obs),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         key_context, key_query = jax.random.split(key)
         context = jax.random.bernoulli(key_context, p=0.5, shape=(self.num_bits,))
@@ -101,7 +95,7 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         # Obs: [time remaining, query, num_bits of context]
         obs = jnp.zeros(shape=(self.num_bits + 2,), dtype=jnp.float32)
@@ -110,14 +104,18 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
             1 - state.time / params.memory_length,
         )
         # Show query - only last step.
-        query_val = lax.select(state.time == params.memory_length - 1, state.query, 0)
+        query_val = jax.lax.select(
+            state.time == params.memory_length - 1, state.query, 0
+        )
         obs = obs.at[1].set(query_val)
         # Show context - only first step.
-        context_val = lax.select(state.time == 0, (2 * state.context - 1).squeeze(), 0)
+        context_val = jax.lax.select(
+            state.time == 0, (2 * state.context - 1).squeeze(), 0
+        )
         obs = obs.at[2:].set(context_val)
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         done_mem = state.time - 1 == params.memory_length

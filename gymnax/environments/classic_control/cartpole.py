@@ -1,26 +1,20 @@
-"""JAX compatible version of CartPole-v1 OpenAI gym environment."""
+"""JAX implementation of CartPole-v1 OpenAI gym environment."""
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
-    x: jnp.ndarray
-    x_dot: jnp.ndarray
-    theta: jnp.ndarray
-    theta_dot: jnp.ndarray
+    x: jax.Array
+    x_dot: jax.Array
+    theta: jax.Array
+    theta_dot: jax.Array
     time: int
 
 
@@ -40,7 +34,7 @@ class EnvParams(environment.EnvParams):
 
 
 class CartPole(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of CartPole-v1 OpenAI gym environment.
+    """JAX implementation of CartPole-v1 OpenAI gym environment.
 
 
     Source: github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
@@ -57,11 +51,11 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Performs step transitions in the environment."""
         prev_terminal = self.is_terminal(state, params)
         force = params.force_mag * action - params.force_mag * (1 - action)
@@ -97,16 +91,16 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         done = self.is_terminal(state, params)
 
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             jnp.array(reward),
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Performs resetting of environment."""
         init_state = jax.random.uniform(key, minval=-0.05, maxval=0.05, shape=(4,))
         state = EnvState(
@@ -118,11 +112,11 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Applies observation function to state."""
         return jnp.array([state.x, state.x_dot, state.theta, state.theta_dot])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check termination criteria
         done1 = jnp.logical_or(

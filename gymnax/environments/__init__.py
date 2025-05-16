@@ -49,7 +49,6 @@ __all__ = [
     "MinAsterix",
     "MinBreakout",
     "MinFreeway",
-    # "MinSeaquest",
     "MinSpaceInvaders",
     "BernoulliBandit",
     "GaussianBandit",

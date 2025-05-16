@@ -1,23 +1,17 @@
-"""JAX Compatible version of UmbrellaChain bsuite environment.
+"""JAX implementation of UmbrellaChain bsuite environment.
 
 
 Source:
 github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py
 """
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
@@ -35,7 +29,7 @@ class EnvParams(environment.EnvParams):
 
 
 class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of UmbrellaChain bsuite environment."""
+    """JAX implementation of UmbrellaChain bsuite environment."""
 
     def __init__(self, n_distractor: int = 0):
         super().__init__()
@@ -48,13 +42,13 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
-        has_umbrella = lax.select(state.time + 1 == 1, action, state.has_umbrella)
+        has_umbrella = jax.lax.select(state.time + 1 == 1, action, state.has_umbrella)
         reward = 0
         # Check if chain is full/up
         chain_full = state.time + 1 == params.chain_length
@@ -80,18 +74,18 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
         done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(
+            jax.lax.stop_gradient(
                 self.get_obs(state=state, key=key_distractor, params=params)
             ),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         key_need, key_has, key_distractor = jax.random.split(key, 3)
         need_umbrella = jnp.int32(jax.random.bernoulli(key_need, p=0.5, shape=()))
@@ -104,9 +98,7 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state=state, key=key_distractor, params=params), state
 
-    def get_obs(
-        self, state: EnvState, key: chex.PRNGKey, params: EnvParams
-    ) -> chex.Array:
+    def get_obs(self, state: EnvState, key: jax.Array, params: EnvParams) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(shape=(3 + self.n_distractor,), dtype=jnp.float32)
         obs = obs.at[0].set(state.need_umbrella)
@@ -117,7 +109,7 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
         )
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         done_chain = state.time == params.chain_length

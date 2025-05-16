@@ -1,29 +1,23 @@
-"""JAX compatible version of Pendulum-v0 OpenAI gym environment.
+"""JAX implementation of Pendulum-v0 OpenAI gym environment.
 
 
 Source: github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
 """
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
-    theta: jnp.ndarray
-    theta_dot: jnp.ndarray
-    last_u: jnp.ndarray  # Only needed for rendering
+    theta: jax.Array
+    theta_dot: jax.Array
+    last_u: jax.Array  # Only needed for rendering
     time: int
 
 
@@ -52,11 +46,11 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Integrate pendulum ODE and return transition."""
         u = jnp.clip(action, -params.max_torque, params.max_torque)
         reward = -(
@@ -86,16 +80,16 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         )
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling theta, theta_dot."""
         high = jnp.array([jnp.pi, 1])
         state = jax.random.uniform(key, shape=(2,), minval=-high, maxval=high)
@@ -104,7 +98,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return angle in polar coordinates and change."""
         return jnp.array(
             [
@@ -114,7 +108,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
             ]
         ).squeeze()
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
@@ -173,6 +167,6 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         )
 
 
-def angle_normalize(x: jnp.ndarray) -> jnp.ndarray:
+def angle_normalize(x: jax.Array) -> jax.Array:
     """Normalize the angle - radians."""
     return ((x + jnp.pi) % (2 * jnp.pi)) - jnp.pi

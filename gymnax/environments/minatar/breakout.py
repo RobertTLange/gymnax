@@ -1,30 +1,24 @@
-"""JAX compatible version of Breakout MinAtar environment."""
+"""JAX implementation of Breakout MinAtar environment."""
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
-    ball_y: jnp.ndarray
-    ball_x: jnp.ndarray
-    ball_dir: jnp.ndarray
+    ball_y: jax.Array
+    ball_x: jax.Array
+    ball_dir: jax.Array
     pos: int
-    brick_map: chex.Array
+    brick_map: jax.Array
     strike: bool
-    last_y: jnp.ndarray
-    last_x: jnp.ndarray
+    last_y: jax.Array
+    last_x: jax.Array
     time: int
     terminal: bool
 
@@ -35,7 +29,7 @@ class EnvParams(environment.EnvParams):
 
 
 class MinBreakout(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Breakout MinAtar environment.
+    """JAX implementation of Breakout MinAtar environment.
 
 
     Source:
@@ -77,11 +71,11 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         a = self.action_set[action]
         state, new_x, new_y = step_agent(state, a)
@@ -93,16 +87,16 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
         state = state.replace(terminal=done)
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward.astype(jnp.float32),
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
@@ -119,7 +113,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the player paddle, paddle, trail & brick map
@@ -172,8 +166,8 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
 
 def step_agent(
     state: EnvState,
-    action: jnp.ndarray,
-) -> tuple[EnvState, jnp.ndarray, jnp.ndarray]:
+    action: jax.Array,
+) -> tuple[EnvState, jax.Array, jax.Array]:
     """Helper that steps the agent and checks boundary conditions."""
     # Update player position
     pos = (
@@ -221,16 +215,16 @@ def step_agent(
 
 
 def step_ball_brick(
-    state: EnvState, new_x: jnp.ndarray, new_y: jnp.ndarray
-) -> tuple[EnvState, jnp.ndarray]:
+    state: EnvState, new_x: jax.Array, new_y: jax.Array
+) -> tuple[EnvState, jax.Array]:
     """Helper that computes reward and termination cond. from brickmap."""
 
     reward = 0
 
     # Reflect ball direction if bounced off at y border
     border_cond1_y = new_y < 0
-    new_y = lax.select(border_cond1_y, 0, new_y)
-    ball_dir = lax.select(
+    new_y = jax.lax.select(border_cond1_y, 0, new_y)
+    ball_dir = jax.lax.select(
         border_cond1_y, jnp.array([3, 2, 1, 0])[state.ball_dir], state.ball_dir
     )
 

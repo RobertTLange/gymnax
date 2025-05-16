@@ -3,7 +3,6 @@
 import copy
 from typing import Any
 
-import chex
 import gymnasium as gym
 import jax.random
 from gymnasium import core
@@ -41,9 +40,9 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
                 ),
             }
         )
-        self.rng: chex.PRNGKey = jax.random.key(0)  # Placeholder
+        self.key: jax.Array = jax.random.key(0)  # Placeholder
         self._seed(seed)
-        _, self.env_state = self._env.reset(self.rng, self.env_params)
+        _, self.env_state = self._env.reset(self.key, self.env_params)
 
     @property
     def action_space(self):
@@ -59,13 +58,13 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
 
     def _seed(self, seed: int | None = None):
         """Set RNG seed (or use 0)."""
-        self.rng = jax.random.key(seed or 0)
+        self.key = jax.random.key(seed or 0)
 
     def step(
         self, action: core.ActType
     ) -> tuple[core.ObsType, float, bool, bool, dict[Any, Any]]:
         """Step environment, follow new step API."""
-        self.rng, step_key = jax.random.split(self.rng)
+        self.key, step_key = jax.random.split(self.key)
         o, self.env_state, r, d, info = self._env.step(
             step_key, self.env_state, action, self.env_params
         )
@@ -85,7 +84,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
             self.env_params = options.get(
                 "env_params", self.env_params
             )  # Allow changing environment parameters on reset
-        self.rng, reset_key = jax.random.split(self.rng)
+        self.key, reset_key = jax.random.split(self.key)
         o, self.env_state = self._env.reset(reset_key, self.env_params)
         return o, {}
 
@@ -122,17 +121,17 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         self.new_step_api = True
         self.closed = False
         self.viewer = None
-        self.rng: chex.PRNGKey = jax.random.key(0)  # Placeholder
+        self.key: jax.Array = jax.random.key(0)  # Placeholder
         self._seed(seed)
         # Jit-of-vmap is faster than vmap-of-jit.
         # Map over leading axis of all but env params
         self._env.reset = jax.jit(jax.vmap(self._env.reset, in_axes=(0, None)))
         self._env.step = jax.jit(jax.vmap(self._env.step, in_axes=(0, 0, 0, None)))
         self.env_params = params if params is not None else env.default_params
-        _, self.env_state = self._env.reset(self.rng, self.env_params)  # Placeholder
-        self._batched_rng_split = jax.jit(
+        _, self.env_state = self._env.reset(self.key, self.env_params)  # Placeholder
+        self._batched_key_split = jax.jit(
             jax.vmap(jax.random.split, in_axes=0, out_axes=1)
-        )  # Split all rng keys
+        )  # Split all keys
 
     @property
     def single_action_space(self):
@@ -158,7 +157,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
 
     def _seed(self, seed: int | None = None):
         """Set RNG seed (or use 0)."""
-        self.rng = jax.random.split(
+        self.key = jax.random.split(
             jax.random.key(seed or 0), self.num_envs
         )  # 1 RNG per env
 
@@ -176,7 +175,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
             self.env_params = options.get(
                 "env_params", self.env_params
             )  # Allow changing environment parameters on reset
-        self.rng, reset_key = self._batched_rng_split(self.rng)  # Split all keys
+        self.key, reset_key = self._batched_key_split(self.key)  # Split all keys
         o, self.env_state = self._env.reset(reset_key, self.env_params)
         return o, {}
 
@@ -185,7 +184,7 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         action,  #: core.ActType
     ):  # -> Tuple[core.ObsType, float, bool, bool, Any]:  # dict]:
         """Step environment, follow new step API."""
-        self.rng, step_key = self._batched_rng_split(self.rng)
+        self.key, step_key = self._batched_key_split(self.key)
         o, self.env_state, r, d, info = self._env.step(
             step_key, self.env_state, action, self.env_params
         )

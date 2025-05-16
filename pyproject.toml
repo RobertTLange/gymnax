@@ -1,19 +1,17 @@
 [project]
 name = "gymnax"
 version = "0.0.8"
-description = "JAX-compatible version of Open AI's gym environments"
+description = "JAX implementations of OpenAI's gym environments"
 authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
     "jax",
-    "chex",
-    "pyyaml",
-    "gym>=0.26",
     "gymnasium",
     "matplotlib",
     "seaborn",
+    "gym>=0.26",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.10",
@@ -33,6 +31,7 @@ dev = [
     "mypy",
 ]
 test = [
+    "chex",
     "flax",
     "brax",
     "minatar",

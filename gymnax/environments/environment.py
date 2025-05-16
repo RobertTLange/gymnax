@@ -1,22 +1,15 @@
 """Abstract base class for all gymnax Environments."""
 
-import functools
+from functools import partial
+from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Generic,
     TypeVar,
     overload,
 )
 
-import chex
 import jax
-import jax.numpy as jnp
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
 TEnvParams = TypeVar("TEnvParams", bound="EnvParams")
@@ -32,59 +25,64 @@ class EnvParams:
     max_steps_in_episode: int = 1
 
 
-class Environment(Generic[TEnvState, TEnvParams]):  # object):
-    """Jittable abstract base class for all gymnax Environments."""
+class Environment(Generic[TEnvState, TEnvParams]):
+    """Abstract base class for environments."""
 
     @property
     def default_params(self) -> EnvParams:
         return EnvParams()
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def step(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: TEnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: TEnvParams | None = None,
-    ) -> tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, TEnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Performs step transitions in the environment."""
-        # Use default env parameters if no others specified
         if params is None:
             params = self.default_params
-        key, key_reset = jax.random.split(key)
-        obs_st, state_st, reward, done, info = self.step_env(key, state, action, params)
+
+        # Step
+        key_step, key_reset = jax.random.split(key)
+        obs_st, state_st, reward, done, info = self.step_env(key_step, state, action, params)
         obs_re, state_re = self.reset_env(key_reset, params)
+
         # Auto-reset environment based on termination
         state = jax.tree.map(
             lambda x, y: jax.lax.select(done, x, y), state_re, state_st
         )
         obs = jax.lax.select(done, obs_re, obs_st)
+
         return obs, state, reward, done, info
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def reset(
-        self, key: chex.PRNGKey, params: TEnvParams | None = None
-    ) -> tuple[chex.Array, TEnvState]:
+        self, key: jax.Array, params: TEnvParams | None = None
+    ) -> tuple[jax.Array, TEnvState]:
         """Performs resetting of environment."""
-        # Use default env parameters if no others specified
         if params is None:
             params = self.default_params
+
+        # Reset
         obs, state = self.reset_env(key, params)
+
         return obs, state
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: TEnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: TEnvParams,
-    ) -> tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, TEnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Environment-specific step transition."""
         raise NotImplementedError
 
     def reset_env(
-        self, key: chex.PRNGKey, params: TEnvParams
-    ) -> tuple[chex.Array, TEnvState]:
+        self, key: jax.Array, params: TEnvParams
+    ) -> tuple[jax.Array, TEnvState]:
         """Environment-specific reset."""
         raise NotImplementedError
 
@@ -93,7 +91,7 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         self,
         state: TEnvState,
         params: TEnvParams,
-    ) -> chex.Array:
+    ) -> jax.Array:
         """Applies observation function to state."""
         raise NotImplementedError
 
@@ -101,31 +99,24 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
     def get_obs(
         self,
         state: TEnvState,
-    ) -> chex.Array:
+    ) -> jax.Array:
         """Applies observation function to state."""
         raise NotImplementedError
 
     @overload
-    def get_obs(
-        self, state: TEnvState, key: chex.PRNGKey, params: TEnvParams
-    ) -> chex.Array:
+    def get_obs(self, state: TEnvState, key: jax.Array, params: TEnvParams) -> jax.Array:
         """Applies observation function to state."""
         raise NotImplementedError
 
-    def get_obs(
-        self,
-        state,
-        params=None,
-        key=None,
-    ) -> chex.Array:
+    def get_obs(self, state, params=None, key=None) -> jax.Array:
         """Applies observation function to state."""
         raise NotImplementedError
 
-    def is_terminal(self, state: TEnvState, params: TEnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: TEnvState, params: TEnvParams) -> jax.Array:
         """Check whether state transition is terminal."""
         raise NotImplementedError
 
-    def discount(self, state: TEnvState, params: TEnvParams) -> jnp.ndarray:
+    def discount(self, state: TEnvState, params: TEnvParams) -> jax.Array:
         """Return a discount of zero if the episode has terminated."""
         return jax.lax.select(self.is_terminal(state, params), 0.0, 1.0)
 

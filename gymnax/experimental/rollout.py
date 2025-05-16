@@ -1,6 +1,6 @@
 """Rollout wrapper for gymnax environments."""
 
-import functools
+from functools import partial
 from typing import Any
 
 import jax
@@ -36,21 +36,21 @@ class RolloutWrapper:
         else:
             self.num_env_steps = num_env_steps
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def population_rollout(self, rng_eval, policy_params):
         """Reshape parameter vector and evaluate the generation."""
         # Evaluate population of nets on gymnax task - vmap over rng & params
         pop_rollout = jax.vmap(self.batch_rollout, in_axes=(None, 0))
         return pop_rollout(rng_eval, policy_params)
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def batch_rollout(self, rng_eval, policy_params):
         """Evaluate a generation of networks on RL/Supervised/etc. task."""
         # vmap over different MC fitness evaluations for single network
         batch_rollout = jax.vmap(self.single_rollout, in_axes=(0, None))
         return batch_rollout(rng_eval, policy_params)
 
-    @functools.partial(jax.jit, static_argnums=(0,))
+    @partial(jax.jit, static_argnames=("self",))
     def single_rollout(self, rng_input, policy_params):
         """Rollout a pendulum episode with lax.scan."""
         # Reset the environment

@@ -1,4 +1,4 @@
-"""JAX compatible version of Pong-like environment.
+"""JAX implementation of Pong-like environment.
 
 
 Adapted from:
@@ -6,30 +6,24 @@ https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py -
 Actions are encoded as: ['n', 'u', 'd']
 """
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import seaborn as sns
-from jax import lax
 from matplotlib import colors
 
 from gymnax.environments import environment, spaces
 
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
-
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
-    paddle_centers: chex.Array
-    ball_position: chex.Array
-    last_ball_position: chex.Array
-    ball_velocity: chex.Array
+    paddle_centers: jax.Array
+    ball_position: jax.Array
+    last_ball_position: jax.Array
+    ball_velocity: jax.Array
     time: int
     terminal: bool
 
@@ -44,7 +38,7 @@ class EnvParams(environment.EnvParams):
 
 
 class Pong(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Pong-like environment."""
+    """JAX implementation of Pong-like environment."""
 
     def __init__(
         self,
@@ -67,11 +61,11 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Perform single timestep state transition."""
         last_ball_position = state.ball_position
 
@@ -96,16 +90,16 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         reward = jnp.array(1.0 * (1 - done))
         info = {"discount": self.discount(state, params)}
         return (
-            lax.stop_gradient(self.get_obs(state)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state)),
+            jax.lax.stop_gradient(state),
             reward.astype(jnp.float32),
             done,
             info,
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         paddle_centers = jnp.array([self.height / 2, self.height / 2])
         ball_position = jnp.array([self.height / 2, self.width / 2])
@@ -120,7 +114,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros((self.height, self.width, 3))
         ball_index = jnp.floor(state.ball_position)
@@ -148,7 +142,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         ].set(1)  # paddle
         return obs.reshape((self.height, self.width, 3)).astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
         done_term = update_game_state(state, self.width)
@@ -207,7 +201,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         return ax.imshow(numerical_state, cmap=cmap, norm=norm, interpolation="none")
 
 
-def update_game_state(state: EnvState, width: int) -> jnp.ndarray:
+def update_game_state(state: EnvState, width: int) -> jax.Array:
     """Check if right or left border win conditions are met."""
     win_right = state.ball_position[1] < 0
     win_left = state.ball_position[1] >= width

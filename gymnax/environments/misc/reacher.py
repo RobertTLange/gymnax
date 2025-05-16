@@ -1,25 +1,19 @@
-"""Reacher environment."""
+"""JAX implementation of Reacher environment."""
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-import chex
 import jax
 import jax.numpy as jnp
-from jax import lax
 
 from gymnax.environments import environment, spaces
-
-if TYPE_CHECKING:  # https://github.com/python/mypy/issues/6239
-    from dataclasses import dataclass
-else:
-    from chex import dataclass
 
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
-    angles: chex.Array
-    angle_vels: chex.Array
-    goal_xy: chex.Array
+    angles: jax.Array
+    angle_vels: jax.Array
+    goal_xy: jax.Array
     time: float
 
 
@@ -31,7 +25,7 @@ class EnvParams(environment.EnvParams):
 
 
 class Reacher(environment.Environment[EnvState, EnvParams]):
-    """Reacher environment.
+    """JAX implementation of Reacher environment.
 
 
     Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py
@@ -48,11 +42,11 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
 
     def step_env(
         self,
-        key: chex.PRNGKey,
+        key: jax.Array,
         state: EnvState,
-        action: int | float | chex.Array,
+        action: int | float | jax.Array,
         params: EnvParams,
-    ) -> tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         angle_accs = params.torque_scale * action
         angle_vels = state.angle_vels + params.dt * angle_accs
@@ -77,16 +71,16 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
 
         done = self.is_terminal(state, params)
         return (
-            lax.stop_gradient(self.get_obs(state, params)),
-            lax.stop_gradient(state),
+            jax.lax.stop_gradient(self.get_obs(state, params)),
+            jax.lax.stop_gradient(state),
             reward,
             done,
             {"discount": self.discount(state, params)},
         )
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> tuple[chex.Array, EnvState]:
+        self, key: jax.Array, params: EnvParams
+    ) -> tuple[jax.Array, EnvState]:
         """Reset environment state by sampling initial position."""
         # Sample reward function + construct state as concat with timestamp
         rng_angle, rng_angle_v, rng_goal = jax.random.split(key, 3)
@@ -112,7 +106,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
         )
         return self.get_obs(state, params), state
 
-    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
         """Concatenate reward, one-hot action and time stamp."""
         ob = (
             jnp.reshape(jnp.cos(state.angles), (1, self.num_joints)),
@@ -123,7 +117,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
         ob = jnp.concatenate(ob, axis=0)
         return jnp.reshape(ob, (-1,))
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check number of steps in episode termination condition
         done = state.time >= params.max_steps_in_episode
