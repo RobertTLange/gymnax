@@ -22,7 +22,7 @@ def assert_correct_state(env_gym, env_name: str, state_jax: Any, atol: float = 1
             if type(jax_value) in [
                 jax.Array,
                 # jaxlib.xla_extension.Buffer,
-                jaxlib.xla_extension.ArrayImpl,
+                # jaxlib.xla_extension.ArrayImpl,
                 np.ndarray,
             ]:
                 assert np.allclose(jax_value, state_gym[k], atol=atol)
@@ -35,7 +35,7 @@ def assert_correct_state(env_gym, env_name: str, state_jax: Any, atol: float = 1
                     jax.Array,
                     # jaxlib.xla_extension.Buffer,
                     np.ndarray,
-                    jaxlib.xla_extension.ArrayImpl,
+                    # jaxlib.xla_extension.ArrayImpl,
                 ]:
                     np.allclose(state_gym[k], jax_value, atol=atol)
                 else:
