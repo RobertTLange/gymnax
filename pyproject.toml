@@ -1,10 +1,10 @@
 [project]
 name = "gymnax"
-version = "0.0.8"
+version = "0.0.9"
 description = "JAX implementations of OpenAI's gym environments"
 authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
 readme = "README.md"
-license = { file = "LICENSE" }
+license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
 dependencies = [
     "jax",
@@ -56,3 +56,6 @@ ignore = ["N801", "N802", "N803", "N806", "N815", "W191"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
+
+[tool.setuptools]
+license-files = []
