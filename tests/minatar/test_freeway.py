@@ -8,7 +8,8 @@ from minatar import environment
 
 import gymnax
 from gymnax.environments.minatar import freeway
-from gymnax.utils import state_translate, test_helpers
+from tests import state_translate
+from tests import helpers
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "freeway", "Freeway-MinAtar"
@@ -28,14 +29,14 @@ def test_step():
             key, _, key_action = jax.random.split(key, 3)
             state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
 
             # Perform step transition for agent & assert correct state dict
             _ = freeway_helpers.step_agent_numpy(env_gym, action_gym)
             state_jax_post_agent, _, _ = freeway.step_agent(
                 action_gym, state, env_params
             )
-            test_helpers.assert_correct_state(
+            helpers.assert_correct_state(
                 env_gym, env_name_jax, state_jax_post_agent, tolerance
             )
 
@@ -45,7 +46,7 @@ def test_step():
             )
             freeway_helpers.step_cars_numpy(env_gym)
             state_jax_post_cars = freeway.step_cars(state_gym_post_agent)
-            test_helpers.assert_correct_state(
+            helpers.assert_correct_state(
                 env_gym, env_name_jax, state_jax_post_cars, tolerance
             )
 
@@ -79,7 +80,7 @@ def test_get_obs():
         for _ in range(num_steps):
             key, _, key_action = jax.random.split(key, 3)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
             # Step gym environment get state and trafo in jax dict
             _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()

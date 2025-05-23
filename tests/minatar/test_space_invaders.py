@@ -6,7 +6,8 @@ from minatar import environment
 
 import gymnax
 from gymnax.environments.minatar import space_invaders
-from gymnax.utils import state_translate, test_helpers
+from tests import helpers
+from tests import state_translate
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "space_invaders", "SpaceInvaders-MinAtar"
@@ -26,7 +27,7 @@ def test_step():
             key, key_step, key_action = jax.random.split(key, 3)
             state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
 
             reward_gym, _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()
@@ -36,7 +37,7 @@ def test_step():
             )
 
             # Check correctness of transition
-            test_helpers.assert_correct_transit(
+            helpers.assert_correct_transit(
                 obs_gym,
                 reward_gym,
                 done_gym,
@@ -47,9 +48,7 @@ def test_step():
             )
 
             # Check that post-transition states are equal
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax, tolerance)
 
             if done_gym:
                 break
@@ -69,25 +68,19 @@ def test_sub_steps():
             key, _, key_action = jax.random.split(key, 3)
             state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
 
             _ = space_invaders_helpers.step_agent_numpy(env_gym, action_gym)
             state_jax_a = space_invaders.step_agent(action_gym, state, env_params)
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax_a, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax_a, tolerance)
 
             _ = space_invaders_helpers.step_aliens_numpy(env_gym)
             state_jax_b = space_invaders.step_aliens(state_jax_a)
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax_b, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax_b, tolerance)
 
             reward_gym = space_invaders_helpers.step_shoot_numpy(env_gym)
             state_jax_c, reward_jax = space_invaders.step_shoot(state_jax_b, env_params)
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax_c, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax_c, tolerance)
             assert reward_gym == reward_jax
             if env_gym.env.terminal:
                 break
@@ -119,7 +112,7 @@ def test_get_obs():
         for _ in range(num_steps):
             key, _, key_action = jax.random.split(key, 3)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
             # Step gym environment get state and trafo in jax dict
             _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()
@@ -146,7 +139,7 @@ def test_nearest_alien():
         for _ in range(num_steps):
             key, _, key_action = jax.random.split(key, 3)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
             # Step gym environment get state and trafo in jax dict
             _ = env_gym.act(action_gym)
             state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)

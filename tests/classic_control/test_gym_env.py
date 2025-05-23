@@ -4,7 +4,8 @@ import gymnasium as gym
 import jax
 
 import gymnax
-from gymnax.utils import state_translate, test_helpers
+from tests import state_translate
+from tests import helpers
 
 num_episodes, num_steps, tolerance = 10, 150, 1e-4
 
@@ -32,7 +33,7 @@ def test_step(gym_env_name):
             )
 
             # Check correctness of transition
-            test_helpers.assert_correct_transit(
+            helpers.assert_correct_transit(
                 obs_gym,
                 reward_gym,
                 done_gym,
@@ -44,7 +45,7 @@ def test_step(gym_env_name):
 
             # Check that post-transition states are equal
             if not done_gym:
-                test_helpers.assert_correct_state(
+                helpers.assert_correct_state(
                     env_gym, gym_env_name, state_jax, tolerance
                 )
             else:

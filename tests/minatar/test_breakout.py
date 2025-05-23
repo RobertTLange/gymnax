@@ -6,7 +6,8 @@ from minatar import environment
 
 import gymnax
 from gymnax.environments.minatar import breakout
-from gymnax.utils import state_translate, test_helpers
+from tests import state_translate
+from tests import helpers
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "breakout", "Breakout-MinAtar"
@@ -26,7 +27,7 @@ def test_step():
             key, key_step, key_action = jax.random.split(key, 3)
             state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
 
             reward_gym, _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()
@@ -39,7 +40,7 @@ def test_step():
                 break
 
             # Check correctness of transition
-            test_helpers.assert_correct_transit(
+            helpers.assert_correct_transit(
                 obs_gym,
                 reward_gym,
                 done_gym,
@@ -50,9 +51,7 @@ def test_step():
             )
 
             # Check that post-transition states are equal
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax, tolerance)
 
 
 def test_sub_steps():
@@ -69,20 +68,16 @@ def test_sub_steps():
             key, _, key_action = jax.random.split(key, 3)
             state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
 
             new_x, new_y = breakout_helpers.step_agent_numpy(env_gym, action_gym)
             state_jax_a, new_x_jax, new_y_jax = breakout.step_agent(state, action_gym)
             assert new_x == new_x_jax and new_y == new_y_jax
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax_a, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax_a, tolerance)
 
             _, _ = breakout_helpers.step_ball_brick_numpy(env_gym, new_x, new_y)
             state_jax_b, _ = breakout.step_ball_brick(state_jax_a, new_x, new_y)
-            test_helpers.assert_correct_state(
-                env_gym, env_name_jax, state_jax_b, tolerance
-            )
+            helpers.assert_correct_state(env_gym, env_name_jax, state_jax_b, tolerance)
             if env_gym.env.terminal:
                 break
 
@@ -113,7 +108,7 @@ def test_get_obs():
         for _ in range(num_steps):
             key, _, key_action = jax.random.split(key, 3)
             action = env_gymnax.action_space(env_params).sample(key_action)
-            action_gym = test_helpers.minatar_action_map(action, env_name_jax)
+            action_gym = helpers.minatar_action_map(action, env_name_jax)
             # Step gym environment get state and trafo in jax dict
             _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()

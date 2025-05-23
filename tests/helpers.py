@@ -1,12 +1,10 @@
 """Helper functions for testing."""
 
 from typing import Any
-
 import jax
-import jaxlib
 import numpy as np
 
-from gymnax.utils import state_translate
+from tests import state_translate
 
 
 def assert_correct_state(env_gym, env_name: str, state_jax: Any, atol: float = 1e-4):
@@ -19,28 +17,30 @@ def assert_correct_state(env_gym, env_name: str, state_jax: Any, atol: float = 1
         jax_value = getattr(state_jax, k)
         # print(k, jax_value, state_gym[k])
         if k not in ["time", "terminal"]:
-            if type(jax_value) in [
-                jax.Array,
-                # jaxlib.xla_extension.Buffer,
-                # jaxlib.xla_extension.ArrayImpl,
-                np.ndarray,
-            ]:
-                assert np.allclose(jax_value, state_gym[k], atol=atol)
-            else:
-                # print(k, state_gym[k], state_jax[k])
-                # Exclude extra time and terminal state from assertion
-                if type(state_gym[k]) in [
-                    float,
-                    np.float64,
-                    jax.Array,
-                    # jaxlib.xla_extension.Buffer,
-                    np.ndarray,
-                    # jaxlib.xla_extension.ArrayImpl,
-                ]:
-                    np.allclose(state_gym[k], jax_value, atol=atol)
-                else:
-                    print(type(state_gym[k]), k)
-                    assert state_gym[k] == jax_value
+            assert np.allclose(jax_value, state_gym[k], atol=atol)
+            # if type(jax_value) in [
+            #     jax.Array,
+            #     # jaxlib.xla_extension.Buffer,
+            #     # jaxlib.xla_extension.ArrayImpl,
+            #     np.ndarray,
+            # ]:
+
+            # else:
+            #     # print(k, state_gym[k], state_jax[k])
+            #     # Exclude extra time and terminal state from assertion
+            #     if type(state_gym[k]) in [
+            #         float,
+            #         np.float64,
+            #         np.float32,
+            #         jax.Array,
+            #         # jaxlib.xla_extension.Buffer,
+            #         np.ndarray,
+            #         # jaxlib.xla_extension.ArrayImpl,
+            #     ]:
+            #         np.allclose(state_gym[k], jax_value, atol=atol)
+            #     else:
+            #         print(type(state_gym[k]), k)
+            #         assert state_gym[k] == jax_value
 
 
 def assert_correct_transit(
