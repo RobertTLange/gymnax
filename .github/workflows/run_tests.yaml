@@ -28,7 +28,7 @@ jobs:
         pip install pytest pytest-timeout pytest-cov
         pip install flake8 black
         pip install -e .
-        pip install -U "jax[cuda12]"
+        pip install -U "jax==0.6.0"
         pip install gym bsuite matplotlib brax
         # Setup dependency for minatar tests
         git clone -n https://github.com/kenjyoung/MinAtar.git
