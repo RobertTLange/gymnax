@@ -37,6 +37,7 @@ class Discrete(Space):
 
     def contains(self, x: jax.Array) -> jax.Array:
         """Check whether specific object is within space."""
+        x = x.astype(jnp.int32)
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
         range_cond = jnp.logical_and(x >= 0, x < self.n)
@@ -96,7 +97,7 @@ class Dict(Space):
         # Check for each space individually
         out_of_space = 0
         for k, space in self.spaces.items():
-            out_of_space += 1 - space.contains(getattr(x, k))
+            out_of_space += 1 - space.contains(getattr(x, k)).astype(jnp.int32)
         return out_of_space == 0
 
 
