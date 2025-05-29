@@ -222,4 +222,4 @@ Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excelle
 
 ## Development 👷
 
-You can run the test suite via `python -m pytest -vv --all`. If you find a bug or are missing your favourite feature, feel free to create an issue and/or start [contributing](CONTRIBUTING.md) 🤗.
+You can install the dev and test dependencies with `python -m pip -e .[dev,test]` in the root of the repository, and then run the test suite via `python -m pytest -vv --all`. When running the test suite, it is strongly encouraged, but not required, to treat warnings as errors with `python -m pytest -vv -W error --tb=short --all`. If you find a bug or are missing your favourite feature, feel free to create an issue and/or start [contributing](CONTRIBUTING.md) 🤗.
