@@ -27,7 +27,7 @@ class Discrete(Space):
         assert num_categories >= 0
         self.n = num_categories
         self.shape = ()
-        self.dtype = jnp.int_
+        self.dtype = jnp.integer
 
     def sample(self, key: jax.Array) -> jax.Array:
         """Sample random action uniformly from set of categorical choices."""

@@ -173,7 +173,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         return spaces.Dict(
             {
                 "pos": spaces.Discrete(10),
-                "cars": spaces.Box(0, 1, jnp.zeros((8, 4)), dtype=jnp.int_),
+                "cars": spaces.Box(0, 1, jnp.zeros((8, 4)), dtype=jnp.integer),
                 "move_timer": spaces.Discrete(params.player_speed),
                 "time": spaces.Discrete(params.max_steps_in_episode),
                 "terminal": spaces.Discrete(2),
@@ -260,7 +260,7 @@ def randomize_cars(
 ) -> jax.Array:
     """Randomize car speeds & directions. Reset position if initialize."""
     speeds_new = directions * speeds
-    new_cars = jnp.zeros((8, 4), dtype=int)
+    new_cars = jnp.zeros((8, 4), dtype=jnp.integer)
 
     # Loop over all 8 cars and set their data
     for i in range(8):
@@ -275,4 +275,4 @@ def randomize_cars(
 
     # Mask the car array manipulation according to initialize
     cars = jax.lax.select(initialize, new_cars, old_cars)
-    return jnp.array(cars, dtype=jnp.int_)
+    return jnp.array(cars, dtype=jnp.integer)
