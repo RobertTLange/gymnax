@@ -6,8 +6,7 @@ from minatar import environment
 
 import gymnax
 from gymnax.environments.minatar import space_invaders
-from tests import helpers
-from tests import state_translate
+from tests import helpers, state_translate
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "space_invaders", "SpaceInvaders-MinAtar"
