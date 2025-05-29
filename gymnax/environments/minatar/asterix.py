@@ -142,7 +142,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         # Add a 5th channel to help with not used entities
-        obs = jnp.zeros((10, 10, 5), dtype=bool)
+        obs = jnp.zeros((10, 10, 5), dtype=jnp.int32)
         # Set the position of the agent in the grid
         obs = obs.at[state.player_y, state.player_x, 0].set(1)
         # Loop over entity identities and set entity locations

@@ -260,10 +260,13 @@ def reflect_on_paddle(
     left_ball_velocity = state.ball_velocity.at[1].set(state.ball_velocity[1] * -1)
     left_ball_velocity = left_ball_velocity.at[0].set(
         jnp.clip(
-            left_ball_velocity[0] + paddle_height_distance[0] / paddle_half_height,
+            left_ball_velocity[0].astype(jnp.float32)
+            + paddle_height_distance[0] / float(paddle_half_height),
             -env_params.ball_max_y_speed,
             env_params.ball_max_y_speed,
         )
+        .round()
+        .astype(jnp.int32)
     )
     ball_position = jax.lax.select(
         left_paddle_hit, left_ball_position, state.ball_position
@@ -277,10 +280,13 @@ def reflect_on_paddle(
     right_ball_velocity = ball_velocity.at[1].set(ball_velocity[1] * -1)
     right_ball_velocity = right_ball_velocity.at[0].set(
         jnp.clip(
-            right_ball_velocity[0] + paddle_height_distance[1] / paddle_half_height,
+            right_ball_velocity[0].astype(jnp.float32)
+            + paddle_height_distance[1] / float(paddle_half_height),
             -env_params.ball_max_y_speed,
             env_params.ball_max_y_speed,
         )
+        .round()
+        .astype(jnp.int32)
     )
     ball_position = jax.lax.select(right_paddle_hit, right_ball_position, ball_position)
     ball_velocity = jax.lax.select(right_paddle_hit, right_ball_velocity, ball_velocity)

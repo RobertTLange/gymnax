@@ -108,7 +108,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         enemy_move_interval = state.enemy_move_interval - reset_ramp_cond
         ramp_index = state.ramp_index + reset_ramp_cond
         alien_map = jax.lax.select(
-            reset_map_cond, state.alien_map.at[0:4, 2:8].set(1), state.alien_map
+            reset_map_cond, state.alien_map.at[0:4, 2:8].set(True), state.alien_map
         )
 
         # Check game condition & no. steps for termination condition
@@ -144,7 +144,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
             pos=5,
             f_bullet_map=jnp.zeros((10, 10)),
             e_bullet_map=jnp.zeros((10, 10)),
-            alien_map=jnp.zeros((10, 10)).at[0:4, 2:9].set(1),
+            alien_map=jnp.zeros((10, 10)).at[0:4, 2:9].set(True),
             alien_dir=-1,
             enemy_move_interval=params.enemy_move_interval,
             alien_move_timer=params.enemy_move_interval,
@@ -161,16 +161,16 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         """Return observation from raw state trafo."""
         obs = jnp.zeros((10, 10, 6), dtype=bool)
         # Update cannon, aliens - left + right dir, friendly + enemy bullet
-        obs = obs.at[9, state.pos, 0].set(1)
-        obs = obs.at[:, :, 1].set(state.alien_map)
+        obs = obs.at[9, state.pos, 0].set(True)
+        obs = obs.at[:, :, 1].set(state.alien_map.astype(jnp.bool))
         left_dir_cond = state.alien_dir < 0
         obs = jax.lax.select(
             left_dir_cond,
-            obs.at[:, :, 2].set(state.alien_map),
-            obs.at[:, :, 3].set(state.alien_map),
+            obs.at[:, :, 2].set(state.alien_map.astype(jnp.bool)),
+            obs.at[:, :, 3].set(state.alien_map.astype(jnp.bool)),
         )
-        obs = obs.at[:, :, 4].set(state.f_bullet_map)
-        obs = obs.at[:, :, 5].set(state.e_bullet_map)
+        obs = obs.at[:, :, 4].set(state.f_bullet_map.astype(jnp.bool))
+        obs = obs.at[:, :, 5].set(state.e_bullet_map.astype(jnp.bool))
         return obs.astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
@@ -223,7 +223,7 @@ def step_agent(action: jax.Array, state: EnvState, params: EnvParams) -> EnvStat
     left_cond, right_cond = (action == 1), (action == 3)
     f_bullet_map = jax.lax.select(
         fire_cond,
-        state.f_bullet_map.at[9, state.pos].set(1),
+        state.f_bullet_map.at[9, state.pos].set(True),
         state.f_bullet_map,
     )
     shot_timer = jax.lax.select(fire_cond, params.shot_cool_down, state.shot_timer)
@@ -305,7 +305,7 @@ def step_shoot(state: EnvState, params: EnvParams) -> tuple[EnvState, jax.Array]
     update_aliens_cond = jnp.logical_and(alien_shot_cond, alien_exists)
     e_bullet_map = jax.lax.select(
         update_aliens_cond,
-        state.e_bullet_map.at[loc, idx].set(1),
+        state.e_bullet_map.at[loc, idx].set(True),
         state.e_bullet_map,
     )
     kill_locations = jnp.logical_and(
