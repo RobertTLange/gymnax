@@ -124,25 +124,27 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=bool)
         # Set the position of the chicken agent, cars, and trails
-        obs = obs.at[state.pos, 4, 0].set(1)
+        obs = obs.at[state.pos, 4, 0].set(True)
         for car_id in range(8):
             car = state.cars[car_id]
-            obs = obs.at[car[1], car[0], 1].set(1)
+            obs = obs.at[car[1], car[0], 1].set(True)
             # Boundary conditions for cars
-            back_x = (car[3] > 0) * (car[0] - 1) + (1 - (car[3] > 0)) * (car[0] + 1)
-            left_out = back_x < 0
-            right_out = back_x > 9
+            back_x = (car[3] > 0).astype(jnp.int32) * (car[0] - 1) + (
+                1 - (car[3] > 0).astype(jnp.int32)
+            ) * (car[0] + 1)
+            left_out = (back_x < 0).astype(jnp.int32)
+            right_out = (back_x > 9).astype(jnp.int32)
             back_x = left_out * 9 + (1 - left_out) * back_x
             back_x = right_out * 0 + (1 - right_out) * back_x
             # Set trail to be on
             trail_channel = (
-                2 * (jnp.abs(car[3]) == 1)
-                + 3 * (jnp.abs(car[3]) == 2)
-                + 4 * (jnp.abs(car[3]) == 3)
-                + 5 * (jnp.abs(car[3]) == 4)
-                + 6 * (jnp.abs(car[3]) == 5)
+                2 * (jnp.abs(car[3]) == 1).astype(jnp.int32)
+                + 3 * (jnp.abs(car[3]) == 2).astype(jnp.int32)
+                + 4 * (jnp.abs(car[3]) == 3).astype(jnp.int32)
+                + 5 * (jnp.abs(car[3]) == 4).astype(jnp.int32)
+                + 6 * (jnp.abs(car[3]) == 5).astype(jnp.int32)
             )
-            obs = obs.at[car[1], back_x, trail_channel].set(1)
+            obs = obs.at[car[1], back_x, trail_channel].set(True)
         return obs.astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
@@ -190,11 +192,15 @@ def step_agent(
     any_cond = jnp.logical_or(cond_up, cond_down)
     state_up = jnp.maximum(0, state.pos - 1)
     state_down = jnp.minimum(9, state.pos + 1)
-    pos = (1 - any_cond) * state.pos + cond_up * state_up + cond_down * state_down
+    pos = (
+        (1 - any_cond.astype(jnp.int32)) * state.pos
+        + cond_up.astype(jnp.int32) * state_up
+        + cond_down.astype(jnp.int32) * state_down
+    )
     move_timer = jax.lax.select(any_cond, params.player_speed, state.move_timer)
     # Check win cond. - increase reward, randomize cars, reset agent position
     win_cond = pos == 0
-    reward = win_cond * 1.0
+    reward = win_cond.astype(jnp.int32) * 1.0
     pos = jax.lax.select(win_cond, 9, pos)
     return state.replace(pos=pos, move_timer=move_timer), reward, win_cond
 
