@@ -179,7 +179,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
                     0,
                     1,
                     (self.size, self.size),
-                    dtype=jnp.integer,
+                    dtype=jnp.int32,
                 ),
                 "time": spaces.Discrete(params.max_steps_in_episode),
             }

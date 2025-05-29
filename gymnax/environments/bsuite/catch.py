@@ -139,7 +139,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 1, (self.rows, self.columns), dtype=jnp.integer)
+        return spaces.Box(0, 1, (self.rows, self.columns), dtype=jnp.int32)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
