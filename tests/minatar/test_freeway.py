@@ -1,5 +1,18 @@
 """Tests for the Freeway environment."""
 
+import warnings
+import traceback
+
+_original_warn = warnings.warn
+
+
+def custom_warn(message, category=None, stacklevel=1, source=None):
+    print("\n=== WARNING ===")
+    print(f"{category.__name__ if category else 'Warning'}: {message}")
+    traceback.print_stack()
+    _original_warn(message, category, stacklevel, source)
+
+
 import freeway_helpers
 import jax
 import jax.numpy as jnp

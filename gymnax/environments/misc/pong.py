@@ -87,7 +87,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         )
         done = self.is_terminal(state, params)
 
-        reward = jnp.array(1.0 * (1 - done))
+        reward = 1.0 - done.astype(jnp.float32)
         info = {"discount": self.discount(state, params)}
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
@@ -132,7 +132,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
             -self.paddle_half_height, self.paddle_half_height + 1
         )[jnp.newaxis, :]
 
-        paddle_indices = jnp.floor(state.paddle_centers)
+        paddle_indices = jnp.floor(state.paddle_centers).astype(jnp.int32)
         expanded_paddles = jnp.clip(
             paddle_indices[:, jnp.newaxis] + paddle_range, 0, self.height - 1
         ).astype(jnp.int32)
@@ -260,10 +260,13 @@ def reflect_on_paddle(
     left_ball_velocity = state.ball_velocity.at[1].set(state.ball_velocity[1] * -1)
     left_ball_velocity = left_ball_velocity.at[0].set(
         jnp.clip(
-            left_ball_velocity[0] + paddle_height_distance[0] / paddle_half_height,
+            left_ball_velocity[0].astype(jnp.float32)
+            + paddle_height_distance[0] / float(paddle_half_height),
             -env_params.ball_max_y_speed,
             env_params.ball_max_y_speed,
         )
+        .round()
+        .astype(jnp.int32)
     )
     ball_position = jax.lax.select(
         left_paddle_hit, left_ball_position, state.ball_position
@@ -277,10 +280,13 @@ def reflect_on_paddle(
     right_ball_velocity = ball_velocity.at[1].set(ball_velocity[1] * -1)
     right_ball_velocity = right_ball_velocity.at[0].set(
         jnp.clip(
-            right_ball_velocity[0] + paddle_height_distance[1] / paddle_half_height,
+            right_ball_velocity[0].astype(jnp.float32)
+            + paddle_height_distance[1] / float(paddle_half_height),
             -env_params.ball_max_y_speed,
             env_params.ball_max_y_speed,
         )
+        .round()
+        .astype(jnp.int32)
     )
     ball_position = jax.lax.select(right_paddle_hit, right_ball_position, ball_position)
     ball_velocity = jax.lax.select(right_paddle_hit, right_ball_velocity, ball_velocity)
@@ -305,19 +311,19 @@ def move_paddles(
     use_ai_policy: bool,
 ) -> EnvState:
     """Update paddle positions and clip at height borders."""
-    paddle_direction = -1 * (action == 1) + 1 * (action == 2)
+    paddle_direction = (action == 2).astype(jnp.int32) - (action == 1).astype(jnp.int32)
     paddle_step = paddle_direction * paddle_y_speed
     # NOTE: Different from reference - full paddle is visible
     # Calculate new center of P1 based on action
     new_center_p1 = jnp.clip(
-        state.paddle_centers[0] + paddle_step,
+        state.paddle_centers[0].astype(jnp.int32) + paddle_step,
         paddle_half_height,
         height - paddle_half_height - 1,
     )
     # Calculate new center of P2 based on same action
     # This means both players play 'same' policy
     new_center_self = jnp.clip(
-        state.paddle_centers[1] + paddle_step,
+        state.paddle_centers[1].astype(jnp.int32) + paddle_step,
         paddle_half_height,
         height - paddle_half_height - 1,
     )
@@ -340,15 +346,15 @@ def move_paddles(
             height - paddle_half_height - 1,
         )
     )
-    ai_go_up = dist_center_up < dist_center_down
+    ai_go_up = (dist_center_up < dist_center_down).astype(jnp.int32)
     new_center_ai = jnp.clip(
-        state.paddle_centers[1]
+        state.paddle_centers[1].astype(jnp.int32)
         - ai_go_up * paddle_y_speed
         + (1 - ai_go_up) * paddle_y_speed,
         paddle_half_height,
         height - paddle_half_height - 1,
-    )
+    ).astype(jnp.int32)
     new_center_p2 = jax.lax.select(use_ai_policy, new_center_ai, new_center_self)
 
-    new_centers = jnp.array([new_center_p1, new_center_p2])
+    new_centers = jnp.array([new_center_p1, new_center_p2], dtype=jnp.float32)
     return state.replace(paddle_centers=new_centers)

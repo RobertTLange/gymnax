@@ -2,7 +2,11 @@
 
 import chex
 import jax
-from brax import envs
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from brax import envs
 
 import gymnax
 from gymnax.wrappers import brax
