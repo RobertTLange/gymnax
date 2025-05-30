@@ -4,8 +4,7 @@ import gymnasium as gym
 import jax
 
 import gymnax
-from tests import state_translate
-from tests import helpers
+from tests import helpers, state_translate
 
 num_episodes, num_steps, tolerance = 10, 150, 1e-4
 

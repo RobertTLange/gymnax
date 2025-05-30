@@ -1,7 +1,7 @@
 """Helper functions for testing."""
 
 from typing import Any
-import jax
+
 import numpy as np
 
 from tests import state_translate
