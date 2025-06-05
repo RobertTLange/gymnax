@@ -1,0 +1,3 @@
+[submodule "tests/bsuite/bsuite"]
+	path = tests/bsuite/bsuite
+	url = https://github.com/knyazer/bsuite
