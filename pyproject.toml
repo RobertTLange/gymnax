@@ -31,7 +31,6 @@ dev = [
     "mypy",
 ]
 test = [
-    "chex",
     "flax",
     "brax",
     "minatar",

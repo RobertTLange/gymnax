@@ -3,7 +3,6 @@
 from typing import Any, Dict, Optional, Tuple, Union
 
 
-import chex
 from flax import struct
 import jax
 from jax import lax
@@ -20,7 +19,7 @@ class EnvState(environment.EnvState):
     total_bad_episodes: int
     denoised_return: int
     optimal_return: float
-    action_mapping: chex.Array
+    action_mapping: Any  # float array
     time: int
 
 
@@ -45,7 +44,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         self,
         size: int = 8,
         randomize_actions=True,
-        action_mapping_rng_key: chex.PRNGKey = jax.random.PRNGKey(42),
+        action_mapping_rng_key=jax.random.key(42),
         **kws,
     ):
         super().__init__()
@@ -64,8 +63,8 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         return self._params
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
+        self, key: Any, state: EnvState, action: int, params: EnvParams
+    ) -> Tuple[Any, EnvState, float, bool, dict]:
         """Perform single timestep state transition."""
         # Pull out randomness for easier testing
         rng_reward, rng_trans = jax.random.split(key)
@@ -106,9 +105,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
             info,
         )
 
-    def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
-    ) -> Tuple[chex.Array, EnvState]:
+    def reset_env(self, key: Any, params: EnvParams) -> Tuple[Any, EnvState]:
         """Reset environment state by sampling initial position."""
         optimal_no_cost = (1 - params.deterministic) * (1 - 1 / self.size) ** (
             self.size - 1
@@ -136,7 +133,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
         return self.get_obs(state), state
 
-    def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
+    def get_obs(self, state: EnvState, params=None, key=None) -> Any:
         """Return observation from raw state trafo."""
         obs_end = jnp.zeros(shape=(self.size, self.size), dtype=jnp.float32)
         end_cond = state.row >= self.size
