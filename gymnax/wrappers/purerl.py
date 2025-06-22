@@ -80,7 +80,7 @@ class LogWrapper(GymnaxWrapper):
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> tuple[jax.Array, LogEnvState]:
         obs, env_state = self._env.reset(key, params)
-        state = LogEnvState(env_state, 0, 0, 0, 0)
+        state = LogEnvState(env_state, 0.0, 0, 0.0, 0)
         return obs, state
 
     @partial(jax.jit, static_argnames=("self",))
