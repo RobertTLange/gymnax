@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Any  
+from typing import Dict, Tuple, Any
 from flax import struct
 import jax
 import jax.numpy as jnp
@@ -10,14 +10,17 @@ FROZEN = 1
 HOLE = 2
 GOAL = 3
 
+
 @struct.dataclass
 class EnvState(environment.EnvState):
     state: jax.Array
     time: int
 
+
 @struct.dataclass
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 100
+
 
 class FrozenLake(environment.Environment[EnvState, EnvParams]):
     def __init__(self, map_name="4x4"):
@@ -25,35 +28,41 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
         self.obs_shape = (16,)
 
         self.maps = {
-            "4x4": jnp.array([
-                [START, FROZEN, FROZEN, FROZEN],
-                [FROZEN, HOLE, FROZEN, HOLE],
-                [FROZEN, FROZEN, FROZEN, HOLE],
-                [HOLE, FROZEN, FROZEN, GOAL]
-            ]),
-            "8x8": jnp.array([
-                [START, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN],
-                [FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN],
-                [FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN, FROZEN, FROZEN],
-                [FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN],
-                [FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN, FROZEN, FROZEN],
-                [FROZEN, HOLE, HOLE, FROZEN, FROZEN, FROZEN, HOLE, FROZEN],
-                [FROZEN, HOLE, FROZEN, FROZEN, HOLE, FROZEN, HOLE, FROZEN],
-                [FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN, FROZEN, GOAL]
-            ])
+            "4x4": jnp.array(
+                [
+                    [START, FROZEN, FROZEN, FROZEN],
+                    [FROZEN, HOLE, FROZEN, HOLE],
+                    [FROZEN, FROZEN, FROZEN, HOLE],
+                    [HOLE, FROZEN, FROZEN, GOAL],
+                ]
+            ),
+            "8x8": jnp.array(
+                [
+                    [START, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN],
+                    [FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN],
+                    [FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN, FROZEN, FROZEN],
+                    [FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN],
+                    [FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN, FROZEN, FROZEN],
+                    [FROZEN, HOLE, HOLE, FROZEN, FROZEN, FROZEN, HOLE, FROZEN],
+                    [FROZEN, HOLE, FROZEN, FROZEN, HOLE, FROZEN, HOLE, FROZEN],
+                    [FROZEN, FROZEN, FROZEN, HOLE, FROZEN, FROZEN, FROZEN, GOAL],
+                ]
+            ),
         }
 
         self.desc = self.maps[map_name]
         self.nrow, self.ncol = self.desc.shape
         self.n_states = self.nrow * self.ncol
         self.n_actions = 4
-        self.directions =  jnp.array([
-            [0, -1],
-            [0, 1],
-            [1, 0],
-            [-1, 0],
-        ])
-    
+        self.directions = jnp.array(
+            [
+                [0, -1],
+                [0, 1],
+                [1, 0],
+                [-1, 0],
+            ]
+        )
+
     @property
     def name(self) -> str:
         return "FrozenLake-misc"
@@ -62,16 +71,18 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
     def default_params(self) -> EnvParams:
         return EnvParams()
 
-
     def step_env(
-        self, key: jax.Array, state: EnvState, action: int | float | jax.Array, params: EnvParams
+        self,
+        key: jax.Array,
+        state: EnvState,
+        action: int | float | jax.Array,
+        params: EnvParams,
     ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
 
         time = state.time
         current_state = state.state
         row = current_state // self.ncol
         col = current_state % self.ncol
-
 
         def get_next_state(row, col, action):
             new_row = row + self.directions[action][0]
@@ -82,7 +93,7 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
 
         key_random, key_action = jax.random.split(key)
         random_action = jax.random.randint(key_action, (), 0, self.n_actions)
-        slip = jax.random.uniform(key_random) < 1/3
+        slip = jax.random.uniform(key_random) < 1 / 3
         action = jax.lax.select(slip, random_action, action)
 
         new_row, new_col = get_next_state(row, col, action)
@@ -92,10 +103,7 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
         done = (current_cell == GOAL) | (current_cell == HOLE)
         reward = (current_cell == GOAL).astype(jnp.float32)
 
-        new_env_state = EnvState(
-            state=new_state,
-            time=time + 1
-        )
+        new_env_state = EnvState(state=new_state, time=time + 1)
 
         return (
             jax.lax.stop_gradient(self.get_obs(new_env_state)),
@@ -109,10 +117,7 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
 
-        initial_state = EnvState(
-            state=jnp.array(0),
-            time=0
-        )
+        initial_state = EnvState(state=jnp.array(0), time=0)
 
         return self.get_obs(initial_state), initial_state
 
@@ -148,5 +153,3 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
                 "time": spaces.Discrete(params.max_steps_in_episode),
             }
         )
-
-

@@ -67,6 +67,7 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 | [`Reacher-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/reacher.py) | [Lenton et al. (2021)](https://github.com/unifyai/gym/) | [Click](https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py) |
 | [`Swimmer-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/swimmer.py) | [Lenton et al. (2021)](https://github.com/unifyai/gym/) | [Click](https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py) |
 | [`Pong-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/pong.py) | [Kirsch (2018)](https://github.com/BlackHC/batch_pong_poc) | [Click](https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py) |
+| [`FrozenLake-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/frozen_lake.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540) | [Click](https://github.com/openai/gym/blob/master/gym/envs/toy_text/frozen_lake.py) |
 
 \* All displayed speeds are estimated for 1M step transitions (random policy) on a NVIDIA A100 GPU using `jit` compiled episode rollouts with 2000 environment workers. For more detailed speed comparisons on different accelerators (CPU, RTX 2080Ti) and MLP policies, please refer to the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
 

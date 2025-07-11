@@ -139,7 +139,9 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
         obs = obs.at[
             expanded_paddles, jnp.array([0, self.width - 1]).reshape((2, 1)), 0
-        ].set(1)  # paddle
+        ].set(
+            1
+        )  # paddle
         return obs.reshape((self.height, self.width, 3)).astype(jnp.float32)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:

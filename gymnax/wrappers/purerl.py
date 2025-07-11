@@ -29,9 +29,9 @@ class FlattenObservationWrapper(GymnaxWrapper):
     #     super().__init__(env)
 
     def observation_space(self, params) -> spaces.Box:
-        assert isinstance(self._env.observation_space(params), spaces.Box), (
-            "Only Box spaces are supported for now."
-        )
+        assert isinstance(
+            self._env.observation_space(params), spaces.Box
+        ), "Only Box spaces are supported for now."
         return spaces.Box(
             low=self._env.observation_space(params).low,
             high=self._env.observation_space(params).high,
