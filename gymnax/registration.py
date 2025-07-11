@@ -26,6 +26,7 @@ from gymnax.environments.misc import (
     reacher,
     rooms,
     swimmer,
+    frozen_lake,
 )
 
 # =============================================================================
@@ -104,6 +105,8 @@ def make(env_id: str, **env_kwargs):
         env = swimmer.Swimmer(**env_kwargs)
     elif env_id == "Pong-misc":
         env = pong.Pong(**env_kwargs)
+    elif env_id == "FrozenLake-misc":
+        env = frozen_lake.FrozenLake(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered.")
 
@@ -136,4 +139,5 @@ registered_envs = [
     "Reacher-misc",
     "Swimmer-misc",
     "Pong-misc",
+    "FrozenLake-misc",
 ]

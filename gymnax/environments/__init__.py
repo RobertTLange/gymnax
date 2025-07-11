@@ -23,13 +23,14 @@ MinFreeway = minatar.MinFreeway
 MinSpaceInvaders = minatar.MinSpaceInvaders
 BernoulliBandit = misc.BernoulliBandit
 FourRooms = misc.FourRooms
+FrozenLake = misc.FrozenLake
 GaussianBandit = misc.GaussianBandit
 MetaMaze = misc.MetaMaze
 PointRobot = misc.PointRobot
 Pong = misc.Pong
 Reacher = misc.Reacher
 Swimmer = misc.Swimmer
-
+FrozenLake = misc.FrozenLake
 
 __all__ = [
     "EnvParams",
@@ -58,4 +59,5 @@ __all__ = [
     "Reacher",
     "Swimmer",
     "Pong",
+    "FrozenLake",
 ]
