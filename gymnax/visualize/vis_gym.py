@@ -65,6 +65,7 @@ def update_gym(im, env, state):
         gym_env = gym.make("Pendulum-v0", render_mode="rgb_array")
     else:
         gym_env = gym.make(env.name, render_mode="rgb_array")
+    gym_env.reset()
     gym_state = get_gym_state(state, env.name)
     if env.name == "Pendulum-v1":
         gym_env.env.last_u = gym_state[-1]
