@@ -60,7 +60,6 @@ class Environment(Generic[TEnvState, TEnvParams]):
 
         # Keep track of obs_st on terminal states
         info["obs_st"] = obs_st
-        info["state_st"] = state_st
         info["truncated"] = state_st.time >= params.max_steps_in_episode
         info["terminated"] = jnp.logical_and(done,jnp.logical_not(info["truncated"]))
 
