@@ -9,6 +9,7 @@ from typing import (
 )
 
 import jax
+import jax.numpy as jnp
 from flax import struct
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
@@ -56,6 +57,12 @@ class Environment(Generic[TEnvState, TEnvParams]):
             lambda x, y: jax.lax.select(done, x, y), state_re, state_st
         )
         obs = jax.lax.select(done, obs_re, obs_st)
+
+        # Keep track of obs_st on terminal states
+        info["obs_st"] = obs_st
+        info["state_st"] = state_st
+        info["truncated"] = state_st.time >= params.max_steps_in_episode
+        info["terminated"] = jnp.logical_and(done,jnp.logical_not(info["truncated"]))
 
         return obs, state, reward, done, info
 
