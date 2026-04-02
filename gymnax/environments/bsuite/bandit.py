@@ -48,9 +48,9 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         """Perform single timestep state transition."""
         reward = state.rewards[action]
         state = EnvState(
-            state.rewards,
-            state.total_regret + params.optimal_return - reward,
-            state.time + 1,
+            rewards=state.rewards,
+            total_regret=state.total_regret + params.optimal_return - reward,
+            time=state.time + 1,
         )
 
         # Check game condition & no. steps for termination condition
@@ -76,7 +76,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         )
         rewards = jnp.linspace(0, 1, self.num_actions)[action_mask]
 
-        state = EnvState(rewards, 0.0, 0)
+        state = EnvState(rewards=rewards, total_regret=0.0, time=0)
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
