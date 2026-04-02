@@ -93,7 +93,7 @@ class RolloutWrapper:
                 jnp.array([1.0]),
             ],
             (),
-            self.env_params.max_steps_in_episode,
+            self.num_env_steps,
         )
         # Return the sum of rewards accumulated by agent in episode rollout
         obs, action, reward, next_obs, done = scan_out

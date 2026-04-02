@@ -25,23 +25,24 @@ def test_rollout():
     key = jax.random.key(0)
     model = MLP()
     pholder = jnp.zeros((3,))
+    num_env_steps = 150
     policy_params = model.init(
         key,
         x=pholder,
         key=key,
     )
     manager = rollout.RolloutWrapper(
-        model.apply, env_name="Pendulum-v1", num_env_steps=200
+        model.apply, env_name="Pendulum-v1", num_env_steps=num_env_steps
     )
 
     # Test simple single episode rollout
     obs, _, _, _, _, _ = manager.single_rollout(key, policy_params)
-    assert obs.shape == (200, 3)
+    assert obs.shape == (num_env_steps, 3)
 
     # Test multiple rollouts for same network (different random numbers)
     key_batch = jax.random.split(key, 10)
     obs, _, _, _, _, _ = manager.batch_rollout(key_batch, policy_params)
-    assert obs.shape == (10, 200, 3)
+    assert obs.shape == (10, num_env_steps, 3)
 
     # Test multiple rollouts for different networks
     batch_params = jax.tree.map(
@@ -57,4 +58,4 @@ def test_rollout():
         _,
         _,
     ) = manager.population_rollout(key_batch, batch_params)
-    assert obs.shape == (5, 10, 200, 3)
+    assert obs.shape == (5, 10, num_env_steps, 3)

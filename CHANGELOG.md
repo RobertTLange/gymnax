@@ -2,8 +2,10 @@
 
 - Fixed `SimpleBandit` state initialization so `rewards`, `total_regret`, and `time` are assigned to the correct fields.
 - Added a regression test covering `SimpleBandit` reset and step state construction.
+- Fixed `RolloutWrapper` so `num_env_steps` overrides the default episode length during scans.
+- Added a regression test covering non-default `num_env_steps` rollout shapes.
 
-Thanks to @ponseko !
+Thanks to @ponseko and @jinPrelude !
 
 ### [v0.0.8] - 21/04/2024
 
