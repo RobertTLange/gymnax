@@ -1,3 +1,10 @@
+### [Unreleased] - 02/04/2026
+
+- Fixed `SimpleBandit` state initialization so `rewards`, `total_regret`, and `time` are assigned to the correct fields.
+- Added a regression test covering `SimpleBandit` reset and step state construction.
+
+Thanks to @ponseko !
+
 ### [v0.0.8] - 21/04/2024
 
 Fix import errors for `matplotlib` and `seaborn` visualization.
