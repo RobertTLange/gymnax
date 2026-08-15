@@ -4,6 +4,7 @@ This module provides JAX implementations of miscellaneous environments, includin
 - BernoulliBandit
 - GaussianBandit
 - FourRooms
+- FrozenLake
 - MetaMaze
 - PointRobot
 - Reacher
@@ -12,6 +13,7 @@ This module provides JAX implementations of miscellaneous environments, includin
 """
 
 from .bernoulli_bandit import BernoulliBandit
+from .frozen_lake import FrozenLake
 from .gaussian_bandit import GaussianBandit
 from .meta_maze import MetaMaze
 from .point_robot import PointRobot
@@ -24,6 +26,7 @@ __all__ = [
     "BernoulliBandit",
     "GaussianBandit",
     "FourRooms",
+    "FrozenLake",
     "MetaMaze",
     "PointRobot",
     "Reacher",

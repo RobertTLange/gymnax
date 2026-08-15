@@ -5,7 +5,8 @@ from gymnax import environments, registration
 EnvParams = environments.EnvParams
 EnvState = environments.EnvState
 make = registration.make
+register = registration.register
 registered_envs = registration.registered_envs
 
 
-__all__ = ["make", "registered_envs", "EnvState", "EnvParams"]
+__all__ = ["make", "register", "registered_envs", "EnvState", "EnvParams"]

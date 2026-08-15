@@ -51,6 +51,7 @@ def pytest_generate_tests(metafunc):
                     "Reacher-misc",
                     "Swimmer-misc",
                     "Pong-misc",
+                    "FrozenLake-misc",
                 ],
             )
         else:

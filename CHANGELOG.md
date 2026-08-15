@@ -1,5 +1,9 @@
 ### [Unreleased] - 02/04/2026
 
+- Added Gymnasium-compatible `FrozenLake-misc`, including configurable static
+  maps, dynamics, rewards, and episode limits.
+- Added public factory-based `gymnax.register` support for runtime custom
+  environment registration.
 - **Breaking:** Released the Gymnax 1.0 six-value step API: `terminated` and
   `truncated` replace the legacy `done` result. Automatic reset and
   `info["final_observation"]` remain available for terminal transitions.

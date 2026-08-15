@@ -84,6 +84,7 @@ wrap an environment with `LegacyStepAPIWrapper`; see the
 | [`Reacher-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/reacher.py) | [Lenton et al. (2021)](https://github.com/unifyai/gym/) | [Click](https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py) |
 | [`Swimmer-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/swimmer.py) | [Lenton et al. (2021)](https://github.com/unifyai/gym/) | [Click](https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py) |
 | [`Pong-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/pong.py) | [Kirsch (2018)](https://github.com/BlackHC/batch_pong_poc) | [Click](https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py) |
+| [`FrozenLake-misc`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/misc/frozen_lake.py) | [Brockman et al. (2016)](https://arxiv.org/abs/1606.01540) | [Gymnasium FrozenLake](https://gymnasium.farama.org/environments/toy_text/frozen_lake/) |
 
 \* All displayed speeds are estimated for 1M step transitions (random policy) on a NVIDIA A100 GPU using `jit` compiled episode rollouts with 2000 environment workers. For more detailed speed comparisons on different accelerators (CPU, RTX 2080Ti) and MLP policies, please refer to the [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) documentation.
 
@@ -115,6 +116,23 @@ Other dependency versions may work, but are not part of the tested support matri
 * 📓 [ES with `gymnax`](examples/02_evolution.ipynb) - Meta-evolve an LSTM controller that controls 2 link pendula of different lengths.
 * 📓 [Bandit A2C Meta-RL](examples/03_meta_a2c.ipynb) - Meta-learn an A2C LSTM that learns to explore/exploit in multi-arm bandit tasks.
 * 📓 [Trained baselines](https://github.com/RobertTLange/gymnax-blines) - Check out the trained baseline agents (PPO/ES) in `gymnax-blines`.
+
+## Custom environments
+
+Register a factory to make a custom environment available through the usual
+`gymnax.make` entry point. The factory receives any `make` keyword arguments
+and must create a fresh `Environment` instance:
+
+```python
+import gymnax
+from my_package import MyEnvironment
+
+gymnax.register("MyEnvironment-v0", MyEnvironment)
+env, params = gymnax.make("MyEnvironment-v0", difficulty="hard")
+```
+
+Registration is process-global for the running Python interpreter; choose a
+unique ID and register each factory once during application setup.
 
 ## Key Selling Points 💵
 

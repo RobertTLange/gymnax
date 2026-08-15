@@ -23,6 +23,7 @@ MinSeaquest = minatar.MinSeaquest
 MinSpaceInvaders = minatar.MinSpaceInvaders
 BernoulliBandit = misc.BernoulliBandit
 FourRooms = misc.FourRooms
+FrozenLake = misc.FrozenLake
 GaussianBandit = misc.GaussianBandit
 MetaMaze = misc.MetaMaze
 PointRobot = misc.PointRobot
@@ -54,6 +55,7 @@ __all__ = [
     "BernoulliBandit",
     "GaussianBandit",
     "FourRooms",
+    "FrozenLake",
     "MetaMaze",
     "PointRobot",
     "Reacher",
