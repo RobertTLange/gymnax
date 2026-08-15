@@ -21,3 +21,6 @@ wheels/
 # Custom
 output/
 *.gif
+
+# Local planning notes
+/HANDOFF.md
