@@ -55,7 +55,7 @@ jobs:
         run: |
           test_dir="$(mktemp -d)"
           cd "$test_dir"
-          uv run --project "$GITHUB_WORKSPACE" python -m pytest -vv --all --durations=0 --cov=gymnax --cov-report=term-missing --cov-report=xml="$GITHUB_WORKSPACE/coverage.xml" "$GITHUB_WORKSPACE/tests" --ignore="$GITHUB_WORKSPACE/tests/minatar/test_seaquest.py"
+          uv run --project "$GITHUB_WORKSPACE" python -m pytest -vv --all --durations=0 --cov=gymnax --cov-report=term-missing --cov-report="xml:$GITHUB_WORKSPACE/coverage.xml" "$GITHUB_WORKSPACE/tests" --ignore="$GITHUB_WORKSPACE/tests/minatar/test_seaquest.py"
       - name: Upload coverage to Codecov
         if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
         continue-on-error: true
