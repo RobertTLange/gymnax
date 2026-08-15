@@ -152,7 +152,11 @@ Other dependency versions may work, but are not part of the tested support matri
       return obs, action, reward, next_obs, done
   ```
 
-- **Build-in visualization tools**: You can also smoothly generate GIF animations using the `Visualizer` tool, which covers all `classic_control`, `MinAtar` and most `misc` environments:
+- **Built-in visualization tools**: Generate GIF animations with the `Visualizer`
+  tool. Install the optional classic-control renderer first with
+  `pip install "gymnax[visualize]"`; GIF export uses Pillow and does not require
+  ffmpeg. The visualizer supports the Gymnasium classic-control environments and
+  selected native MinAtar and misc environments:
   ```python
   from gymnax.visualize import Visualizer
 
@@ -177,6 +181,10 @@ Other dependency versions may work, but are not part of the tested support matri
   vis = Visualizer(env, env_params, state_seq, cum_rewards)
   vis.animate(f"docs/anim.gif")
   ```
+
+  Native `env.render(state, params)` methods return Matplotlib figures and axes
+  for environment-specific debugging. To display one interactively, use an
+  interactive Matplotlib backend and call `plt.show()`.
 
 - **Training pipelines & pretrained agents**: Check out [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines) for trained agents, expert rollout visualizations and PPO/ES pipelines. The agents are minimally tuned, but can help you get up and running.
 
