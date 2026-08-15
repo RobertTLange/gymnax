@@ -29,7 +29,10 @@ def test_brax_wrapper():
     action = jax.vmap(env.action_space(env_params).sample)(keys)
     reset_fn = jax.jit(wrapped_env.reset)
     _, env_state = jax.vmap(env.reset)(keys)
-    o, new_env_state, r, d, _ = jax.vmap(env.step)(keys, env_state, action)
+    o, new_env_state, r, terminated, truncated, _ = jax.vmap(env.step)(
+        keys, env_state, action
+    )
+    d = jax.numpy.logical_or(terminated, truncated)
     state = reset_fn(keys)
     chex.assert_trees_all_equal_shapes(o, state.obs)
     chex.assert_trees_all_equal_shapes(r, state.reward)
@@ -37,3 +40,19 @@ def test_brax_wrapper():
     chex.assert_trees_all_equal_structs(new_env_state, state.pipeline_state)
     step_fn = jax.jit(wrapped_env.step)
     _ = step_fn(state, action)
+
+
+def test_brax_wrapper_retains_terminal_flags_in_info():
+    """Brax exposes Gymnax terminal causes alongside its combined done flag."""
+    env, params = gymnax.make("Pendulum-v1")
+    params = params.replace(max_steps_in_episode=1)
+    adapter = brax.GymnaxToBraxWrapper(env)
+    reset_key, action_key = jax.random.split(jax.random.key(1))
+
+    state = adapter.reset(reset_key, params)
+    action = env.action_space(params).sample(action_key)
+    next_state = adapter.step(state, action)
+
+    assert next_state.done
+    assert not next_state.info["terminated"]
+    assert next_state.info["truncated"]

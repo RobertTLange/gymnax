@@ -44,11 +44,11 @@ class GymnaxToEvoJaxTask(VectorizedTask):
             state: GymState, action: jax.Array
         ) -> tuple[GymState, jax.Array, jax.Array]:
             key_st, key_ep = jax.random.split(state.key)
-            obs, env_state, reward, done, _ = env.step(
+            obs, env_state, reward, terminated, truncated, _ = env.step(
                 key_st, state.state, action, env_params
             )
             state = state.replace(key=key_ep, state=env_state, obs=obs)
-            return state, reward, done
+            return state, reward, jax.numpy.logical_or(terminated, truncated)
 
         self._step_fn = jax.jit(jax.vmap(step_fn))
 

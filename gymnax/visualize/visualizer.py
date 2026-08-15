@@ -82,7 +82,9 @@ class Visualizer:
             "SpaceInvaders-MinAtar",
             "Pong-misc",
         ]:
-            self.im = vis_minatar.init_minatar(self.ax, self.env, self.state_seq[0])
+            self.im = vis_minatar.init_minatar(
+                self.ax, self.env, self.state_seq[0], self.env_params
+            )
         elif self.env.name == "PointRobot-misc":
             self.im = vis_circle.init_circle(
                 self.ax, self.env, self.state_seq[0], self.env_params
@@ -115,7 +117,9 @@ class Visualizer:
             "SpaceInvaders-MinAtar",
             "Pong-misc",
         ]:
-            vis_minatar.update_minatar(self.im, self.env, self.state_seq[frame])
+            vis_minatar.update_minatar(
+                self.im, self.env, self.state_seq[frame], self.env_params
+            )
         elif self.env.name == "PointRobot-misc":
             self.im = vis_circle.update_circle(self.im, self.env, self.state_seq[frame])
         elif self.env.name in ["MetaMaze-misc", "FourRooms-misc"]:
@@ -146,9 +150,10 @@ if __name__ == "__main__":
         state_seq.append(env_state)
         key, key_act, key_step = jax.random.split(key, 3)
         action = env.action_space(env_params).sample(key_act)
-        next_obs, next_env_state, reward, done, info = env.step(
+        next_obs, next_env_state, reward, terminated, truncated, info = env.step(
             key_step, env_state, action, env_params
         )
+        done = jnp.logical_or(terminated, truncated)
         reward_seq.append(reward)
         if done:
             break

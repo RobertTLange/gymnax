@@ -73,7 +73,9 @@ class StickyActionWrapper(GymnaxWrapper):
         state: StickyActionState,
         action: int | jax.Array,
         params: environment.EnvParams | None = None,
-    ) -> tuple[jax.Array, StickyActionState, jax.Array, jax.Array, dict[Any, Any]]:
+    ) -> tuple[
+        jax.Array, StickyActionState, jax.Array, jax.Array, jax.Array, dict[Any, Any]
+    ]:
         """Step with either the requested action or the recorded previous action."""
         requested_action = jnp.asarray(action, dtype=self._action_dtype)
         if self._sticky_action_prob == 0.0:
@@ -83,14 +85,15 @@ class StickyActionWrapper(GymnaxWrapper):
             replay_key, step_key = jax.random.split(key)
             replay = jax.random.bernoulli(replay_key, self._sticky_action_prob)
             executed_action = jnp.where(replay, state.last_action, requested_action)
-        obs, env_state, reward, done, info = self._env.step(
+        obs, env_state, reward, terminated, truncated, info = self._env.step(
             step_key, state.env_state, executed_action, params
         )
         return (
             obs,
             StickyActionState(env_state=env_state, last_action=executed_action),
             reward,
-            done,
+            terminated,
+            truncated,
             info,
         )
 
@@ -127,10 +130,14 @@ class FlattenObservationWrapper(GymnaxWrapper):
         state: environment.EnvState,
         action: int | float,
         params: environment.EnvParams | None = None,
-    ) -> tuple[jax.Array, environment.EnvState, float, bool, Any]:  # dict]:
-        obs, state, reward, done, info = self._env.step(key, state, action, params)
+    ) -> tuple[jax.Array, environment.EnvState, float, bool, bool, Any]:  # dict]:
+        obs, state, reward, terminated, truncated, info = self._env.step(
+            key, state, action, params
+        )
         obs = jnp.reshape(obs, (-1,))
-        return obs, state, reward, done, info
+        final_observation = jnp.reshape(info["final_observation"], (-1,))
+        info = {**info, "final_observation": final_observation}
+        return obs, state, reward, terminated, truncated, info
 
 
 @struct.dataclass
@@ -169,7 +176,7 @@ class LogWrapper(GymnaxWrapper):
         state: LogEnvState,
         action: int | float,
         params: environment.EnvParams | None = None,
-    ) -> tuple[jax.Array, LogEnvState, jax.Array, bool, dict[Any, Any]]:
+    ) -> tuple[jax.Array, LogEnvState, jax.Array, bool, bool, dict[Any, Any]]:
         """Step the environment.
 
 
@@ -181,11 +188,12 @@ class LogWrapper(GymnaxWrapper):
 
 
         Returns:
-          A tuple of (observation, state, reward, done, info).
+          A tuple of (observation, state, reward, terminated, truncated, info).
         """
-        obs, env_state, reward, done, info = self._env.step(
+        obs, env_state, reward, terminated, truncated, info = self._env.step(
             key, state.env_state, action, params
         )
+        done = jnp.logical_or(terminated, truncated)
         new_episode_return = state.episode_returns + reward
         new_episode_length = state.episode_lengths + 1
         state = LogEnvState(
@@ -200,4 +208,4 @@ class LogWrapper(GymnaxWrapper):
         info["returned_episode_returns"] = state.returned_episode_returns
         info["returned_episode_lengths"] = state.returned_episode_lengths
         info["returned_episode"] = done
-        return obs, state, reward, done, info
+        return obs, state, reward, terminated, truncated, info

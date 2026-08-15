@@ -1,14 +1,15 @@
 """Visualize Minatar environments."""
 
+import jax
 import numpy as np
 import seaborn as sns
 from matplotlib import colors
 
 
-def init_minatar(ax, env, state):
+def init_minatar(ax, env, state, params):
     """Initialize the Minatar visualization."""
 
-    obs = env.get_obs(state)
+    obs = env.observe(jax.random.key(0), state, None, params)
     n_channels = env.obs_shape[-1]
     cmap = sns.color_palette("cubehelix", n_channels)
     cmap.insert(0, (0, 0, 0))
@@ -23,9 +24,9 @@ def init_minatar(ax, env, state):
     return ax.imshow(numerical_state, cmap=cmap, norm=norm, interpolation="none")
 
 
-def update_minatar(im, env, state):
+def update_minatar(im, env, state, params):
     """Update the Minatar visualization."""
-    obs = env.get_obs(state)
+    obs = env.observe(jax.random.key(0), state, None, params)
     n_channels = env.obs_shape[-1]
     numerical_state = (
         np.amax(obs * np.reshape(np.arange(n_channels) + 1, (1, 1, -1)), 2) + 0.5

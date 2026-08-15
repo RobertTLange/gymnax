@@ -38,7 +38,14 @@ class GymnaxToBraxWrapper(envs.Env):
             reward=jax.numpy.array(0.0),
             done=jax.numpy.array(False),
             metrics={},
-            info={"_key": jax.random.split(key)[0], "_env_params": params},
+            info={
+                "_key": jax.random.split(key)[0],
+                "_env_params": params,
+                "terminated": jax.numpy.array(False),
+                "truncated": jax.numpy.array(False),
+                "discount": jax.numpy.array(1.0),
+                "final_observation": obs,
+            },
         )
 
     def step(
@@ -50,16 +57,25 @@ class GymnaxToBraxWrapper(envs.Env):
         """Step brax State. Update stored key and params in info field."""
         key, step_key = jax.random.split(state.info["_key"])
         if params is None:
-            params = self.env.default_params
-        state.info.update(_key=key, _env_params=params)
-        o, env_state, r, d, _ = self.env.step(
+            params = state.info["_env_params"]
+        o, env_state, r, terminated, truncated, env_info = self.env.step(
             step_key, state.pipeline_state, action, params
         )
+        done = jax.numpy.logical_or(terminated, truncated)
+        info = {
+            **state.info,
+            **env_info,
+            "_key": key,
+            "_env_params": params,
+            "terminated": terminated,
+            "truncated": truncated,
+        }
         return state.replace(
             pipeline_state=env_state,
             obs=o,
             reward=jax.numpy.array(r),
-            done=jax.numpy.array(d),
+            done=jax.numpy.array(done),
+            info=info,
         )
 
     def action_size(self) -> int:

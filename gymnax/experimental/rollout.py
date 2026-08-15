@@ -65,9 +65,10 @@ class RolloutWrapper:
                 action = self.model_forward(policy_params, obs, key_net)
             else:
                 action = self.env.action_space(self.env_params).sample(key_net)
-            next_obs, next_state, reward, done, _ = self.env.step(
+            next_obs, next_state, reward, terminated, truncated, _ = self.env.step(
                 key_step, state, action, self.env_params
             )
+            done = jnp.logical_or(terminated, truncated)
             new_cum_reward = cum_reward + reward * valid_mask
             new_valid_mask = valid_mask * (1 - done)
             carry = [

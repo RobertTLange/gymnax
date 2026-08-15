@@ -33,7 +33,9 @@ def rollout_states(env_name: str, num_steps: int = 2):
         state_seq.append(env_state)
         key, key_act, key_step = jax.random.split(key, 3)
         action = env.action_space(env_params).sample(key_act)
-        _, env_state, reward, _, _ = env.step(key_step, env_state, action, env_params)
+        _, env_state, reward, _, _, _ = env.step(
+            key_step, env_state, action, env_params
+        )
         reward_seq.append(reward)
     return env, env_params, state_seq, jnp.cumsum(jnp.array(reward_seq))
 

@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import pytest
 
 import gymnax
-from gymnax.wrappers import LogWrapper, StickyActionWrapper
+from gymnax.wrappers import FlattenObservationWrapper, LogWrapper, StickyActionWrapper
 
 
 def test_log_wrapper_reset_and_step_share_jit_state_dtypes():
@@ -41,17 +41,22 @@ def test_sticky_action_wrapper_defaults_to_passthrough_and_records_action():
     _, state = wrapper.reset(reset_key, params)
 
     _, direct_state = env.reset(reset_key, params)
-    _, expected_state, expected_reward, expected_done, _ = env.step(
-        step_key, direct_state, jnp.int32(2), params
+    _, expected_state, expected_reward, expected_terminated, expected_truncated, _ = (
+        env.step(
+            step_key, direct_state, jnp.int32(2), params
+        )
     )
-    _, state, reward, done, _ = wrapper.step(step_key, state, jnp.int32(2), params)
+    _, state, reward, terminated, truncated, _ = wrapper.step(
+        step_key, state, jnp.int32(2), params
+    )
 
     assert state.last_action == 2
     assert state.env_state.paddle_x == 3
     state_matches = jax.tree.map(jnp.array_equal, state.env_state, expected_state)
     assert all(jax.tree.leaves(state_matches))
     assert reward == expected_reward
-    assert done == expected_done
+    assert terminated == expected_terminated
+    assert truncated == expected_truncated
 
 
 def test_sticky_action_wrapper_replays_previous_action():
@@ -61,7 +66,7 @@ def test_sticky_action_wrapper_replays_previous_action():
     _, state = wrapper.reset(reset_key, params)
     state = state.replace(last_action=jnp.int32(2))
 
-    _, state, _, _, _ = wrapper.step(step_key, state, jnp.int32(0), params)
+    _, state, _, _, _, _ = wrapper.step(step_key, state, jnp.int32(0), params)
 
     assert state.last_action == 2
     assert state.env_state.paddle_x == 3
@@ -73,7 +78,7 @@ def test_sticky_action_wrapper_samples_replay_from_transition_key():
     reset_key, step_key = jax.random.split(jax.random.key(2))
     _, state = wrapper.reset(reset_key, params)
 
-    _, state, _, _, _ = wrapper.step(step_key, state, jnp.int32(2), params)
+    _, state, _, _, _, _ = wrapper.step(step_key, state, jnp.int32(2), params)
     replay_key, _ = jax.random.split(step_key)
     expected_action = jnp.where(
         jax.random.bernoulli(replay_key, 0.5), jnp.int32(0), jnp.int32(2)
@@ -91,7 +96,10 @@ def test_sticky_action_wrapper_keeps_last_action_after_auto_reset():
     _, state = wrapper.reset(reset_key, params)
     state = state.replace(last_action=jnp.int32(2))
 
-    _, state, _, done, _ = wrapper.step(step_key, state, jnp.int32(0), params)
+    _, state, _, terminated, truncated, _ = wrapper.step(
+        step_key, state, jnp.int32(0), params
+    )
+    done = jnp.logical_or(terminated, truncated)
 
     assert done
     assert state.last_action == 2
@@ -103,22 +111,37 @@ def test_sticky_action_wrapper_explicit_reset_reinitializes_last_action():
     wrapper = StickyActionWrapper(env)
     reset_key, step_key, fresh_reset_key = jax.random.split(jax.random.key(4), 3)
     _, state = wrapper.reset(reset_key, params)
-    _, state, _, _, _ = wrapper.step(step_key, state, jnp.int32(2), params)
+    _, state, _, _, _, _ = wrapper.step(step_key, state, jnp.int32(2), params)
 
     _, fresh_state = wrapper.reset(fresh_reset_key, params)
 
     assert fresh_state.last_action == 0
 
 
+def test_flatten_observation_wrapper_flattens_terminal_observation():
+    """Bootstrap observations remain in the wrapper's flattened observation space."""
+    env, params = gymnax.make("Breakout-MinAtar")
+    params = params.replace(max_steps_in_episode=1)
+    wrapper = FlattenObservationWrapper(env)
+    reset_key, action_key, step_key = jax.random.split(jax.random.key(5), 3)
+    _, state = wrapper.reset(reset_key, params)
+    action = env.action_space(params).sample(action_key)
+
+    obs, _, _, _, truncated, info = wrapper.step(step_key, state, action, params)
+
+    assert truncated
+    assert info["final_observation"].shape == obs.shape
+
+
 def test_sticky_action_wrapper_supports_jit_and_vmap():
     env, params = gymnax.make("Catch-bsuite")
     wrapper = StickyActionWrapper(env)
-    reset_keys = jax.random.split(jax.random.key(5), 2)
-    step_keys = jax.random.split(jax.random.key(6), 2)
+    reset_keys = jax.random.split(jax.random.key(6), 2)
+    step_keys = jax.random.split(jax.random.key(7), 2)
     actions = jnp.array([0, 2], dtype=jnp.int32)
 
     _, states = jax.jit(jax.vmap(wrapper.reset, in_axes=(0, None)))(reset_keys, params)
-    _, states, _, _, _ = jax.jit(jax.vmap(wrapper.step, in_axes=(0, 0, 0, None)))(
+    _, states, _, _, _, _ = jax.jit(jax.vmap(wrapper.step, in_axes=(0, 0, 0, None)))(
         step_keys, states, actions, params
     )
 

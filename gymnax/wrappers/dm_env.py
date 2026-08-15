@@ -16,6 +16,7 @@ class TimeStep:
     reward: jax.Array
     discount: jax.Array
     observation: jax.Array
+    final_observation: jax.Array
 
 
 class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
@@ -27,7 +28,11 @@ class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
     ) -> TimeStep:
         obs, state = self._env.reset(key, params)
         return TimeStep(
-            state=state, reward=jnp.array(0.0), discount=jnp.array(1.0), observation=obs
+            state=state,
+            reward=jnp.array(0.0),
+            discount=jnp.array(1.0),
+            observation=obs,
+            final_observation=obs,
         )
 
     @partial(jax.jit, static_argnames=("self",))
@@ -38,9 +43,13 @@ class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
         action: int | float,
         params: environment.EnvParams | None = None,
     ) -> TimeStep:
-        obs, state, reward, done, _ = self._env.step(
+        obs, state, reward, terminated, truncated, info = self._env.step(
             key, timestep.state, action, params
         )
         return TimeStep(
-            state=state, reward=reward, discount=1.0 - done, observation=obs
+            state=state,
+            reward=reward,
+            discount=1.0 - terminated,
+            observation=obs,
+            final_observation=info["final_observation"],
         )
