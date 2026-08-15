@@ -1,5 +1,13 @@
 ### [Unreleased] - 02/04/2026
 
+- Fixed Acrobot autoreset state selection under JAX x64 mode.
+- Fixed `LogWrapper` reset counter dtypes so wrapped environments work in JIT
+  control flow.
+- Fixed `Catch-bsuite` reset state dtypes for JAX x64 control flow.
+- Fixed `MemoryChain-bsuite` reset and JIT stepping when `num_bits` is greater
+  than one.
+- Added a keyword-only `dtype` option to `spaces.Discrete`; it defaults to
+  `int32` and supports `int64` when JAX x64 mode is enabled.
 - Fixed `SimpleBandit` state initialization so `rewards`, `total_regret`, and `time` are assigned to the correct fields.
 - Added a regression test covering `SimpleBandit` reset and step state construction.
 - Fixed `RolloutWrapper` so `num_env_steps` overrides the default episode length during scans.

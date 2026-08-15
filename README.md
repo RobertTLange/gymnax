@@ -35,6 +35,9 @@ action = env.action_space(env_params).sample(key_act)
 n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 ```
 
+`spaces.Discrete(n, dtype=...)` uses `int32` actions by default. `int64` is
+available only when JAX x64 mode is enabled; other dtypes are unsupported.
+
 ## Implemented Accelerated Environments 🏎️
 
 
@@ -86,6 +89,11 @@ pip install git+https://github.com/RobertTLange/gymnax.git@main
 ```
 
 In order to use JAX on your accelerators, you can find more details in the [JAX documentation](https://github.com/google/jax#installation).
+
+## Supported versions
+
+Gymnax supports CPython 3.10–3.13, JAX and JAXlib 0.6.x, and Gymnasium 1.1.x.
+Other dependency versions may work, but are not part of the tested support matrix.
 
 ## Examples 📖
 * 📓 [Environment API](examples/00_getting_started.ipynb) - Get started with the basic `gymnax` API.
@@ -222,4 +230,7 @@ Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excelle
 
 ## Development 👷
 
-You can install the dev and test dependencies with `python -m pip -e .[dev,test]` in the root of the repository, and then run the test suite via `python -m pytest -vv --all`. When running the test suite, it is strongly encouraged, but not required, to treat warnings as errors with `python -m pytest -vv -W error --tb=short --all`. If you find a bug or are missing your favourite feature, feel free to create an issue and/or start [contributing](CONTRIBUTING.md) 🤗.
+Install the locked development and test environment with `uv sync --locked --all-extras`.
+Run `uv run ruff check .`, `uv run ruff format --check .`, and `uv run pytest -vv --all --ignore=tests/minatar/test_seaquest.py` before opening a pull request. Seaquest remains unsupported and is excluded from the suite.
+
+When running the test suite, it is strongly encouraged, but not required, to treat warnings as errors with `uv run pytest -vv -W error --tb=short --all --ignore=tests/minatar/test_seaquest.py`. If you find a bug or are missing your favourite feature, feel free to create an issue and/or start [contributing](CONTRIBUTING.md) 🤗.
