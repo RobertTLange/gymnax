@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted 2026-08-15. The 0.x terminal-metadata compatibility release is
-implemented in `805354b` and `a033a3e`; the remaining work is tracked for 1.0.
+Implemented for 1.0.0 on 2026-08-15. The 0.x terminal-metadata compatibility
+release remains available in `805354b` and `a033a3e` for migration reference.
 
 ## Goals
 
@@ -79,7 +79,9 @@ environment's `observation_space(params)` must describe the same tree.
 3. `observe(key, state, action, params)` replaces the inconsistent `get_obs`
    overloads. `action` is `None` for reset observations and the action that
    produced a transition otherwise. It may return a PyTree and supports noisy
-   observations through `key`.
+   observations through `key`. Built-in 1.0 environments continue to use a
+   compatibility bridge to their existing `get_obs` implementations; new custom
+   environments should implement `observe` directly.
 4. `is_terminal` and `discount` are no longer required base hooks. Environments
    that retain helpers must use them only for natural termination; learning code
    consumes the public terminal flags.
@@ -89,28 +91,37 @@ or stochastic observations without custom signatures.
 
 ## Migration
 
-For 0.x callers, preserve the five-value unpacking and use the new fields when
-computing targets:
+For code that must retain the historical five-value unpacking during migration,
+wrap the 1.0 environment and use the retained metadata when computing targets:
 
 ```python
-next_obs, next_state, reward, done, info = env.step(key, state, action, params)
+legacy_env = LegacyStepAPIWrapper(env)
+next_obs, next_state, reward, done, info = legacy_env.step(key, state, action, params)
 bootstrap_obs = info["final_observation"]
 bootstrap_mask = 1.0 - info["terminated"].astype(jnp.float32)
 ```
 
 For 1.0, replace `done` with `terminated, truncated`; reset control flow when
 `terminated | truncated` is true. Retain `final_observation` for autoreset
-rollouts. Gymnasium and vector-Gymnasium adapters must forward the two flags
-without deriving one from the other.
+rollouts. Gymnasium and vector-Gymnasium adapters forward the two flags without
+deriving one from the other.
+
+Code that cannot migrate immediately may use the opt-in
+`gymnax.wrappers.LegacyStepAPIWrapper`. It restores the removed five-value
+return and computes `done = terminated | truncated`; terminal metadata remains
+available in `info`. New code and custom environments must implement the
+six-value/`observe` contract directly. The legacy observation and terminal
+helpers remain as compatibility internals for built-in implementations; they
+are not required hooks for new environments.
 
 ## Delivery sequence
 
 1. Completed: the 0.x `info` fields, built-in time-limit audit, and Gymnasium
    adapter forwarding have regression coverage for ordinary, terminated,
    truncated, simultaneous, JIT, and vmap transitions.
-2. Add PyTree observation coverage and migrate the base hooks.
-3. Release 1.0 with the six-value API, deprecation/migration notes, and adapter
-   contract tests.
+2. Completed: PyTree-safe autoreset, the keyed `observe` entrypoint, the
+   six-value API, and the opt-in five-value compatibility adapter.
+3. Released: 1.0.0 migration notes and wrapper contract coverage.
 
 Open issues #109, #38, #103, #107, #88, #59, #32, and #26 remain the public
 discussion and implementation trackers. Pull request #108 was useful reference

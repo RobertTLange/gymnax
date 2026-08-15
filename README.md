@@ -17,6 +17,7 @@ Are you fed up with slow CPU-based RL environment processes? Do you want to leve
 
 ```python
 import jax
+import jax.numpy as jnp
 import gymnax
 
 key = jax.random.key(0)
@@ -32,7 +33,7 @@ obs, state = env.reset(key_reset, env_params)
 action = env.action_space(env_params).sample(key_act)
 
 # Perform the step transition. Gymnax auto-resets after either terminal cause.
-n_obs, n_state, reward, done, info = env.step(
+n_obs, n_state, reward, terminated, truncated, info = env.step(
     key_step, state, action, env_params
 )
 
@@ -45,9 +46,10 @@ bootstrap_mask = 1.0 - info["terminated"].astype(jnp.float32)
 `spaces.Discrete(n, dtype=...)` uses `int32` actions by default. `int64` is
 available only when JAX x64 mode is enabled; other dtypes are unsupported.
 
-The current five-value environment API includes distinct `terminated` and
-`truncated` metadata in `info`. Its accepted 1.0 migration contract is documented in the
-[API and compatibility RFC](docs/api_rfc.md).
+Gymnax 1.0 returns separate `terminated` and `truncated` values. Use
+`terminated | truncated` for reset control flow. Existing five-value callers can
+wrap an environment with `LegacyStepAPIWrapper`; see the
+[API and compatibility RFC](docs/api_rfc.md) for the migration details.
 
 ## Implemented Accelerated Environments 🏎️
 
@@ -146,9 +148,10 @@ Other dependency versions may work, but are not part of the tested support matri
           obs, state, policy_params, key = state_input
           key, key_step, key_net = jax.random.split(key, 3)
           action = model.apply(policy_params, obs)
-          next_obs, next_state, reward, done, _ = env.step(
+          next_obs, next_state, reward, terminated, truncated, _ = env.step(
               key_step, state, action, env_params
           )
+          done = terminated | truncated
           carry = [next_obs, next_state, policy_params, key]
           return carry, [obs, action, reward, next_obs, done]
 
@@ -179,9 +182,10 @@ Other dependency versions may work, but are not part of the tested support matri
       state_seq.append(env_state)
       key, key_act, key_step = jax.random.split(key, 3)
       action = env.action_space(env_params).sample(key_act)
-      next_obs, next_env_state, reward, done, info = env.step(
+      next_obs, next_env_state, reward, terminated, truncated, info = env.step(
           key_step, env_state, action, env_params
       )
+      done = terminated | truncated
       reward_seq.append(reward)
       if done:
           break
@@ -200,6 +204,16 @@ Other dependency versions may work, but are not part of the tested support matri
   from gymnax.wrappers import StickyActionWrapper
 
   env = StickyActionWrapper(env, sticky_action_prob=0.1)
+  ```
+
+  For a transitional five-value API, opt in explicitly:
+  ```python
+  from gymnax.wrappers import LegacyStepAPIWrapper
+
+  legacy_env = LegacyStepAPIWrapper(env)
+  next_obs, next_state, reward, done, info = legacy_env.step(
+      key_step, state, action, env_params
+  )
   ```
 
   Native `env.render(state, params)` methods return Matplotlib figures and axes

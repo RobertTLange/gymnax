@@ -1,5 +1,14 @@
 ### [Unreleased] - 02/04/2026
 
+- **Breaking:** Released the Gymnax 1.0 six-value step API: `terminated` and
+  `truncated` replace the legacy `done` result. Automatic reset and
+  `info["final_observation"]` remain available for terminal transitions.
+- Added PyTree-safe observation autoreset and the keyed `Environment.observe`
+  extension point for new custom environments.
+- Added opt-in `LegacyStepAPIWrapper` for applications that require the removed
+  five-value step return while migrating.
+- Updated Gymnasium, Brax, EvoJAX, DM-env, pure-RL, rollout, visualization, and
+  tutorial integration paths for the 1.0 terminal contract.
 - Published the accepted API and compatibility RFC: a non-breaking terminal
   metadata path for 0.x and the Gymnasium-style 1.0 migration contract.
 - Added JIT/vmap-safe `terminated`, `truncated`, and `final_observation`

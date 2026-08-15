@@ -1,6 +1,6 @@
 [project]
 name = "gymnax"
-version = "0.0.9"
+version = "1.0.0"
 description = "JAX implementations of OpenAI's gym environments"
 authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
 readme = "README.md"
