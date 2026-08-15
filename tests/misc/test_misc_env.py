@@ -21,7 +21,9 @@ def test_step(misc_env_name: str):
         # Loop over test episode steps
         for _ in range(num_steps):
             action = env_gymnax.action_space(env_params).sample(key_input)
-            obs, state, _, _, _ = env_gymnax.step(key_input, state, action, env_params)
+            obs, state, _, _, _, _ = env_gymnax.step(
+                key_input, state, action, env_params
+            )
 
             # Check state and observation space
             env_gymnax.state_space(env_params).contains(state)

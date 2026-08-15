@@ -61,19 +61,13 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: int | float | jax.Array,
         params: EnvParams | None = None,
-    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, jax.Array, dict[Any, Any]]:
         """Step while preserving bsuite's cumulative episode metrics on reset."""
         if params is None:
             params = self.default_params
         key_step, key_reset = jax.random.split(key)
-        obs_step, state_step, reward, legacy_done, info = self.step_env(
+        obs_step, state_step, reward, terminated, info = self.step_env(
             key_step, state, action, params
-        )
-        terminated = jnp.logical_or(
-            self.is_terminated(state_step, params),
-            jnp.logical_and(
-                legacy_done, jnp.logical_not(self.is_truncated(state_step, params))
-            ),
         )
         truncated = self.is_truncated(state_step, params)
         done = jnp.logical_or(terminated, truncated)
@@ -97,7 +91,12 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
             "truncated": truncated,
             "final_observation": obs_step,
         }
-        return jax.lax.select(done, obs_reset, obs_step), next_state, reward, done, info
+        obs = jax.tree.map(
+            lambda reset_leaf, step_leaf: jax.lax.select(done, reset_leaf, step_leaf),
+            obs_reset,
+            obs_step,
+        )
+        return obs, next_state, reward, terminated, truncated, info
 
     def step_env(
         self,

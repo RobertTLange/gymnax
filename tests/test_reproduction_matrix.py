@@ -38,16 +38,17 @@ def test_registered_environment_resets_and_steps_when_jitted(
 
     observation, state = reset(reset_key, params)
     action = env.action_space(params).sample(action_key)
-    next_observation, next_state, reward, done, info = step(
+    next_observation, next_state, reward, terminated, truncated, info = step(
         step_key, state, action, params
     )
+    done = jnp.logical_or(terminated, truncated)
 
     assert observation.shape == next_observation.shape
     assert reward.shape == ()
     assert done.shape == ()
     assert info
     assert {"terminated", "truncated", "final_observation"} <= info.keys()
-    assert done == jnp.logical_or(info["terminated"], info["truncated"])
+    assert done == jnp.logical_or(terminated, truncated)
     assert next_observation.shape == info["final_observation"].shape
     jax.block_until_ready((next_observation, next_state, reward, done))
 
@@ -94,7 +95,10 @@ def test_acrobot_jitted_step_under_x64():
     key, reset_key, action_key, step_key = jax.random.split(jax.random.key(0), 4)
     _, state = jax.jit(env.reset)(reset_key, params)
     action = env.action_space(params).sample(action_key)
-    _, next_state, _, done, _ = jax.jit(env.step)(step_key, state, action, params)
+    _, next_state, _, terminated, truncated, _ = jax.jit(env.step)(
+        step_key, state, action, params
+    )
+    done = jnp.logical_or(terminated, truncated)
 
     assert state.time.dtype == jnp.int32
     assert done

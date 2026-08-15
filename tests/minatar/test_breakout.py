@@ -2,6 +2,7 @@
 
 import breakout_helpers
 import jax
+import jax.numpy as jnp
 from minatar import environment
 
 import gymnax
@@ -31,9 +32,12 @@ def test_step():
             reward_gym, _ = env_gym.act(action_gym)
             obs_gym = env_gym.state()
             done_gym = env_gym.env.terminal
-            obs_jax, state_jax, reward_jax, done_jax, _ = env_gymnax.step(
-                key_step, state, action, env_params
+            obs_jax, state_jax, reward_jax, terminated_jax, truncated_jax, _ = (
+                env_gymnax.step(
+                    key_step, state, action, env_params
+                )
             )
+            done_jax = jnp.logical_or(terminated_jax, truncated_jax)
             # Doesnt make sense to compare since jax resamples state
             if done_gym and done_gym == done_jax:
                 break

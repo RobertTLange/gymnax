@@ -163,9 +163,15 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
         )
         return gspc.Box(low, high, space.shape, space.dtype)
     elif isinstance(space, Dict):
-        return gspc.Dict({k: gymnax_space_to_gym_space(v) for k, v in space.spaces})
+        return gspc.Dict(
+            {
+                key: gymnax_space_to_gym_space(value)
+                for key, value in space.spaces.items()
+            }
+        )
     elif isinstance(space, Tuple):
-        return gspc.Tuple(space.spaces)
+        children = tuple(gymnax_space_to_gym_space(child) for child in space.spaces)
+        return gspc.Tuple(children)
     else:
         raise NotImplementedError(
             f"Conversion of {space.__class__.__name__} not supported"

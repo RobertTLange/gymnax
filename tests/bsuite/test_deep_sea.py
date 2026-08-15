@@ -174,8 +174,14 @@ def test_autoreset_preserves_cumulative_bsuite_metrics():
     params = env.default_params.replace(randomize_actions=False)
     _, state = env.reset(jax.random.key(0), params)
 
-    _, state, _, first_done, _ = env.step(jax.random.key(1), state, 1, params)
-    _, state, _, second_done, _ = env.step(jax.random.key(2), state, 0, params)
+    _, state, _, first_terminated, first_truncated, _ = env.step(
+        jax.random.key(1), state, 1, params
+    )
+    _, state, _, second_terminated, second_truncated, _ = env.step(
+        jax.random.key(2), state, 0, params
+    )
+    first_done = jnp.logical_or(first_terminated, first_truncated)
+    second_done = jnp.logical_or(second_terminated, second_truncated)
 
     assert first_done and second_done
     assert state.denoised_return == 1

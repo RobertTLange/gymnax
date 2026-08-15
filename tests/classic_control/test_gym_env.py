@@ -2,6 +2,7 @@
 
 import gymnasium as gym
 import jax
+import jax.numpy as jnp
 
 import gymnax
 from tests import helpers, state_translate
@@ -27,9 +28,12 @@ def test_step(gym_env_name):
             obs_gym, reward_gym, done_gym, _, _ = env_gym.step(action)
 
             key, key_input = jax.random.split(key)
-            obs_jax, state_jax, reward_jax, done_jax, _ = env_gymnax.step(
-                key_input, state, action, env_params
+            obs_jax, state_jax, reward_jax, terminated_jax, truncated_jax, _ = (
+                env_gymnax.step(
+                    key_input, state, action, env_params
+                )
             )
+            done_jax = jnp.logical_or(terminated_jax, truncated_jax)
 
             # Check correctness of transition
             helpers.assert_correct_transit(

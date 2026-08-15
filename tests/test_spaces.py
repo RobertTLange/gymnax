@@ -5,6 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
+from gymnax.environments import spaces
 from gymnax.environments.spaces import Discrete
 
 
@@ -65,3 +66,26 @@ def test_discrete_rejects_unsupported_dtypes(dtype):
     """Only int32 and x64-enabled int64 are valid Discrete dtypes."""
     with pytest.raises(ValueError, match="must be int32 or int64"):
         Discrete(3, dtype=dtype)
+
+
+def test_tuple_space_converts_recursively_for_gymnasium_adapters():
+    """Tuple leaves become native Gymnasium spaces, not Gymnax space objects."""
+    converted = spaces.gymnax_space_to_gym_space(
+        spaces.Tuple((spaces.Discrete(2), spaces.Box(-1.0, 1.0, (2,))))
+    )
+
+    assert converted.contains((0, np.zeros((2,), dtype=np.float32)))
+
+
+def test_dict_space_converts_recursively_for_gymnasium_adapters():
+    """Dictionary leaves become native Gymnasium spaces by their keys."""
+    converted = spaces.gymnax_space_to_gym_space(
+        spaces.Dict(
+            {
+                "choice": spaces.Discrete(2),
+                "vector": spaces.Box(-1.0, 1.0, (2,)),
+            }
+        )
+    )
+
+    assert converted.contains({"choice": 0, "vector": np.zeros((2,), dtype=np.float32)})

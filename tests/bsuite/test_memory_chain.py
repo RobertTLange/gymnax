@@ -16,7 +16,7 @@ def test_memory_chain_resets_and_steps_when_jitted(num_bits):
     key, reset_key, step_key = jax.random.split(jax.random.key(0), 3)
 
     observation, state = reset(reset_key, params)
-    next_observation, next_state, _, _, _ = step(step_key, state, 0, params)
+    next_observation, next_state, _, _, _, _ = step(step_key, state, 0, params)
 
     assert observation.shape == (num_bits + 2,)
     assert state.context.shape == (num_bits,)
