@@ -1,53 +1,163 @@
-
-name: Python tests
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Run tests on ${{ matrix.os }} with Python ${{ matrix.python }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python: ['3.11']
-    runs-on: ${{ matrix.os }}
-
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python }}
-    - name: Install testing and linting dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-timeout pytest-cov
-        pip install flake8 black
-        pip install -e .[test]
-        pip install gym bsuite matplotlib brax
-        # Setup dependency for minatar tests
-        git clone -n https://github.com/kenjyoung/MinAtar.git
-        cd MinAtar
-        git checkout c645454f07a3dfa5dd8dc81228b36d8256305cf0
-        rm minatar/__init__.py
-        pip install -e .
-        cd ..
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 ./gymnax --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 ./gymnax --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Run unit/integration tests
-      run: |
-        python -m pytest -vv --all --durations=0 --cov=./ --cov-report=term-missing --cov-report=xml --ignore=tests/minatar/test_seaquest.py
-    - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v2
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-        fail_ci_if_error: true # optional (default = false)
-        verbose: true # optional (default = false)
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  test:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+      - name: Run tests outside the repository
+        run: |
+          test_dir="$(mktemp -d)"
+          cd "$test_dir"
+          uv run --project "$GITHUB_WORKSPACE" python -m pytest -vv --all --durations=0 --cov=gymnax --cov-report=term-missing --cov-report=xml="$GITHUB_WORKSPACE/coverage.xml" "$GITHUB_WORKSPACE/tests" --ignore="$GITHUB_WORKSPACE/tests/minatar/test_seaquest.py"
+      - name: Upload coverage to Codecov
+        if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+        continue-on-error: true
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+
+  x64:
+    name: JAX x64
+    runs-on: ubuntu-latest
+    env:
+      JAX_ENABLE_X64: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+      - run: uv run python -m pytest -vv tests/test_reproduction_matrix.py -k 'cartpole_jitted_step_under_x64 or acrobot_jitted_step_under_x64'
+
+  brax:
+    name: Brax adapter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+      - run: uv run python -m pytest -vv tests/test_reproduction_matrix.py::test_brax_adapter_resets_and_steps_when_available
+
+  environment-smoke:
+    name: Registered environment smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+      - name: Reset and JIT-step every registered environment
+        run: uv run python -m pytest -vv tests/test_reproduction_matrix.py::test_registered_environment_resets_and_steps_when_jitted
+
+  visualizer-smoke:
+    name: Visualizer smoke tests
+    runs-on: ubuntu-latest
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+      - name: Run native and Gymnasium visualizer probes
+        run: |
+          test_dir="$(mktemp -d)"
+          cd "$test_dir"
+          uv run --project "$GITHUB_WORKSPACE" python -m pytest -vv "$GITHUB_WORKSPACE/tests/test_visualizer.py" --all
+
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+      - run: uv build
