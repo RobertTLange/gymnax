@@ -134,6 +134,15 @@ env, params = gymnax.make("MyEnvironment-v0", difficulty="hard")
 Registration is process-global for the running Python interpreter; choose a
 unique ID and register each factory once during application setup.
 
+## Pixel-style observations
+
+Pixel-style observations are multi-channel tensors, not renderer images.
+`Asterix-MinAtar`, `Breakout-MinAtar`, `Freeway-MinAtar`, `Seaquest-MinAtar`,
+and `SpaceInvaders-MinAtar` provide MinAtar grid tensors. `Pong-misc` provides
+a three-channel grid; `FourRooms-misc` provides a `(13, 13, 2)` grid when
+constructed with `use_visual_obs=True`. For visualization, use the
+environment-specific `render(state, params)` method where it is implemented.
+
 ## Key Selling Points 💵
 
 - **Environment vectorization & acceleration**: Easy composition of JAX primitives (e.g. `jit`, `vmap`, `pmap`):

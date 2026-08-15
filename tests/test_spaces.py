@@ -89,3 +89,22 @@ def test_dict_space_converts_recursively_for_gymnasium_adapters():
     )
 
     assert converted.contains({"choice": 0, "vector": np.zeros((2,), dtype=np.float32)})
+
+
+def test_spaces_have_readable_constructor_style_representations():
+    """Interactive inspection reveals bounds, dtypes, and nested children."""
+    discrete = spaces.Discrete(3)
+    box = spaces.Box(-1.0, 1.0, (2,))
+    composite = spaces.Dict({"choice": discrete, "vector": box})
+    tuple_space = spaces.Tuple((discrete, box))
+
+    assert repr(discrete) == "Discrete(3, dtype=int32)"
+    assert repr(box) == "Box(low=-1.0, high=1.0, shape=(2,), dtype=float32)"
+    assert repr(composite) == (
+        "Dict({'choice': Discrete(3, dtype=int32), "
+        "'vector': Box(low=-1.0, high=1.0, shape=(2,), dtype=float32)})"
+    )
+    assert repr(tuple_space) == (
+        "Tuple((Discrete(3, dtype=int32), "
+        "Box(low=-1.0, high=1.0, shape=(2,), dtype=float32)))"
+    )

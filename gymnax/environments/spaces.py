@@ -44,6 +44,10 @@ class Discrete(Space):
         self.shape = ()
         self.dtype = dtype
 
+    def __repr__(self) -> str:
+        """Return a concise representation for interactive inspection."""
+        return f"Discrete({self.n}, dtype={self.dtype.name})"
+
     def sample(self, key: jax.Array) -> jax.Array:
         """Sample random action uniformly from set of categorical choices."""
         return jax.random.randint(
@@ -81,6 +85,13 @@ class Box(Space):
         self.shape = shape
         self.dtype = dtype
 
+    def __repr__(self) -> str:
+        """Return the configured bounds, shape, and dtype."""
+        return (
+            f"Box(low={_format_bound(self.low)}, high={_format_bound(self.high)}, "
+            f"shape={self.shape}, dtype={np.dtype(self.dtype).name})"
+        )
+
     def sample(self, key: jax.Array) -> jax.Array:
         """Sample random action uniformly from 1D continuous range."""
         return jax.random.uniform(
@@ -101,6 +112,10 @@ class Dict(Space):
     def __init__(self, spaces: Any):
         self.spaces = spaces
         self.num_spaces = len(spaces)
+
+    def __repr__(self) -> str:
+        """Return the representations of the keyed child spaces."""
+        return f"Dict({self.spaces!r})"
 
     def sample(self, key: jax.Array) -> Any:
         """Sample random action from all subspaces."""
@@ -129,6 +144,10 @@ class Tuple(Space):
     def __init__(self, spaces: Sequence[Space]):
         self.spaces = spaces
         self.num_spaces = len(spaces)
+
+    def __repr__(self) -> str:
+        """Return the representations of the child spaces."""
+        return f"Tuple({tuple(self.spaces)!r})"
 
     def sample(self, key: jax.Array) -> Any:
         """Sample random action from all subspaces."""
@@ -176,3 +195,11 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
         raise NotImplementedError(
             f"Conversion of {space.__class__.__name__} not supported"
         )
+
+
+def _format_bound(value: jax.Array | float) -> str:
+    """Format scalar and array bounds without JAX device details."""
+    array = np.asarray(value)
+    if array.ndim == 0:
+        return repr(array.item())
+    return np.array2string(array, threshold=6)
