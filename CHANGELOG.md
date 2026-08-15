@@ -8,6 +8,8 @@
   and complete-parameter injection.
 - Added readable constructor-style representations for Gymnax space objects.
 - Documented pixel-style observation tensors and their renderer distinction.
+
+Thanks to @Dcyaprogrammer!
 - **Breaking:** Released the Gymnax 1.0 six-value step API: `terminated` and
   `truncated` replace the legacy `done` result. Automatic reset and
   `info["final_observation"]` remain available for terminal transitions.
