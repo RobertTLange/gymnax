@@ -42,9 +42,7 @@ def test_sticky_action_wrapper_defaults_to_passthrough_and_records_action():
 
     _, direct_state = env.reset(reset_key, params)
     _, expected_state, expected_reward, expected_terminated, expected_truncated, _ = (
-        env.step(
-            step_key, direct_state, jnp.int32(2), params
-        )
+        env.step(step_key, direct_state, jnp.int32(2), params)
     )
     _, state, reward, terminated, truncated, _ = wrapper.step(
         step_key, state, jnp.int32(2), params
