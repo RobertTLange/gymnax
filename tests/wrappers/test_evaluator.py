@@ -3,7 +3,9 @@
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
+import pytest
 
+import gymnax
 from gymnax.experimental import rollout
 
 
@@ -59,3 +61,41 @@ def test_rollout():
         _,
     ) = manager.population_rollout(key_batch, batch_params)
     assert obs.shape == (5, 10, num_env_steps, 3)
+
+
+def test_rollout_accepts_an_environment_and_complete_parameters():
+    """External environments bypass registration and retain their parameters."""
+    env = gymnax.environments.CartPole()
+    params = env.default_params
+    params = params.replace(max_steps_in_episode=4)
+    manager = rollout.RolloutWrapper(
+        env=env,
+        env_params=params,
+        num_env_steps=3,
+    )
+
+    observations, *_ = manager.single_rollout(jax.random.key(0), None)
+
+    assert manager.env is env
+    assert manager.env_params == params
+    assert observations.shape == (3, 4)
+
+
+def test_rollout_rejects_constructor_options_for_an_external_environment():
+    """An injected environment cannot also receive registry constructor options."""
+    env, _ = gymnax.make("CartPole-v1")
+
+    with pytest.raises(ValueError, match="env_kwargs"):
+        rollout.RolloutWrapper(env=env, env_kwargs={"unused": True})
+    with pytest.raises(ValueError, match="env_name"):
+        rollout.RolloutWrapper(env=env, env_name="CartPole-v1")
+
+
+def test_rollout_preserves_named_environment_parameter_overrides():
+    """The original named-environment API still accepts parameter mappings."""
+    manager = rollout.RolloutWrapper(
+        env_name="CartPole-v1",
+        env_params={"max_steps_in_episode": 3},
+    )
+
+    assert manager.env_params.max_steps_in_episode == 3

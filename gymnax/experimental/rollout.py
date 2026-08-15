@@ -1,5 +1,6 @@
 """Rollout wrapper for gymnax environments."""
 
+from collections.abc import Mapping
 from functools import partial
 from typing import Any
 
@@ -15,20 +16,37 @@ class RolloutWrapper:
     def __init__(
         self,
         model_forward=None,
-        env_name: str = "Pendulum-v1",
+        env_name: str | None = None,
         num_env_steps: int | None = None,
         env_kwargs: Any | None = None,
         env_params: Any | None = None,
+        env: Any | None = None,
     ):
-        """Wrapper to define batch evaluation for generation parameters."""
+        """Create a rollout wrapper for a registered or external environment.
+
+        Args:
+            model_forward: Policy function accepting parameters, observations,
+                and a PRNG key.
+            env_name: Registered Gymnax environment ID. Defaults to Pendulum.
+            num_env_steps: Number of transitions in each rollout.
+            env_kwargs: Constructor keyword arguments for ``env_name``.
+            env_params: Parameter overrides as a mapping, or a complete params
+                object when ``env`` is provided.
+            env: Pre-constructed environment, bypassing ``gymnax.make``.
+        """
         self.env_name = env_name
-        # Define the RL environment & network forward function
-        if env_kwargs is None:
-            env_kwargs = {}
-        if env_params is None:
-            env_params = {}
-        self.env, self.env_params = gymnax.make(self.env_name, **env_kwargs)
-        self.env_params = self.env_params.replace(**env_params)
+        if env is not None:
+            if env_name is not None:
+                raise ValueError("env_name cannot be used with an external env")
+            if env_kwargs is not None:
+                raise ValueError("env_kwargs cannot be used with an external env")
+            self.env = env
+            self.env_params = _resolve_params(env, env_params)
+        else:
+            self.env_name = "Pendulum-v1" if env_name is None else env_name
+            env_kwargs = {} if env_kwargs is None else env_kwargs
+            self.env, default_params = gymnax.make(self.env_name, **env_kwargs)
+            self.env_params = _resolve_params(self.env, env_params, default_params)
         self.model_forward = model_forward
 
         if num_env_steps is None:
@@ -107,3 +125,14 @@ class RolloutWrapper:
         key = jax.random.key(0)
         obs, _ = self.env.reset(key, self.env_params)
         return obs.shape
+
+
+def _resolve_params(env, env_params, default_params=None):
+    """Return complete environment parameters from an object or field overrides."""
+    if default_params is None:
+        default_params = env.default_params
+    if env_params is None:
+        return default_params
+    if isinstance(env_params, Mapping):
+        return default_params.replace(**env_params)
+    return env_params

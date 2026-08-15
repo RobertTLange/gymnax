@@ -4,6 +4,8 @@
   maps, dynamics, rewards, and episode limits.
 - Added public factory-based `gymnax.register` support for runtime custom
   environment registration.
+- Added an external-environment path to `RolloutWrapper` for direct environment
+  and complete-parameter injection.
 - **Breaking:** Released the Gymnax 1.0 six-value step API: `terminated` and
   `truncated` replace the legacy `done` result. Automatic reset and
   `info["final_observation"]` remain available for terminal transitions.
