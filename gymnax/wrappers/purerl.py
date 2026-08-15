@@ -63,10 +63,10 @@ class FlattenObservationWrapper(GymnaxWrapper):
 @struct.dataclass
 class LogEnvState:
     env_state: environment.EnvState
-    episode_returns: float
-    episode_lengths: int
-    returned_episode_returns: float
-    returned_episode_lengths: int
+    episode_returns: jax.Array
+    episode_lengths: jax.Array
+    returned_episode_returns: jax.Array
+    returned_episode_lengths: jax.Array
 
 
 class LogWrapper(GymnaxWrapper):
@@ -80,7 +80,13 @@ class LogWrapper(GymnaxWrapper):
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> tuple[jax.Array, LogEnvState]:
         obs, env_state = self._env.reset(key, params)
-        state = LogEnvState(env_state, 0, 0, 0, 0)
+        state = LogEnvState(
+            env_state,
+            jnp.array(0, dtype=jnp.float32),
+            jnp.array(0, dtype=jnp.int32),
+            jnp.array(0, dtype=jnp.float32),
+            jnp.array(0, dtype=jnp.int32),
+        )
         return obs, state
 
     @partial(jax.jit, static_argnames=("self",))

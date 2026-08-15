@@ -89,9 +89,9 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         state = EnvState(
             context=jnp.int32(context),
             query=jnp.int32(query),
-            total_perfect=0,
+            total_perfect=jnp.int32(0),
             total_regret=jnp.float32(0),
-            time=0,
+            time=jnp.int32(0),
         )
         return self.get_obs(state, params), state
 
@@ -105,12 +105,14 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         )
         # Show query - only last step.
         query_val = jax.lax.select(
-            state.time == params.memory_length - 1, state.query, 0
+            state.time == params.memory_length - 1,
+            state.query,
+            jnp.zeros_like(state.query),
         )
         obs = obs.at[1].set(query_val)
         # Show context - only first step.
         context_val = jax.lax.select(
-            state.time == 0, (2 * state.context - 1).squeeze(), 0
+            state.time == 0, 2 * state.context - 1, jnp.zeros_like(state.context)
         )
         obs = obs.at[2:].set(context_val)
         return obs

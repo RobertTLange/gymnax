@@ -105,7 +105,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
             paddle_x=paddle_x,
             paddle_y=paddle_y,
             prev_done=False,
-            time=0,
+            time=jnp.int32(0),
         )
         return self.get_obs(state), state
 
@@ -180,10 +180,12 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
 def sample_init_state(
     key: jax.Array, rows: int, columns: int
-) -> tuple[jax.Array, jax.Array, int, int]:
+) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
     """Sample a new initial state."""
-    ball_x = jax.random.randint(key, shape=(), minval=0, maxval=columns)
-    ball_y = 0
-    paddle_x = columns // 2
-    paddle_y = rows - 1
-    return ball_x, jnp.array(ball_y), paddle_x, paddle_y
+    ball_x = jax.random.randint(
+        key, shape=(), minval=0, maxval=columns, dtype=jnp.int32
+    )
+    ball_y = jnp.int32(0)
+    paddle_x = jnp.int32(columns // 2)
+    paddle_y = jnp.int32(rows - 1)
+    return ball_x, ball_y, paddle_x, paddle_y

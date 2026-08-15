@@ -21,26 +21,48 @@ class Space:
 
 
 class Discrete(Space):
-    """Minimal jittable class for discrete gymnax spaces."""
+    """Minimal jittable class for discrete Gymnax spaces.
 
-    def __init__(self, num_categories: int):
+    Args:
+        num_categories: Number of integer values in the space.
+        dtype: Keyword-only action dtype. Supports ``int32`` by default and
+            ``int64`` when JAX x64 mode is enabled.
+    """
+
+    def __init__(self, num_categories: int, *, dtype: Any = jnp.int32):
         assert num_categories >= 0
+        try:
+            dtype = jnp.dtype(dtype)
+        except TypeError as error:
+            raise ValueError("Discrete dtype must be int32 or int64") from error
+        if dtype == jnp.dtype(jnp.int64) and not jax.config.read("jax_enable_x64"):
+            raise ValueError("Discrete(dtype=int64) requires JAX x64 mode")
+        if dtype not in (jnp.dtype(jnp.int32), jnp.dtype(jnp.int64)):
+            raise ValueError("Discrete dtype must be int32 or int64")
+
         self.n = num_categories
         self.shape = ()
-        self.dtype = jnp.int32
+        self.dtype = dtype
 
     def sample(self, key: jax.Array) -> jax.Array:
         """Sample random action uniformly from set of categorical choices."""
         return jax.random.randint(
-            key, shape=self.shape, minval=0, maxval=self.n
-        ).astype(self.dtype)
+            key,
+            shape=self.shape,
+            minval=0,
+            maxval=self.n,
+            dtype=self.dtype,
+        )
 
     def contains(self, x: jax.Array) -> jax.Array:
         """Check whether specific object is within space."""
-        x = x.astype(jnp.int32)
+        x = jnp.asarray(x, dtype=self.dtype)
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
-        range_cond = jnp.logical_and(x >= 0, x < self.n)
+        range_cond = jnp.logical_and(
+            x >= jnp.asarray(0, dtype=self.dtype),
+            x < jnp.asarray(self.n, dtype=self.dtype),
+        )
         return range_cond
 
 

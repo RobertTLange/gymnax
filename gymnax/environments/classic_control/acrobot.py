@@ -121,7 +121,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
             joint_angle2=init_state[1],
             velocity_1=init_state[2],
             velocity_2=init_state[3],
-            time=0,
+            time=jnp.int32(0),
         )
         return self.get_obs(state), state
 
