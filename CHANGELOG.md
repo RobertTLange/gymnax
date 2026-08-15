@@ -1,5 +1,7 @@
 ### [Unreleased] - 02/04/2026
 
+- Aligned DeepSea action mappings with canonical bsuite behavior, added the
+  Seaquest MinAtar environment, and introduced an opt-in sticky-action wrapper.
 - Restored Gymnasium classic-control GIF visualization with the modern
   `render_mode="rgb_array"` API and an optional `visualize` dependency extra.
 - Fixed Acrobot autoreset state selection under JAX x64 mode.

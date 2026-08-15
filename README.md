@@ -52,6 +52,7 @@ available only when JAX x64 mode is enabled; other dtypes are unsupported.
 | [`Asterix-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/asterix.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py) | [PPO](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/Asterix-MinAtar) (R: 15) | 0.92
 | [`Breakout-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/breakout.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py) | [PPO](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/Breakout-MinAtar) (R: 28) | 0.19
 | [`Freeway-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/freeway.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py) | [PPO](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/Freeway-MinAtar) (R: 58) | 0.87
+| [`Seaquest-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/seaquest.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py) | - | -
 | [`SpaceInvaders-MinAtar`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/minatar/space_invaders.py) | [Young & Tian (2019)](https://arxiv.org/abs/1903.03176) | [Click](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py) | [PPO](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/SpaceInvaders-MinAtar) (R: 131) | 0.33
 |  |  |  |  |
 | [`Catch-bsuite`](https://github.com/RobertTLange/gymnax/blob/main/gymnax/environments/bsuite/catch.py) | [Osband et al. (2019)](https://openreview.net/forum?id=rygf-kSYwH) | [Click](https://github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py) | [PPO, ES](https://github.com/RobertTLange/gymnax-blines/tree/main/agents/Catch-bsuite) (R: 1) | 0.15
@@ -182,6 +183,14 @@ Other dependency versions may work, but are not part of the tested support matri
   vis.animate(f"docs/anim.gif")
   ```
 
+  Wrap a discrete-action environment with opt-in sticky actions when an
+  experiment needs action persistence:
+  ```python
+  from gymnax.wrappers import StickyActionWrapper
+
+  env = StickyActionWrapper(env, sticky_action_prob=0.1)
+  ```
+
   Native `env.render(state, params)` methods return Matplotlib figures and axes
   for environment-specific debugging. To display one interactively, use an
   interactive Matplotlib backend and call `plt.show()`.
@@ -239,6 +248,6 @@ Forschungsgemeinschaft (DFG, German Research Foundation) under Germany's Excelle
 ## Development 👷
 
 Install the locked development and test environment with `uv sync --locked --all-extras`.
-Run `uv run ruff check .`, `uv run ruff format --check .`, and `uv run pytest -vv --all --ignore=tests/minatar/test_seaquest.py` before opening a pull request. Seaquest remains unsupported and is excluded from the suite.
+Run `uv run ruff check .`, `uv run ruff format --check .`, and `uv run pytest -vv --all` before opening a pull request.
 
-When running the test suite, it is strongly encouraged, but not required, to treat warnings as errors with `uv run pytest -vv -W error --tb=short --all --ignore=tests/minatar/test_seaquest.py`. If you find a bug or are missing your favourite feature, feel free to create an issue and/or start [contributing](CONTRIBUTING.md) 🤗.
+When running the test suite, it is strongly encouraged, but not required, to treat warnings as errors with `uv run pytest -vv -W error --tb=short --all`. If you find a bug or are missing your favourite feature, feel free to create an issue and/or start [contributing](CONTRIBUTING.md) 🤗.
