@@ -19,7 +19,7 @@ EnvParams = environment.EnvParams
 MinAsterix = minatar.MinAsterix
 MinBreakout = minatar.MinBreakout
 MinFreeway = minatar.MinFreeway
-# MinSeaquest = minatar.MinSeaquest
+MinSeaquest = minatar.MinSeaquest
 MinSpaceInvaders = minatar.MinSpaceInvaders
 BernoulliBandit = misc.BernoulliBandit
 FourRooms = misc.FourRooms
@@ -49,6 +49,7 @@ __all__ = [
     "MinAsterix",
     "MinBreakout",
     "MinFreeway",
+    "MinSeaquest",
     "MinSpaceInvaders",
     "BernoulliBandit",
     "GaussianBandit",

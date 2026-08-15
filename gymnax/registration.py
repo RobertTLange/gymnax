@@ -16,7 +16,13 @@ from gymnax.environments.classic_control import (
     mountain_car,
     pendulum,
 )
-from gymnax.environments.minatar import asterix, breakout, freeway, space_invaders
+from gymnax.environments.minatar import (
+    asterix,
+    breakout,
+    freeway,
+    seaquest,
+    space_invaders,
+)
 from gymnax.environments.misc import (
     bernoulli_bandit,
     gaussian_bandit,
@@ -82,8 +88,7 @@ def make(env_id: str, **env_kwargs):
     elif env_id == "Freeway-MinAtar":
         env = freeway.MinFreeway(**env_kwargs)
     elif env_id == "Seaquest-MinAtar":
-        raise NotImplementedError("Seaquest is not yet supported.")
-        # env = MinSeaquest(**env_kwargs)
+        env = seaquest.MinSeaquest(**env_kwargs)
     elif env_id == "SpaceInvaders-MinAtar":
         env = space_invaders.MinSpaceInvaders(**env_kwargs)
 
@@ -119,7 +124,7 @@ registered_envs = [
     "Asterix-MinAtar",
     "Breakout-MinAtar",
     "Freeway-MinAtar",
-    # "Seaquest-MinAtar",
+    "Seaquest-MinAtar",
     "SpaceInvaders-MinAtar",
     "Catch-bsuite",
     "DeepSea-bsuite",

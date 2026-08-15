@@ -39,7 +39,8 @@ def rollout_states(env_name: str, num_steps: int = 2):
 
 
 @pytest.mark.parametrize(
-    "env_name", ["Catch-bsuite", "MetaMaze-misc", "SpaceInvaders-MinAtar"]
+    "env_name",
+    ["Catch-bsuite", "MetaMaze-misc", "Seaquest-MinAtar", "SpaceInvaders-MinAtar"],
 )
 def test_native_visualizer_writes_temporary_animation(env_name: str, tmp_path):
     """Supported native visualizer paths render without leaving repository files."""
