@@ -22,6 +22,79 @@ class GymnaxWrapper:
         return getattr(self._env, name)
 
 
+@struct.dataclass
+class StickyActionState:
+    """State for :class:`StickyActionWrapper`."""
+
+    env_state: Any
+    last_action: jax.Array
+
+
+class StickyActionWrapper(GymnaxWrapper):
+    """Replay the previous discrete action with a configurable probability."""
+
+    def __init__(self, env, sticky_action_prob: float = 0.0):
+        super().__init__(env)
+        try:
+            probability = float(sticky_action_prob)
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                "sticky_action_prob must be a finite value in [0, 1]"
+            ) from error
+        if not np.isfinite(probability) or not 0.0 <= probability <= 1.0:
+            raise ValueError("sticky_action_prob must be a finite value in [0, 1]")
+
+        action_space = env.action_space(env.default_params)
+        if not isinstance(action_space, spaces.Discrete):
+            raise ValueError("StickyActionWrapper requires a Discrete action space")
+        if action_space.n < 1:
+            raise ValueError(
+                "StickyActionWrapper requires at least one discrete action"
+            )
+
+        self._sticky_action_prob = probability
+        self._action_dtype = action_space.dtype
+
+    @partial(jax.jit, static_argnames=("self",))
+    def reset(
+        self, key: jax.Array, params: environment.EnvParams | None = None
+    ) -> tuple[jax.Array, StickyActionState]:
+        """Reset the inner environment and initialize the replay action to zero."""
+        obs, env_state = self._env.reset(key, params)
+        return obs, StickyActionState(
+            env_state=env_state,
+            last_action=jnp.array(0, dtype=self._action_dtype),
+        )
+
+    @partial(jax.jit, static_argnames=("self",))
+    def step(
+        self,
+        key: jax.Array,
+        state: StickyActionState,
+        action: int | jax.Array,
+        params: environment.EnvParams | None = None,
+    ) -> tuple[jax.Array, StickyActionState, jax.Array, jax.Array, dict[Any, Any]]:
+        """Step with either the requested action or the recorded previous action."""
+        requested_action = jnp.asarray(action, dtype=self._action_dtype)
+        if self._sticky_action_prob == 0.0:
+            executed_action = requested_action
+            step_key = key
+        else:
+            replay_key, step_key = jax.random.split(key)
+            replay = jax.random.bernoulli(replay_key, self._sticky_action_prob)
+            executed_action = jnp.where(replay, state.last_action, requested_action)
+        obs, env_state, reward, done, info = self._env.step(
+            step_key, state.env_state, executed_action, params
+        )
+        return (
+            obs,
+            StickyActionState(env_state=env_state, last_action=executed_action),
+            reward,
+            done,
+            info,
+        )
+
+
 class FlattenObservationWrapper(GymnaxWrapper):
     """Flatten the observations of the environment."""
 

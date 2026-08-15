@@ -7,6 +7,7 @@ GymnaxToGymWrapper = gym.GymnaxToGymWrapper
 GymnaxToVectorGymWrapper = gym.GymnaxToVectorGymWrapper
 FlattenObservationWrapper = purerl.FlattenObservationWrapper
 LogWrapper = purerl.LogWrapper
+StickyActionWrapper = purerl.StickyActionWrapper
 
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "GymnaxToVectorGymWrapper",
     "FlattenObservationWrapper",
     "LogWrapper",
+    "StickyActionWrapper",
 ]
