@@ -1,17 +1,7 @@
 """Tests for the Freeway environment."""
 
-import warnings
 import traceback
-
-_original_warn = warnings.warn
-
-
-def custom_warn(message, category=None, stacklevel=1, source=None):
-    print("\n=== WARNING ===")
-    print(f"{category.__name__ if category else 'Warning'}: {message}")
-    traceback.print_stack()
-    _original_warn(message, category, stacklevel, source)
-
+import warnings
 
 import freeway_helpers
 import jax
@@ -22,6 +12,16 @@ from minatar import environment
 import gymnax
 from gymnax.environments.minatar import freeway
 from tests import helpers, state_translate
+
+_original_warn = warnings.warn
+
+
+def custom_warn(message, category=None, stacklevel=1, source=None):
+    print("\n=== WARNING ===")
+    print(f"{category.__name__ if category else 'Warning'}: {message}")
+    traceback.print_stack()
+    _original_warn(message, category, stacklevel, source)
+
 
 num_episodes, num_steps, tolerance = 5, 10, 1e-04
 env_name_gym, env_name_jax = "freeway", "Freeway-MinAtar"

@@ -1,8 +1,9 @@
 """Tests for brax wrapper."""
 
+import warnings
+
 import chex
 import jax
-import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
