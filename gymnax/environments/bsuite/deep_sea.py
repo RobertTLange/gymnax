@@ -1,5 +1,6 @@
 """JAX implementation of DeepSea bsuite environment."""
 
+from functools import partial
 from typing import Any
 
 import jax
@@ -26,7 +27,7 @@ class EnvParams(environment.EnvParams):
     deterministic: bool = True
     sample_action_map: bool = False
     unscaled_move_cost: float = 0.01
-    randomize_actions: bool = False
+    randomize_actions: bool = True
     max_steps_in_episode: int = 2000
 
 
@@ -38,15 +39,51 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
     github.com/deepmind/bsuite/blob/master/bsuite/environments/deep_sea.py.
     """
 
-    def __init__(self, size: int = 8):
+    def __init__(self, size: int = 8, action_mapping_key: jax.Array | None = None):
+        """Create a DeepSea instance with a fixed, reproducible action mapping."""
         super().__init__()
         self.size = size
-        self.action_mapping = jnp.ones([size, size])
+        if action_mapping_key is None:
+            action_mapping_key = jax.random.key(0)
+        self.action_mapping = jax.random.bernoulli(
+            action_mapping_key, 0.5, (size, size)
+        ).astype(jnp.int32)
 
     @property
     def default_params(self) -> EnvParams:
         # Default environment parameters
         return EnvParams()
+
+    @partial(jax.jit, static_argnames=("self",))
+    def step(
+        self,
+        key: jax.Array,
+        state: EnvState,
+        action: int | float | jax.Array,
+        params: EnvParams | None = None,
+    ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
+        """Step while preserving bsuite's cumulative episode metrics on reset."""
+        if params is None:
+            params = self.default_params
+        key_step, key_reset = jax.random.split(key)
+        obs_step, state_step, reward, done, info = self.step_env(
+            key_step, state, action, params
+        )
+        obs_reset, state_reset = self.reset_env(key_reset, params)
+        next_state = jax.tree.map(
+            lambda reset, stepped: jax.lax.select(done, reset, stepped),
+            state_reset,
+            state_step,
+        )
+        next_state = next_state.replace(
+            total_bad_episodes=jax.lax.select(
+                done, state_step.total_bad_episodes, next_state.total_bad_episodes
+            ),
+            denoised_return=jax.lax.select(
+                done, state_step.denoised_return, next_state.denoised_return
+            ),
+        )
+        return jax.lax.select(done, obs_reset, obs_step), next_state, reward, done, info
 
     def step_env(
         self,
@@ -104,20 +141,19 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         ) + params.deterministic * 1.0
         optimal_return = optimal_no_cost - params.unscaled_move_cost
 
-        a_map_rand = jax.random.bernoulli(key, 0.5, (self.size, self.size))
-        a_map_determ = jnp.ones([self.size, self.size])
-
-        new_a_map_cond = jnp.logical_and(
-            1 - params.deterministic, params.sample_action_map
+        sampled_action_mapping = jax.random.bernoulli(
+            key, 0.5, (self.size, self.size)
+        ).astype(jnp.int32)
+        debug_action_mapping = jnp.ones((self.size, self.size), dtype=jnp.int32)
+        fixed_action_mapping = jnp.where(
+            params.randomize_actions,
+            self.action_mapping,
+            debug_action_mapping,
         )
-        old_a_map_cond = jnp.logical_and(
-            1 - params.deterministic,
-            1 - params.sample_action_map,
-        )
-        action_mapping = (
-            params.deterministic * a_map_determ
-            + new_a_map_cond * a_map_rand
-            + old_a_map_cond * self.action_mapping
+        action_mapping = jnp.where(
+            params.sample_action_map,
+            sampled_action_mapping,
+            fixed_action_mapping,
         )
 
         state = EnvState(
@@ -204,9 +240,9 @@ def step_reward(
     # Noisy rewards on the 'end' of chain.
     col_at_edge = jnp.logical_or(state.column == 0, state.column == size - 1)
     chain_end = jnp.logical_and(state.row == size - 1, col_at_edge)
-    det_chain_end = jnp.logical_and(chain_end, params.deterministic)
-    reward += rand_reward * det_chain_end * (1 - params.deterministic)
-    reward -= right_cond * params.unscaled_move_cost / size
+    noisy_chain_end = jnp.logical_and(chain_end, jnp.logical_not(params.deterministic))
+    reward += rand_reward * noisy_chain_end
+    reward -= action_right * params.unscaled_move_cost / size
     return reward, denoised_return
 
 
