@@ -36,6 +36,9 @@ test = [
     "brax",
     "minatar",
 ]
+visualize = [
+    "gymnasium[classic-control]>=1.1,<1.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/RobertTLange/gymnax"
