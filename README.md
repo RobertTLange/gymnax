@@ -31,15 +31,22 @@ obs, state = env.reset(key_reset, env_params)
 # Sample a random action.
 action = env.action_space(env_params).sample(key_act)
 
-# Perform the step transition.
-n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
+# Perform the step transition. Gymnax auto-resets after either terminal cause.
+n_obs, n_state, reward, done, info = env.step(
+    key_step, state, action, env_params
+)
+
+# Bootstrap from the pre-reset observation; only natural termination has zero
+# continuation value.
+bootstrap_obs = info["final_observation"]
+bootstrap_mask = 1.0 - info["terminated"].astype(jnp.float32)
 ```
 
 `spaces.Discrete(n, dtype=...)` uses `int32` actions by default. `int64` is
 available only when JAX x64 mode is enabled; other dtypes are unsupported.
 
-The current five-value environment API is retained through the next 0.x release.
-Its accepted terminal-state and 1.0 migration contract is documented in the
+The current five-value environment API includes distinct `terminated` and
+`truncated` metadata in `info`. Its accepted 1.0 migration contract is documented in the
 [API and compatibility RFC](docs/api_rfc.md).
 
 ## Implemented Accelerated Environments 🏎️

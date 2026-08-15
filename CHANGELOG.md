@@ -2,6 +2,9 @@
 
 - Published the accepted API and compatibility RFC: a non-breaking terminal
   metadata path for 0.x and the Gymnasium-style 1.0 migration contract.
+- Added JIT/vmap-safe `terminated`, `truncated`, and `final_observation`
+  metadata to the five-value environment API; Gymnasium adapters now forward
+  distinct terminal and time-limit flags.
 - Aligned DeepSea action mappings with canonical bsuite behavior, added the
   Seaquest MinAtar environment, and introduced an opt-in sticky-action wrapper.
 - Restored Gymnasium classic-control GIF visualization with the modern

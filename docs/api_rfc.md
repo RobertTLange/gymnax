@@ -2,9 +2,8 @@
 
 ## Status
 
-Accepted 2026-08-15. This RFC defines the next Gymnax API transition. It does
-not change the current runtime API; the implementation work is tracked for the
-next 0.x compatibility release and 1.0.
+Accepted 2026-08-15. The 0.x terminal-metadata compatibility release is
+implemented in `805354b` and `a033a3e`; the remaining work is tracked for 1.0.
 
 ## Goals
 
@@ -27,7 +26,7 @@ observation, state, reward, done, info = env.step(key, state, action, params)
 `done` means `terminated | truncated`. Gymnax continues to automatically reset
 when `done` is true: returned `observation` and `state` begin the next episode.
 
-The next compatible 0.x release will always add these keys to `info`:
+The current compatible 0.x API always adds these keys to `info`:
 
 | Key | Meaning |
 | --- | --- |
@@ -35,8 +34,8 @@ The next compatible 0.x release will always add these keys to `info`:
 | `truncated` | The transition reached `params.max_steps_in_episode`. |
 | `final_observation` | The observation before automatic reset. |
 
-The keys are JAX arrays or PyTrees with a stable structure for every transition,
-so they work under `jax.jit` and `jax.vmap`. On nonterminal transitions,
+The keys have a stable JAX-array structure for every transition, so they work
+under `jax.jit` and `jax.vmap`. On nonterminal transitions,
 `final_observation` equals the returned observation and callers must ignore it
 unless `done` is true. If natural termination and the time limit occur together,
 both flags are true. Bootstrap targets use `final_observation`; a natural
@@ -45,6 +44,11 @@ termination has zero continuation value even when `truncated` is also true.
 `final_observation` comes directly from the environment-specific transition,
 before the base environment selects a fresh reset observation. Gymnax will not
 expose a terminal environment state through `info` in 0.x.
+
+Existing third-party environments that only override `is_terminal` retain their
+previous reset behavior. To report a natural terminal transition that coincides
+with a time limit, they must also override `is_terminated`; the legacy hook
+cannot distinguish both causes by itself.
 
 ## 1.0 contract
 
@@ -101,18 +105,17 @@ without deriving one from the other.
 
 ## Delivery sequence
 
-1. Implement the 0.x `info` fields with regression tests for ordinary,
-   terminated, truncated, and simultaneous boundaries under JIT and vmap.
-2. Audit every environment so `max_steps_in_episode` is only a truncation;
-   update Gymnasium, Brax, rollout, logging, and evaluation wrappers.
-3. Add PyTree observation coverage and migrate the base hooks.
-4. Release 1.0 with the six-value API, deprecation/migration notes, and adapter
+1. Completed: the 0.x `info` fields, built-in time-limit audit, and Gymnasium
+   adapter forwarding have regression coverage for ordinary, terminated,
+   truncated, simultaneous, JIT, and vmap transitions.
+2. Add PyTree observation coverage and migrate the base hooks.
+3. Release 1.0 with the six-value API, deprecation/migration notes, and adapter
    contract tests.
 
 Open issues #109, #38, #103, #107, #88, #59, #32, and #26 remain the public
-discussion and implementation trackers. Pull request #108 is a useful
-non-breaking reference for step 1, but requires a focused rebase after this RFC
-and does not by itself resolve the API migration.
+discussion and implementation trackers. Pull request #108 was useful reference
+material for the completed 0.x change, but does not itself resolve the 1.0 API
+migration.
 
 ## Deferred decisions
 
