@@ -43,14 +43,20 @@ class Visualizer:
             blit=False,
             interval=self.interval,
         )
-        # Save the animation to a gif
-        if save_fname is not None:
-            ani.save(save_fname)
-        # Simply view it 3 times
-        if view:
-            plt.show(block=False)
-            plt.pause(3)
-            plt.close()
+        try:
+            # Save the animation to a gif
+            if save_fname is not None:
+                if str(save_fname).lower().endswith(".gif"):
+                    writer = animation.PillowWriter(fps=1000 // self.interval)
+                    ani.save(save_fname, writer=writer)
+                else:
+                    ani.save(save_fname)
+            # Simply view it 3 times
+            if view:
+                plt.show(block=False)
+                plt.pause(3)
+        finally:
+            plt.close(self.fig)
 
     def init(self):
         """Plot placeholder points."""
@@ -96,7 +102,9 @@ class Visualizer:
             "MountainCar-v0",
             "MountainCarContinuous-v0",
         ]:
-            self.im = vis_gym.update_gym(self.im, self.env, self.state_seq[frame])
+            self.im = vis_gym.update_gym(
+                self.im, self.env, self.state_seq[frame], self.env_params
+            )
         elif self.env.name == "Catch-bsuite":
             self.im = vis_catch.update_catch(self.im, self.env, self.state_seq[frame])
         elif self.env.name in [

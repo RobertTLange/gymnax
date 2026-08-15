@@ -7,10 +7,19 @@ matplotlib.use("Agg")
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 import gymnax
-from gymnax.visualize import visualizer
+from gymnax.visualize import vis_gym, visualizer
+
+CLASSIC_CONTROL_ENVS = [
+    "Acrobot-v1",
+    "CartPole-v1",
+    "Pendulum-v1",
+    "MountainCar-v0",
+    "MountainCarContinuous-v0",
+]
 
 
 def rollout_states(env_name: str, num_steps: int = 2):
@@ -41,19 +50,89 @@ def test_native_visualizer_writes_temporary_animation(env_name: str, tmp_path):
         vis.animate(str(animation_path))
         assert animation_path.is_file()
         assert animation_path.stat().st_size > 0
+        assert not plt.fignum_exists(vis.fig.number)
     finally:
         plt.close(vis.fig)
 
 
-@pytest.mark.parametrize("env_name", ["CartPole-v1", "Acrobot-v1", "Pendulum-v1"])
-@pytest.mark.xfail(reason="WP2/#57: Gymnasium visualizer compatibility is pending.")
-def test_gymnasium_visualizer_reproduction_probe(env_name: str, tmp_path):
-    """Record the modern Gymnasium rendering regression for WP2."""
+@pytest.mark.parametrize("env_name", CLASSIC_CONTROL_ENVS)
+def test_gymnasium_visualizer_writes_temporary_animation(env_name: str, tmp_path):
+    """Modern Gymnasium classic-control paths render without ffmpeg."""
     env, env_params, state_seq, rewards = rollout_states(env_name)
     animation_path = tmp_path / f"{env_name}.gif"
     vis = visualizer.Visualizer(env, env_params, state_seq, rewards)
     try:
         vis.animate(str(animation_path))
         assert animation_path.is_file()
+        assert animation_path.stat().st_size > 0
+        assert not plt.fignum_exists(vis.fig.number)
     finally:
         plt.close(vis.fig)
+
+
+@pytest.mark.parametrize("env_name", CLASSIC_CONTROL_ENVS)
+def test_gymnasium_frame_adapter_returns_rgb_array(env_name: str):
+    """Classic-control frames use the current Gymnasium rendering contract."""
+    env, env_params, state_seq, _ = rollout_states(env_name)
+
+    frame = vis_gym.render_gym_frame(env.name, state_seq[0], env_params)
+
+    assert isinstance(frame, np.ndarray)
+    assert frame.ndim == 3
+    assert frame.shape[-1] == 3
+    assert frame.shape[0] > 0
+    assert frame.shape[1] > 0
+
+
+@pytest.mark.parametrize("env_name", CLASSIC_CONTROL_ENVS)
+def test_gymnasium_frame_adapter_transfers_state_params_and_closes(
+    env_name, monkeypatch
+):
+    """Adapters transfer all render inputs below Gymnasium wrappers."""
+    env, env_params, state_seq, _ = rollout_states(env_name)
+
+    class FakeGymEnv:
+        def __init__(self):
+            self.unwrapped = type("Unwrapped", (), {})()
+            self.closed = False
+
+        def reset(self):
+            return None, {}
+
+        def render(self):
+            return np.zeros((2, 3, 3), dtype=np.uint8)
+
+        def close(self):
+            self.closed = True
+
+    fake_env = FakeGymEnv()
+    make_calls = []
+    monkeypatch.setattr(
+        vis_gym.gym,
+        "make",
+        lambda *args, **kwargs: make_calls.append((args, kwargs)) or fake_env,
+    )
+
+    frame = vis_gym.render_gym_frame(env_name, state_seq[0], env_params)
+
+    assert frame.shape == (2, 3, 3)
+    assert make_calls == [((env_name,), {"render_mode": "rgb_array"})]
+    np.testing.assert_allclose(
+        fake_env.unwrapped.state, vis_gym.get_gym_state(state_seq[0], env_name)
+    )
+    for gym_attr, gymnax_attr in vis_gym._PARAMETER_MAPPINGS[env_name].items():
+        assert getattr(fake_env.unwrapped, gym_attr) == pytest.approx(
+            float(getattr(env_params, gymnax_attr))
+        )
+    if env_name == "Pendulum-v1":
+        np.testing.assert_allclose(
+            fake_env.unwrapped.last_u,
+            np.asarray(state_seq[0].last_u, dtype=np.float64),
+        )
+    assert fake_env.closed
+
+
+def test_gymnasium_frame_adapter_rejects_unsupported_environment():
+    """The adapter does not silently choose an unrelated Gymnasium renderer."""
+    with pytest.raises(ValueError, match="Unsupported Gymnasium visualizer"):
+        vis_gym.render_gym_frame("Catch-bsuite", object(), object())
