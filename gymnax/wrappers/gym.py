@@ -65,10 +65,10 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
     ) -> tuple[core.ObsType, float, bool, bool, dict[Any, Any]]:
         """Step environment, follow new step API."""
         self.key, step_key = jax.random.split(self.key)
-        o, self.env_state, r, d, info = self._env.step(
+        o, self.env_state, r, _, info = self._env.step(
             step_key, self.env_state, action, self.env_params
         )
-        return o, r, d, d, info
+        return o, r, info["terminated"], info["truncated"], info
 
     def reset(
         self,
@@ -185,10 +185,10 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
     ):  # -> Tuple[core.ObsType, float, bool, bool, Any]:  # dict]:
         """Step environment, follow new step API."""
         self.key, step_key = self._batched_key_split(self.key)
-        o, self.env_state, r, d, info = self._env.step(
+        o, self.env_state, r, _, info = self._env.step(
             step_key, self.env_state, action, self.env_params
         )
-        return o, r, d, d, info
+        return o, r, info["terminated"], info["truncated"], info
 
     def render(self, mode="human") -> core.RenderFrame | list[core.RenderFrame] | None:
         """Use underlying environment rendering if it exists, otherwise return None."""

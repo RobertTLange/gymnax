@@ -3,6 +3,7 @@
 import chex
 import gymnasium as gym
 import jax
+import jax.numpy as jnp
 
 import gymnax
 from gymnax.wrappers import gym as wrappers
@@ -53,3 +54,50 @@ def test_gym_vector_wrapper():
     chex.assert_trees_all_equal_shapes(o_env, o)
     _, _, _, _, _ = e.step(e.action_space.sample())
     e.render()
+
+
+def test_gym_wrapper_forwards_time_limit_metadata():
+    """The Gymnasium adapter separates a Gymnax time limit from termination."""
+    env, params = gymnax.make("Pendulum-v1")
+    params = params.replace(max_steps_in_episode=1)
+    wrapped = wrappers.GymnaxToGymWrapper(env, params, 0)
+    wrapped.reset()
+
+    observation, _, terminated, truncated, info = wrapped.step(jnp.zeros((1,)))
+
+    assert not terminated
+    assert truncated
+    assert "final_observation" in info
+    assert info["final_observation"].shape == observation.shape
+
+
+def test_gym_wrapper_forwards_natural_termination_metadata():
+    """The Gymnasium adapter preserves a CartPole natural termination."""
+    env, params = gymnax.make("CartPole-v1")
+    params = params.replace(max_steps_in_episode=2)
+    wrapped = wrappers.GymnaxToGymWrapper(env, params, 0)
+    wrapped.reset()
+    wrapped.env_state = wrapped.env_state.replace(
+        theta=params.theta_threshold_radians * 2
+    )
+
+    _, _, terminated, truncated, _ = wrapped.step(jnp.int32(0))
+
+    assert terminated
+    assert not truncated
+
+
+def test_vector_gym_wrapper_forwards_terminal_metadata():
+    """The vector adapter forwards a batch of time-limit flags and observations."""
+    env, params = gymnax.make("Pendulum-v1")
+    params = params.replace(max_steps_in_episode=1)
+    wrapped = wrappers.GymnaxToVectorGymWrapper(env, 2, params, 0)
+    wrapped.reset()
+
+    observation, _, terminated, truncated, info = wrapped.step(
+        jnp.zeros((2, 1), dtype=jnp.float32)
+    )
+
+    assert not jnp.any(terminated)
+    assert jnp.all(truncated)
+    assert info["final_observation"].shape == observation.shape
