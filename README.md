@@ -38,6 +38,10 @@ n_obs, n_state, reward, done, _ = env.step(key_step, state, action, env_params)
 `spaces.Discrete(n, dtype=...)` uses `int32` actions by default. `int64` is
 available only when JAX x64 mode is enabled; other dtypes are unsupported.
 
+The current five-value environment API is retained through the next 0.x release.
+Its accepted terminal-state and 1.0 migration contract is documented in the
+[API and compatibility RFC](docs/api_rfc.md).
+
 ## Implemented Accelerated Environments 🏎️
 
 

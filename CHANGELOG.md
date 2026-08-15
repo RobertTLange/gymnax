@@ -1,5 +1,7 @@
 ### [Unreleased] - 02/04/2026
 
+- Published the accepted API and compatibility RFC: a non-breaking terminal
+  metadata path for 0.x and the Gymnasium-style 1.0 migration contract.
 - Aligned DeepSea action mappings with canonical bsuite behavior, added the
   Seaquest MinAtar environment, and introduced an opt-in sticky-action wrapper.
 - Restored Gymnasium classic-control GIF visualization with the modern
