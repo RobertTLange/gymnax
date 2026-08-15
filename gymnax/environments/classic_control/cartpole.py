@@ -116,7 +116,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         """Applies observation function to state."""
         return jnp.array([state.x, state.x_dot, state.theta, state.theta_dot])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check termination criteria
         done1 = jnp.logical_or(
@@ -128,10 +128,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             state.theta > params.theta_threshold_radians,
         )
 
-        # Check number of steps in episode termination condition
-        done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(jnp.logical_or(done1, done2), done_steps)
-        return done
+        return jnp.logical_or(done1, done2)
 
     @property
     def name(self) -> str:

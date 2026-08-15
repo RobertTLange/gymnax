@@ -170,17 +170,14 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         )
         return jnp.hstack([rf_obs, action_one_hot, state.last_reward, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        # Check number of steps in episode termination condition
-        done_steps = state.time >= params.max_steps_in_episode
         # Check if agent has found the goal
         done_goal = jnp.logical_and(
             state.pos[0] == state.goal[0],
             state.pos[1] == state.goal[1],
         )
-        done = jnp.logical_or(done_goal, done_steps)
-        return done
+        return done_goal
 
     def render(self, state: EnvState, _: EnvParams):
         """Small utility for plotting the agent's state."""

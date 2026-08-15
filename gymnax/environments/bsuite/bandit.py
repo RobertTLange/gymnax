@@ -83,7 +83,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         """Return observation from raw state trafo."""
         return jnp.ones(shape=(1, 1), dtype=jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Episode always terminates after single step - Do not reset though!
         return jnp.array(True)

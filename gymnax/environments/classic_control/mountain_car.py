@@ -85,16 +85,13 @@ class MountainCar(environment.Environment[EnvState, EnvParams]):
         """Return observation from raw state trafo."""
         return jnp.array([state.position, state.velocity])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done1 = (state.position >= params.goal_position) * (
             state.velocity >= params.goal_velocity
         )
 
-        # Check number of steps in episode termination condition
-        done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done1, done_steps)
-        return done
+        return done1
 
     @property
     def name(self) -> str:

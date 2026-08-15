@@ -142,12 +142,10 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         ].set(1)  # paddle
         return obs.reshape((self.height, self.width, 3)).astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
         done_term = update_game_state(state, self.width)
-        done = jnp.logical_or(jnp.array(done_steps), jnp.array(done_term))
-        return jnp.logical_or(done, state.terminal)
+        return jnp.logical_or(jnp.array(done_term), state.terminal)
 
     @property
     def name(self) -> str:

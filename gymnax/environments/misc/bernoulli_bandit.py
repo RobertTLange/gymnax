@@ -93,11 +93,9 @@ class BernoulliBandit(environment.Environment[EnvState, EnvParams]):
         )
         return jnp.hstack([state.last_reward, action_one_hot, time_rep])
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        # Check number of steps in episode termination condition
-        done = state.time >= params.max_steps_in_episode
-        return jnp.array(done)
+        return jnp.array(False)
 
     @property
     def name(self) -> str:

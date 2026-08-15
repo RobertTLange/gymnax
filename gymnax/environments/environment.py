@@ -9,6 +9,7 @@ from typing import (
 )
 
 import jax
+import jax.numpy as jnp
 from flax import struct
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
@@ -46,9 +47,17 @@ class Environment(Generic[TEnvState, TEnvParams]):
 
         # Step
         key_step, key_reset = jax.random.split(key)
-        obs_st, state_st, reward, done, info = self.step_env(
+        obs_st, state_st, reward, legacy_done, info = self.step_env(
             key_step, state, action, params
         )
+        terminated = jnp.logical_or(
+            self.is_terminated(state_st, params),
+            jnp.logical_and(
+                legacy_done, jnp.logical_not(self.is_truncated(state_st, params))
+            ),
+        )
+        truncated = self.is_truncated(state_st, params)
+        done = jnp.logical_or(terminated, truncated)
         obs_re, state_re = self.reset_env(key_reset, params)
 
         # Auto-reset environment based on termination
@@ -56,6 +65,12 @@ class Environment(Generic[TEnvState, TEnvParams]):
             lambda x, y: jax.lax.select(done, x, y), state_re, state_st
         )
         obs = jax.lax.select(done, obs_re, obs_st)
+        info = {
+            **info,
+            "terminated": terminated,
+            "truncated": truncated,
+            "final_observation": obs_st,
+        }
 
         return obs, state, reward, done, info
 
@@ -116,9 +131,26 @@ class Environment(Generic[TEnvState, TEnvParams]):
         """Applies observation function to state."""
         raise NotImplementedError
 
+    def is_truncated(self, state: TEnvState, params: TEnvParams) -> jax.Array:
+        """Check whether the transition reached its configured time limit."""
+        return state.time >= params.max_steps_in_episode
+
+    def is_terminated(self, state: TEnvState, params: TEnvParams) -> jax.Array:
+        """Check for natural termination in legacy third-party environments.
+
+        Override this method when a legacy ``is_terminal`` implementation cannot
+        distinguish natural termination from a time-limit transition.
+        """
+        return jnp.logical_and(
+            self.is_terminal(state, params),
+            jnp.logical_not(self.is_truncated(state, params)),
+        )
+
     def is_terminal(self, state: TEnvState, params: TEnvParams) -> jax.Array:
-        """Check whether state transition is terminal."""
-        raise NotImplementedError
+        """Check whether the transition terminated naturally or was truncated."""
+        return jnp.logical_or(
+            self.is_terminated(state, params), self.is_truncated(state, params)
+        )
 
     def discount(self, state: TEnvState, params: TEnvParams) -> jax.Array:
         """Return a discount of zero if the episode has terminated."""

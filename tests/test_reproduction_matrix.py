@@ -46,6 +46,9 @@ def test_registered_environment_resets_and_steps_when_jitted(
     assert reward.shape == ()
     assert done.shape == ()
     assert info
+    assert {"terminated", "truncated", "final_observation"} <= info.keys()
+    assert done == jnp.logical_or(info["terminated"], info["truncated"])
+    assert next_observation.shape == info["final_observation"].shape
     jax.block_until_ready((next_observation, next_state, reward, done))
 
 

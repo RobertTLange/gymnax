@@ -80,7 +80,7 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
         )
         return image, state
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Every step transition is terminal! No long term credit assignment!
         return jnp.array(True)

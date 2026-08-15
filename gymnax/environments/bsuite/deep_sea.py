@@ -66,9 +66,17 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         if params is None:
             params = self.default_params
         key_step, key_reset = jax.random.split(key)
-        obs_step, state_step, reward, done, info = self.step_env(
+        obs_step, state_step, reward, legacy_done, info = self.step_env(
             key_step, state, action, params
         )
+        terminated = jnp.logical_or(
+            self.is_terminated(state_step, params),
+            jnp.logical_and(
+                legacy_done, jnp.logical_not(self.is_truncated(state_step, params))
+            ),
+        )
+        truncated = self.is_truncated(state_step, params)
+        done = jnp.logical_or(terminated, truncated)
         obs_reset, state_reset = self.reset_env(key_reset, params)
         next_state = jax.tree.map(
             lambda reset, stepped: jax.lax.select(done, reset, stepped),
@@ -83,6 +91,12 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
                 done, state_step.denoised_return, next_state.denoised_return
             ),
         )
+        info = {
+            **info,
+            "terminated": terminated,
+            "truncated": truncated,
+            "final_observation": obs_step,
+        }
         return jax.lax.select(done, obs_reset, obs_step), next_state, reward, done, info
 
     def step_env(
@@ -176,12 +190,9 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         obs_upd = obs_end.at[state.row, state.column].set(1.0)
         return jax.lax.select(end_cond, obs_end, obs_upd)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_row = state.row == self.size
-        done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_row, done_steps)
-        return done
+        return state.row == self.size
 
     @property
     def name(self) -> str:

@@ -147,10 +147,9 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
             obs = obs.at[car[1], back_x, trail_channel].set(True)
         return obs.astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
-        return jnp.array(done_steps)
+        return jnp.array(False)
 
     @property
     def name(self) -> str:

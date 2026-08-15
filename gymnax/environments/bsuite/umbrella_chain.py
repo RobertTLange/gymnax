@@ -109,11 +109,10 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
         )
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
         done_chain = state.time == params.chain_length
-        return jnp.logical_or(done_steps, done_chain)
+        return done_chain
 
     @property
     def name(self) -> str:

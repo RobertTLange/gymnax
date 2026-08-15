@@ -159,10 +159,9 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
             obs = obs.at[x[1], back_x, c_eff].set(leave_trail)
         return obs[:, :, :4].astype(jnp.float32)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
-        return jnp.logical_or(done_steps, state.terminal)
+        return state.terminal
 
     @property
     def name(self) -> str:

@@ -117,11 +117,10 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         obs = obs.at[2:].set(context_val)
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
         done_mem = state.time - 1 == params.memory_length
-        return jnp.logical_or(done_steps, done_mem)
+        return done_mem
 
     @property
     def name(self) -> str:

@@ -138,7 +138,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
             ]
         )
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         # Check termination and construct updated state
         done_angle = (
@@ -146,10 +146,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
             - jnp.cos(state.joint_angle2 + state.joint_angle1)
             > 1.0
         )
-        # Check number of steps in episode termination condition
-        done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_angle, done_steps)
-        return done
+        return done_angle
 
     @property
     def name(self) -> str:

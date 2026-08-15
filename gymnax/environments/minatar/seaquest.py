@@ -444,8 +444,8 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
         obs = draw_entities(obs, state.e_subs, state.e_subs_count, 6, True)
         return draw_entities(obs, state.divers, state.divers_count, 9, True)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
-        return state.terminal | (state.time >= params.max_steps_in_episode)
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
+        return state.terminal
 
     @property
     def name(self) -> str:

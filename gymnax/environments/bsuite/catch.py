@@ -116,12 +116,9 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         obs = obs.at[state.paddle_y, state.paddle_x].set(1.0)
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done_loose = state.ball_y == self.rows - 1
-        done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_loose, done_steps)
-        return done
+        return state.ball_y == self.rows - 1
 
     @property
     def name(self) -> str:

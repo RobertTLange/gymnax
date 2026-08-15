@@ -94,10 +94,9 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
         )
         return obs
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
-        done = state.time >= params.max_steps_in_episode
-        return jnp.array(done)
+        return jnp.array(False)
 
     @property
     def name(self) -> str:

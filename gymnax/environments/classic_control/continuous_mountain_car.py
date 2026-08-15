@@ -94,15 +94,12 @@ class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
         """Return observation from raw state trafo."""
         return jnp.array([state.position, state.velocity]).squeeze()
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
         """Check whether state is terminal."""
         done1 = (state.position >= params.goal_position) * (
             state.velocity >= params.goal_velocity
         )
-        # Check number of steps in episode termination condition
-        done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done1, done_steps)
-        return done.squeeze()
+        return done1.squeeze()
 
     @property
     def name(self) -> str:
