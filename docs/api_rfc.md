@@ -123,14 +123,41 @@ are not required hooks for new environments.
    six-value API, and the opt-in five-value compatibility adapter.
 3. Released: 1.0.0 migration notes and wrapper contract coverage.
 
-Open issues #109, #38, #103, #107, #88, #59, #32, and #26 remain the public
+Issues #109, #38, #103, #107, #88, #59, #32, and #26 served as the public
 discussion and implementation trackers. Pull request #108 was useful reference
-material for the completed 0.x change, but does not itself resolve the 1.0 API
+material for the completed 0.x change, but did not itself resolve the 1.0 API
 migration.
 
 ## Deferred decisions
 
-This RFC intentionally does not consolidate constructor arguments into
-`EnvParams`, expose terminal states, or define environment reward derivatives.
-Those remain separate proposals after the terminal and observation contracts are
-stable.
+The 1.0 RFC intentionally did not consolidate constructor arguments into
+`EnvParams`, expose terminal states, or define transition derivatives. Those
+questions were evaluated separately after the terminal and observation contracts
+stabilized.
+
+## Post-1.0 differentiable transition contract
+
+Built-in environments retain their stop-gradient behavior by default. The five
+continuous-action environments (`Pendulum-v1`, `MountainCarContinuous-v0`,
+`PointRobot-misc`, `Reacher-misc`, and `Swimmer-misc`) declare support for
+`env.with_transition_gradients()`. This method returns a new configured
+environment; the original instance remains unchanged, and the new identity keeps
+JIT caching explicit.
+
+Configured environments preserve JAX gradients through transition observations
+and floating-point state leaves. They do not return derivative values directly;
+callers use `jax.grad`, `jax.jacrev`, or related transformations. Reward gradients
+are unchanged by this mode. Unsupported environments reject the opt-in rather
+than implying differentiability for discrete actions or event-driven dynamics.
+
+The contract is pathwise and local to the executed JAX program with a fixed
+random key. It does not promise smooth derivatives through clipping boundaries,
+comparisons, discrete events, termination decisions, or PointRobot's conditional
+respawn. Integer state leaves such as `time` are bookkeeping, not differentiation
+targets.
+
+Automatic reset retains the 1.0 semantics. After termination or truncation, the
+publicly returned observation and state come from reset and have no action
+gradient from the completed transition. `info["final_observation"]` preserves the
+transition-observation gradient, while `step_env` exposes the raw next state
+without autoreset.
