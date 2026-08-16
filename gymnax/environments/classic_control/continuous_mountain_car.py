@@ -38,6 +38,8 @@ class EnvParams(environment.EnvParams):
 class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment."""
 
+    _supports_transition_gradients = True
+
     @property
     def default_params(self) -> EnvParams:
         # Default environment parameters
@@ -74,9 +76,12 @@ class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
             time=state.time + 1,
         )
         done = self.is_terminal(state, params)
+        observation, state = self._apply_transition_gradient_policy(
+            self.get_obs(state), state
+        )
         return (
-            jax.lax.stop_gradient(self.get_obs(state)),
-            jax.lax.stop_gradient(state),
+            observation,
+            state,
             reward,
             done,
             {"discount": self.discount(state, params)},

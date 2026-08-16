@@ -35,6 +35,8 @@ class EnvParams(environment.EnvParams):
 class Pendulum(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible version of Pendulum-v0 OpenAI gym environment."""
 
+    _supports_transition_gradients = True
+
     def __init__(self):
         super().__init__()
         self.obs_shape = (3,)
@@ -79,9 +81,12 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
             time=state.time + 1,
         )
         done = self.is_terminal(state, params)
+        observation, state = self._apply_transition_gradient_policy(
+            self.get_obs(state), state
+        )
         return (
-            jax.lax.stop_gradient(self.get_obs(state)),
-            jax.lax.stop_gradient(state),
+            observation,
+            state,
             reward,
             done,
             {"discount": self.discount(state, params)},

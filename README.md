@@ -58,6 +58,43 @@ bootstrap_mask = 1.0 - info["terminated"].astype(jnp.float32)
 `spaces.Discrete(n, dtype=...)` uses `int32` actions by default. `int64` is
 available only when JAX x64 mode is enabled; other dtypes are unsupported.
 
+## Differentiable transitions
+
+Built-in environments detach transition observations and states by default.
+Continuous-control applications can opt into JAX gradients without changing
+the original environment:
+
+```python
+env, env_params = gymnax.make("Pendulum-v1")
+differentiable_env = env.with_transition_gradients()
+obs, state = differentiable_env.reset(key_reset, env_params)
+
+def next_angular_velocity(action):
+    return differentiable_env.step(key_step, state, action, env_params)[1].theta_dot
+
+action = jnp.array([0.5])
+transition_gradient = jax.grad(next_angular_velocity)(action)
+```
+
+`with_transition_gradients()` returns a configured copy, leaving `env`
+unchanged. It is supported by `Pendulum-v1`, `MountainCarContinuous-v0`,
+`PointRobot-misc`, `Reacher-misc`, and `Swimmer-misc`. Configure the environment
+before applying wrappers. Discrete-action environments such as `CartPole-v1`
+reject this opt-in because action derivatives are not part of their contract.
+
+These are local, pathwise derivatives of the JAX program for a fixed random
+key. Clipping boundaries, comparisons, terminal decisions, and discrete events
+are not smooth; PointRobot's goal-triggered respawn is also discontinuous.
+Differentiate floating-point state leaves rather than the complete state PyTree,
+which includes integer bookkeeping such as `time`.
+
+Automatic reset behavior is unchanged. On a terminal or truncated step, the
+returned observation and state belong to the reset episode and therefore do not
+carry the completed transition's action gradient. The gradient remains available
+through `info["final_observation"]`; use `step_env` when the raw, non-autoreset
+next state is required. Reward gradients are unaffected by the opt-in and remain
+available wherever the reward implementation is differentiable.
+
 ## Implemented Accelerated Environments 🏎️
 
 

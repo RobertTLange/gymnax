@@ -31,6 +31,8 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
     Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py
     """
 
+    _supports_transition_gradients = True
+
     def __init__(self, num_urchins: int = 5):
         super().__init__()
         self.num_urchins = num_urchins
@@ -67,9 +69,12 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
         )
 
         done = self.is_terminal(state, params)
+        observation, state = self._apply_transition_gradient_policy(
+            self.get_obs(state, params), state
+        )
         return (
-            jax.lax.stop_gradient(self.get_obs(state, params)),
-            jax.lax.stop_gradient(state),
+            observation,
+            state,
             reward,
             done,
             {"discount": self.discount(state, params)},

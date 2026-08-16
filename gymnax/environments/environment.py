@@ -1,5 +1,6 @@
 """Abstract base class for all gymnax Environments."""
 
+import copy
 from functools import partial
 from typing import Any, Generic, TypeVar
 
@@ -9,6 +10,7 @@ from flax import struct
 
 TEnvState = TypeVar("TEnvState", bound="EnvState")
 TEnvParams = TypeVar("TEnvParams", bound="EnvParams")
+TEnvironment = TypeVar("TEnvironment", bound="Environment")
 
 
 @struct.dataclass
@@ -23,6 +25,36 @@ class EnvParams:
 
 class Environment(Generic[TEnvState, TEnvParams]):
     """Abstract base class for environments."""
+
+    _supports_transition_gradients = False
+    _transition_gradients_enabled = False
+
+    @property
+    def supports_transition_gradients(self) -> bool:
+        """Whether this environment implements differentiable transitions."""
+        return self._supports_transition_gradients
+
+    @property
+    def transition_gradients_enabled(self) -> bool:
+        """Whether transition observations and states preserve gradients."""
+        return self._transition_gradients_enabled
+
+    def with_transition_gradients(self: TEnvironment) -> TEnvironment:
+        """Return a configured copy that preserves supported transition gradients."""
+        if not self.supports_transition_gradients:
+            raise ValueError(f"{self.name} does not support transition gradients")
+
+        configured_environment = copy.copy(self)
+        configured_environment._transition_gradients_enabled = True
+        return configured_environment
+
+    def _apply_transition_gradient_policy(
+        self, observation: Any, state: TEnvState
+    ) -> tuple[Any, TEnvState]:
+        """Detach transition outputs unless gradients were explicitly enabled."""
+        if self.transition_gradients_enabled:
+            return observation, state
+        return jax.tree.map(jax.lax.stop_gradient, (observation, state))
 
     @property
     def default_params(self) -> EnvParams:

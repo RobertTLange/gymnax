@@ -3,6 +3,8 @@
 - Added a concise Gymnax 1.0 migration summary to the README.
 - Added a persistent `LogWrapper` validity signal that distinguishes reset
   placeholders from completed-episode returns and lengths.
+- Added opt-in differentiable observations and states for the five built-in
+  continuous-action environments while preserving stop-gradient defaults.
 
 ### [v1.0.0] - 16/08/2026
 

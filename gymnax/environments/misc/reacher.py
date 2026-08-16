@@ -31,6 +31,8 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
     Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py
     """
 
+    _supports_transition_gradients = True
+
     def __init__(self, num_joints: int = 2):
         super().__init__()
         self.num_joints = num_joints
@@ -70,9 +72,12 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
         reward = reward.squeeze()
 
         done = self.is_terminal(state, params)
+        observation, state = self._apply_transition_gradient_policy(
+            self.get_obs(state, params), state
+        )
         return (
-            jax.lax.stop_gradient(self.get_obs(state, params)),
-            jax.lax.stop_gradient(state),
+            observation,
+            state,
             reward,
             done,
             {"discount": self.discount(state, params)},
