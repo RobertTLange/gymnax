@@ -1,14 +1,18 @@
-# OpenAI gym - Classic Control Environments
-| Environment Name | Observation Space  |  State Space        | Action Space        | $\text{dim}(\mathcal{O})$, $\text{dim}(\mathcal{S})$, $\text{dim}(\mathcal{A})$ |
-| ---------------- |:------------------:| :------------------:| :------------------:| :------------------:|
-| `Pendulum-v0`    | $\cos(\theta)$, $\sin(\theta), \dot{\theta}$ | $\theta, \dot{\theta}, t,$ `done` | `Continuous(1)` - Torque (clipped) | $(3, 4, 1)$ |
-| `CartPole-v0`    | $x, \dot{x}, \theta, \dot{\theta}$ | $x, \dot{x}, \theta, \dot{\theta}, t,$ `done` | `Discrete(2)` - "Left"/"Right" | $(4, 6, 1)$ |
-| `MountainCar-v0`    | $x, \dot{x}$ | $x, \dot{x}, t,$ `done` | `Discrete(3)` - "Left"/"NoOps"/"Right" | $(4, 6, 1)$ |
-| `MountainCarContinuous-v0`    | $x, \dot{x}$ | $x, \dot{x}, t,$ `done` | `Continuous(1)` - Force | $(4, 6, 1)$ |
-| `Acrobot-v1`    | $\cos(\theta_1), \sin(\theta_1), \cos(\theta_2), \sin(\theta_2), \dot{\theta_1}, \dot{\theta_2}$ | $\theta_1, \theta_2, \dot{\theta_1}, \dot{\theta_2}, t,$ `done` | `Discrete(3)` - +1, 0, -1 Force | $(6, 6, 1)$ |
+# Classic-control environment spaces
 
+Gymnax space declarations are parameter-aware. Query them directly with
+`env.observation_space(params)`, `env.state_space(params)`, and
+`env.action_space(params)` for the authoritative contract.
 
-# DeepMind BSuite - Agent Evaluation Environments
-| Environment Name | Observation Space  |  State Space        | Action Space        | $\text{dim}(\mathcal{O})$, $\text{dim}(\mathcal{S})$, $\text{dim}(\mathcal{A})$ |
-| ---------------- |:------------------:| :------------------:| :------------------:| :------------------:|
-| `Catch-bsuite`    | 
+| Environment | Observation | State | Action |
+| --- | --- | --- | --- |
+| `Pendulum-v1` | $cos(\theta)$, $\sin(\theta)$, $\dot{\theta}$ | $\theta$, $\dot{\theta}$, time | Continuous torque |
+| `CartPole-v1` | $x$, $\dot{x}$, $\theta$, $\dot{\theta}$ | $x$, $\dot{x}$, $\theta$, $\dot{\theta}$, time | Discrete left/right |
+| `MountainCar-v0` | position, velocity | position, velocity, time | Discrete left/no-op/right |
+| `MountainCarContinuous-v0` | position, velocity | position, velocity, time | Continuous force |
+| `Acrobot-v1` | trigonometric joint positions and angular velocities | joint positions, angular velocities, time | Discrete torque |
+
+Terminal status is returned by `Environment.step` as separate `terminated` and
+`truncated` values; it is not stored in environment state spaces. See the
+[API RFC](api_rfc.md) for the 1.0 transition contract and the
+[README](../README.md) for the complete registered-environment list.

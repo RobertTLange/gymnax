@@ -1,7 +1,7 @@
 [project]
 name = "gymnax"
 version = "1.0.0"
-description = "JAX implementations of OpenAI's gym environments"
+description = "JAX-native reinforcement-learning environments"
 authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
 readme = "README.md"
 license = {text = "Apache-2.0"}

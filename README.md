@@ -4,9 +4,9 @@
 </h1>
 
 <p align="center">
-  <a href="https://pypi.python.org/pypi/gymnax"><img src="https://img.shields.io/pypi/pyversions/cax.svg?style=flat" /></a>
+  <a href="https://pypi.python.org/pypi/gymnax"><img src="https://img.shields.io/pypi/pyversions/gymnax.svg?style=flat" /></a>
   <a href= "https://badge.fury.io/py/gymnax"><img src="https://badge.fury.io/py/gymnax.svg" /></a>
-  <a href= "https://github.com/RobertTLange/gymnax/blob/master/LICENSE.md"><img src="https://img.shields.io/badge/license-Apache2.0-blue.svg" /></a>
+  <a href= "https://github.com/RobertTLange/gymnax/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache2.0-blue.svg" /></a>
   <a href= "https://codecov.io/gh/RobertTLange/gymnax"><img src="https://codecov.io/gh/RobertTLange/gymnax/branch/main/graph/badge.svg?token=OKKPDRIQJR" /></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" /></a>
 </p>
@@ -289,8 +289,8 @@ If you use `gymnax` in your research, please cite it as follows:
   author = {Robert Tjarko Lange},
   title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
   url = {http://github.com/RobertTLange/gymnax},
-  version = {0.0.4},
-  year = {2022},
+  version = {1.0.0},
+  year = {2026},
 }
 ```
 

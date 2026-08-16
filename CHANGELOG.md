@@ -1,4 +1,6 @@
-### [Unreleased] - 02/04/2026
+### [Unreleased]
+
+### [v1.0.0] - 16/08/2026
 
 - Added Gymnasium-compatible `FrozenLake-misc`, including configurable static
   maps, dynamics, rewards, and episode limits.
@@ -8,6 +10,7 @@
   and complete-parameter injection.
 - Added readable constructor-style representations for Gymnax space objects.
 - Documented pixel-style observation tensors and their renderer distinction.
+- Updated release, contribution, citation, and environment-space documentation.
 
 Thanks to @Dcyaprogrammer!
 - **Breaking:** Released the Gymnax 1.0 six-value step API: `terminated` and

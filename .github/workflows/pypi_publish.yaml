@@ -4,6 +4,9 @@ on:
   release:
     types: [created]
 
+env:
+  TWINE_VERSION: "6.2.0"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -13,14 +16,21 @@ jobs:
     - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       with:
         persist-credentials: false
+        ref: ${{ github.event.release.tag_name }}
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         enable-cache: false
     - name: Build distribution
       run: uv build
+    - name: Verify release version
+      env:
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+      run: test "$RELEASE_TAG" = "v$(uv run --locked python -c 'from importlib.metadata import version; print(version("gymnax"))')"
+    - name: Validate distribution
+      run: uv tool run --from "twine==$TWINE_VERSION" twine check dist/*
     - name: Publish distribution
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: uv tool run --from twine twine upload dist/*
+      run: uv tool run --from "twine==$TWINE_VERSION" twine upload dist/*
