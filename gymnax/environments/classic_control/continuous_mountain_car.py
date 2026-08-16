@@ -38,7 +38,7 @@ class EnvParams(environment.EnvParams):
 class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment."""
 
-    supports_transition_gradients = True
+    _supports_transition_gradients = True
 
     @property
     def default_params(self) -> EnvParams:

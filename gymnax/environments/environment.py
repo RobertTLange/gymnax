@@ -26,8 +26,13 @@ class EnvParams:
 class Environment(Generic[TEnvState, TEnvParams]):
     """Abstract base class for environments."""
 
-    supports_transition_gradients = False
+    _supports_transition_gradients = False
     _transition_gradients_enabled = False
+
+    @property
+    def supports_transition_gradients(self) -> bool:
+        """Whether this environment implements differentiable transitions."""
+        return self._supports_transition_gradients
 
     @property
     def transition_gradients_enabled(self) -> bool:

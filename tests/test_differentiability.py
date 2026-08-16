@@ -62,6 +62,13 @@ def test_discrete_environment_rejects_transition_gradients():
         env.with_transition_gradients()
 
 
+def test_transition_gradient_capability_is_read_only():
+    env, _ = gymnax.make("CartPole-v1")
+
+    with pytest.raises(AttributeError):
+        env.supports_transition_gradients = True
+
+
 def test_default_pendulum_preserves_stopped_transition_gradients():
     env, params, state, action, key = _pendulum_fixture()
 

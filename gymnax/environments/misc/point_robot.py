@@ -38,7 +38,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
     2021 https://openreview.net/pdf?id=IBdEfhLveS
     """
 
-    supports_transition_gradients = True
+    _supports_transition_gradients = True
 
     @property
     def default_params(self) -> EnvParams:

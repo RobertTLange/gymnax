@@ -31,7 +31,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
     Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py
     """
 
-    supports_transition_gradients = True
+    _supports_transition_gradients = True
 
     def __init__(self, num_urchins: int = 5):
         super().__init__()

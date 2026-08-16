@@ -31,7 +31,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
     Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py
     """
 
-    supports_transition_gradients = True
+    _supports_transition_gradients = True
 
     def __init__(self, num_joints: int = 2):
         super().__init__()

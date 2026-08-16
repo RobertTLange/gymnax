@@ -35,7 +35,7 @@ class EnvParams(environment.EnvParams):
 class Pendulum(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible version of Pendulum-v0 OpenAI gym environment."""
 
-    supports_transition_gradients = True
+    _supports_transition_gradients = True
 
     def __init__(self):
         super().__init__()
