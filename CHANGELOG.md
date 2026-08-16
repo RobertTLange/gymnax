@@ -12,6 +12,7 @@
 - Documented pixel-style observation tensors and their renderer distinction.
 - Updated release, contribution, citation, and environment-space documentation.
 - Modernized Apache-2.0 package metadata for current setuptools builds.
+- Removed a public Codecov badge query token from repository documentation.
 
 Thanks to @Dcyaprogrammer!
 - **Breaking:** Released the Gymnax 1.0 six-value step API: `terminated` and
