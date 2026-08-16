@@ -32,6 +32,60 @@ def test_log_wrapper_reset_and_step_share_jit_state_dtypes():
         assert next_state.returned_episode_returns.dtype == jnp.float32
         assert next_state.episode_lengths.dtype == jnp.int32
         assert next_state.returned_episode_lengths.dtype == jnp.int32
+        assert next_state.returned_episode_valid.dtype == jnp.bool_
+
+
+def test_log_wrapper_marks_zero_return_valid_after_first_completed_episode():
+    env, _ = gymnax.make("Catch-bsuite")
+    params = env.default_params.replace(max_steps_in_episode=2)
+    wrapper = LogWrapper(env)
+    reset_key, first_key, terminal_key, next_episode_key = jax.random.split(
+        jax.random.key(1), 4
+    )
+    _, state = wrapper.reset(reset_key, params)
+
+    assert not state.returned_episode_valid
+
+    _, state, _, _, _, info = wrapper.step(first_key, state, jnp.int32(1), params)
+
+    assert not info["returned_episode"]
+    assert not info["returned_episode_valid"]
+
+    _, state, _, _, truncated, info = wrapper.step(
+        terminal_key, state, jnp.int32(1), params
+    )
+
+    assert truncated
+    assert info["returned_episode"]
+    assert info["returned_episode_valid"]
+    assert info["returned_episode_returns"] == 0.0
+    assert info["returned_episode_lengths"] == 2
+
+    _, state, _, _, _, info = wrapper.step(
+        next_episode_key, state, jnp.int32(1), params
+    )
+
+    assert not info["returned_episode"]
+    assert info["returned_episode_valid"]
+    assert state.returned_episode_valid
+    assert state.returned_episode_returns == 0.0
+    assert state.returned_episode_lengths == 2
+
+
+def test_log_wrapper_batches_return_validity_with_vmap():
+    env, _ = gymnax.make("Catch-bsuite")
+    params = env.default_params.replace(max_steps_in_episode=1)
+    wrapper = LogWrapper(env)
+    reset_keys = jax.random.split(jax.random.key(2), 3)
+    step_keys = jax.random.split(jax.random.key(3), 3)
+    _, states = jax.vmap(wrapper.reset, in_axes=(0, None))(reset_keys, params)
+
+    _, states, _, _, _, info = jax.vmap(wrapper.step, in_axes=(0, 0, 0, None))(
+        step_keys, states, jnp.ones(3, dtype=jnp.int32), params
+    )
+
+    assert jnp.array_equal(states.returned_episode_valid, jnp.ones(3, dtype=bool))
+    assert jnp.array_equal(info["returned_episode_valid"], jnp.ones(3, dtype=bool))
 
 
 def test_sticky_action_wrapper_defaults_to_passthrough_and_records_action():
