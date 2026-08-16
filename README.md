@@ -13,6 +13,18 @@
 
 Are you fed up with slow CPU-based RL environment processes? Do you want to leverage massive vectorization for high-throughput RL experiments? `gymnax` brings the power of `jit` and `vmap`/`pmap` to the classic gym API. It supports a range of different environments including [classic control](https://github.com/openai/gym/tree/master/gym/envs/classic_control), [bsuite](https://github.com/deepmind/bsuite), [MinAtar](https://github.com/kenjyoung/MinAtar/) and a collection of classic/meta RL tasks. `gymnax` allows explicit functional control of environment settings (random seed or hyperparameters), which enables accelerated & parallelized rollouts for different configurations (e.g. for meta RL). By executing both environment and policy on the accelerator, it facilitates the Anakin sub-architecture proposed in the Podracer paper [(Hessel et al., 2021)](https://arxiv.org/pdf/2104.06272.pdf) and highly distributed evolutionary optimization (using e.g. [`evosax`](https://github.com/RobertTLange/evosax)). We provide training & checkpoints for both PPO & ES in [`gymnax-blines`](https://github.com/RobertTLange/gymnax-blines). Get started here 👉 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobertTLange/gymnax/blob/main/examples/00_getting_started.ipynb).
 
+## Upgrading to Gymnax 1.0
+
+> [!IMPORTANT]
+> **Gymnax 1.0 has a breaking step API.**
+>
+> - `env.step(...)` now returns `(observation, state, reward, terminated, truncated, info)`, replacing the former five-value return with `done`.
+> - For episode control, use `done = terminated | truncated`. For value bootstrapping, only `terminated` means zero continuation value.
+> - Terminal steps auto-reset; use `info["final_observation"]` for the pre-reset terminal observation.
+> - Custom environments should implement `observe(key, state, action, params)`.
+>
+> Existing five-value callers can use `gymnax.wrappers.LegacyStepAPIWrapper` while migrating. See the [API and compatibility RFC](docs/api_rfc.md) for details.
+
 ## Basic `gymnax` API Usage 🍲
 
 ```python
@@ -45,11 +57,6 @@ bootstrap_mask = 1.0 - info["terminated"].astype(jnp.float32)
 
 `spaces.Discrete(n, dtype=...)` uses `int32` actions by default. `int64` is
 available only when JAX x64 mode is enabled; other dtypes are unsupported.
-
-Gymnax 1.0 returns separate `terminated` and `truncated` values. Use
-`terminated | truncated` for reset control flow. Existing five-value callers can
-wrap an environment with `LegacyStepAPIWrapper`; see the
-[API and compatibility RFC](docs/api_rfc.md) for the migration details.
 
 ## Implemented Accelerated Environments 🏎️
 

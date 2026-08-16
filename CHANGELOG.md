@@ -1,5 +1,7 @@
 ### [Unreleased]
 
+- Added a concise Gymnax 1.0 migration summary to the README.
+
 ### [v1.0.0] - 16/08/2026
 
 - Added Gymnasium-compatible `FrozenLake-misc`, including configurable static
