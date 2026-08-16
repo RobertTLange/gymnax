@@ -1,6 +1,8 @@
 ### [Unreleased]
 
 - Added a concise Gymnax 1.0 migration summary to the README.
+- Added a persistent `LogWrapper` validity signal that distinguishes reset
+  placeholders from completed-episode returns and lengths.
 
 ### [v1.0.0] - 16/08/2026
 

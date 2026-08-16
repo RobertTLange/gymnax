@@ -147,10 +147,16 @@ class LogEnvState:
     episode_lengths: jax.Array
     returned_episode_returns: jax.Array
     returned_episode_lengths: jax.Array
+    returned_episode_valid: jax.Array
 
 
 class LogWrapper(GymnaxWrapper):
-    """Log the episode returns and lengths."""
+    """Log episode returns and lengths.
+
+    ``returned_episode`` marks a transition that completed an episode, while
+    ``returned_episode_valid`` remains true after the first completed episode.
+    Until then, the returned episode counters contain reset placeholders.
+    """
 
     #   def __init__(self, env: environment.Environment):
     #     super().__init__(env)
@@ -166,6 +172,7 @@ class LogWrapper(GymnaxWrapper):
             jnp.array(0, dtype=jnp.int32),
             jnp.array(0, dtype=jnp.float32),
             jnp.array(0, dtype=jnp.int32),
+            jnp.array(False, dtype=jnp.bool_),
         )
         return obs, state
 
@@ -204,8 +211,10 @@ class LogWrapper(GymnaxWrapper):
             + new_episode_return * done,
             returned_episode_lengths=state.returned_episode_lengths * (1 - done)
             + new_episode_length * done,
+            returned_episode_valid=jnp.logical_or(state.returned_episode_valid, done),
         )
         info["returned_episode_returns"] = state.returned_episode_returns
         info["returned_episode_lengths"] = state.returned_episode_lengths
         info["returned_episode"] = done
+        info["returned_episode_valid"] = state.returned_episode_valid
         return obs, state, reward, terminated, truncated, info
