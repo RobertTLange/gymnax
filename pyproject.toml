@@ -4,7 +4,8 @@ version = "1.0.0"
 description = "JAX-native reinforcement-learning environments"
 authors = [{ name = "Robert Tjarko Lange", email = "robertlange0@gmail.com" }]
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "jax>=0.6,<0.7",
@@ -18,7 +19,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -60,6 +60,3 @@ ignore = ["N801", "N802", "N803", "N806", "N815", "W191"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-
-[tool.setuptools]
-license-files = []
