@@ -8,6 +8,33 @@ import pytest
 from gymnax.environments.bsuite.deep_sea import DeepSea, EnvParams, EnvState
 
 
+@pytest.mark.parametrize("size", [1, 3, 8])
+def test_default_episode_horizon_matches_size(size):
+    """Default rollouts stop at DeepSea's constructor-defined horizon."""
+    env = DeepSea(size=size)
+
+    assert env.default_params.max_steps_in_episode == size
+
+
+def test_natural_termination_coincides_with_default_horizon():
+    """The final DeepSea transition reaches both terminal conditions."""
+    env = DeepSea(size=3)
+    params = env.default_params
+    _, state = env.reset(jax.random.key(0), params)
+
+    for step in range(2):
+        _, state, _, terminated, truncated, _ = env.step(
+            jax.random.key(step + 1), state, 0, params
+        )
+        assert not terminated
+        assert not truncated
+
+    _, _, _, terminated, truncated, _ = env.step(jax.random.key(3), state, 0, params)
+
+    assert terminated
+    assert truncated
+
+
 def _key_where_right_move_fails(size: int) -> jax.Array:
     for seed in range(100):
         key = jax.random.key(seed)

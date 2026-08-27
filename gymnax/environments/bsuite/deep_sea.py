@@ -51,8 +51,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
-        return EnvParams()
+        return EnvParams(max_steps_in_episode=self.size)
 
     @partial(jax.jit, static_argnames=("self",))
     def step(

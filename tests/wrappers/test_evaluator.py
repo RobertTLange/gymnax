@@ -99,3 +99,15 @@ def test_rollout_preserves_named_environment_parameter_overrides():
     )
 
     assert manager.env_params.max_steps_in_episode == 3
+
+
+def test_deep_sea_rollout_defaults_to_grid_size():
+    """Naturally terminal DeepSea rollouts avoid masked extra transitions."""
+    env = gymnax.environments.DeepSea(size=3)
+    manager = rollout.RolloutWrapper(env=env)
+
+    observations, _, _, _, done, _ = manager.single_rollout(jax.random.key(0), None)
+
+    assert manager.num_env_steps == 3
+    assert observations.shape == (3, 3, 3)
+    assert jnp.array_equal(done, jnp.array([False, False, True]))

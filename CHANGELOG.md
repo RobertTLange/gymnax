@@ -5,6 +5,8 @@
   placeholders from completed-episode returns and lengths.
 - Added opt-in differentiable observations and states for the five built-in
   continuous-action environments while preserving stop-gradient defaults.
+- Fixed DeepSea's default episode horizon to follow its grid size, avoiding
+  oversized default rollouts.
 
 ### [v1.0.0] - 16/08/2026
 
