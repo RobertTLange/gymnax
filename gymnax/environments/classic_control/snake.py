@@ -72,33 +72,33 @@ class Snake(environment.Environment[EnvState, EnvParams]):
             state.length > 1,
         )
         direction = jnp.where(reverse, state.direction, action)
-    
+
         bounds = jnp.array([self.height, self.width], dtype=jnp.int32)
         new_head = state.head + DIRECTIONS[direction]
         out_of_bounds = jnp.logical_or(
             jnp.any(new_head < 0), jnp.any(new_head >= bounds)
         )
         new_head = jnp.clip(new_head, 0, bounds - 1)
-    
+
         ate = jnp.logical_and(
             jnp.logical_not(out_of_bounds), jnp.all(new_head == state.apple)
         )
-    
+
         # Snake advances: every cell ages one tick unless growing (tail stays).
         board = jnp.where(ate, state.board, jnp.maximum(state.board - 1, 0))
         hit_self = board[new_head[0], new_head[1]] > 0
         dead = jnp.logical_or(out_of_bounds, hit_self)
-    
+
         length = state.length + ate.astype(jnp.int32)
         board = board.at[new_head[0], new_head[1]].set(length)
         apple = jnp.where(ate, self._sample_apple(key, board), state.apple)
-    
+
         reward = (
             ate * params.reward_apple
             + dead * params.reward_death
             + params.reward_step
         ).astype(jnp.float32)
-    
+
         state = EnvState(
             board=board,
             head=new_head,
@@ -109,7 +109,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
             time=state.time + 1,
         )
         terminated = self.is_terminal(state, params)
-    
+
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
             jax.lax.stop_gradient(state),
