@@ -14,6 +14,8 @@ CartPole = classic_control.CartPole
 ContinuousMountainCar = classic_control.ContinuousMountainCar
 MountainCar = classic_control.MountainCar
 Pendulum = classic_control.Pendulum
+Snake = classic_control.Snake
+
 EnvState = environment.EnvState
 EnvParams = environment.EnvParams
 MinAsterix = minatar.MinAsterix
@@ -39,6 +41,7 @@ __all__ = [
     "CartPole",
     "MountainCar",
     "ContinuousMountainCar",
+    "Snake",
     "Acrobot",
     "Catch",
     "DeepSea",
