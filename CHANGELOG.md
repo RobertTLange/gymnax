@@ -22,6 +22,9 @@ Thanks to @YannBerthelot and @jadkins99!
   continuous-action environments while preserving stop-gradient defaults.
 - Fixed DeepSea's default episode horizon to follow its grid size, avoiding
   oversized default rollouts.
+- Fixed `SpaceInvaders-MinAtar` to match MinAtar: enemy bullets are checked
+  against the cannon's position after it moves, and the first wave has 24
+  aliens instead of 28. Returns are not comparable with earlier versions.
 
 ### [v1.0.0] - 16/08/2026
 
