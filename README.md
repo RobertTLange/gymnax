@@ -337,7 +337,7 @@ If you use `gymnax` in your research, please cite it as follows:
   author = {Robert Tjarko Lange},
   title = {{gymnax}: A {JAX}-based Reinforcement Learning Environment Library},
   url = {http://github.com/RobertTLange/gymnax},
-  version = {1.0.0},
+  version = {1.0.1},
   year = {2026},
 }
 ```

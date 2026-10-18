@@ -1,5 +1,7 @@
 ### [Unreleased]
 
+### [v1.0.1] - 18/10/2026
+
 - Widened the `jax` and `gymnasium` upper bounds (to `<0.12` and `<1.4`) so
   Gymnax can be installed alongside downstream packages requiring newer
   versions, while keeping advertised support bounded to combinations CI
@@ -75,6 +77,16 @@ Thanks to @Dcyaprogrammer!
 - Added a regression test covering non-default `num_env_steps` rollout shapes.
 
 Thanks to @ponseko and @jinPrelude !
+
+### [v0.0.9] - 23/05/2025
+
+- Migrated packaging from `setup.py` to `pyproject.toml` and added a `uv`
+  lockfile.
+- Updated deprecated JAX tree and random-key APIs.
+- Removed direct `gym` and `chex` runtime dependencies.
+- Fixed non-JIT-compatible terminal values in the Asterix and Freeway MinAtar
+  environments.
+- Refreshed tests, examples, and notebooks for the updated package structure.
 
 ### [v0.0.8] - 21/04/2024
 
