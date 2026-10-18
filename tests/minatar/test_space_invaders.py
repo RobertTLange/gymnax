@@ -2,6 +2,8 @@
 
 import jax
 import jax.numpy as jnp
+import numpy as np
+import pytest
 import space_invaders_helpers
 from minatar import environment
 
@@ -98,6 +100,38 @@ def test_reset():
         # Check state and observation space
         env_gymnax.state_space(env_params).contains(state)
         env_gymnax.observation_space(env_params).contains(obs)
+
+
+def test_reset_matches_numpy():
+    """Test that the reset state is the same as in the NumPy version."""
+    env_gym = environment.Environment(env_name_gym, sticky_action_prob=0.0)
+    env_gym.reset()
+    env_gymnax, env_params = gymnax.make(env_name_jax)
+    _, state = env_gymnax.reset(jax.random.key(0), env_params)
+    helpers.assert_correct_state(env_gym, env_name_jax, state, tolerance)
+
+
+@pytest.mark.parametrize("bullet_col, action", [(4, 1), (5, 1), (6, 2), (5, 2), (5, 0)])
+def test_enemy_bullet_hit_after_move(bullet_col, action):
+    """Test that an enemy bullet is checked against the moved cannon."""
+    env_gym = environment.Environment(env_name_gym, sticky_action_prob=0.0)
+    env_gym.reset()
+    # Cannon in column 5, one enemy bullet that lands on row 9 in this step
+    env_gym.env.pos = 5
+    env_gym.env.alien_map = np.zeros((10, 10))
+    env_gym.env.alien_map[0, 2] = 1
+    env_gym.env.e_bullet_map = np.zeros((10, 10))
+    env_gym.env.e_bullet_map[8, bullet_col] = 1
+    env_gym.env.alien_move_timer, env_gym.env.alien_shot_timer = 5, 5
+
+    env_gymnax, env_params = gymnax.make(env_name_jax)
+    state = state_translate.np_state_to_jax(env_gym, env_name_jax, get_jax=True)
+    _, done_gym = env_gym.act(helpers.minatar_action_map(action, env_name_jax))
+    _, state_jax, _, done_jax, _ = env_gymnax.step_env(
+        jax.random.key(0), state, action, env_params
+    )
+    assert bool(done_jax) == bool(done_gym)
+    helpers.assert_correct_state(env_gym, env_name_jax, state_jax, tolerance)
 
 
 def test_get_obs():

@@ -144,7 +144,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
             pos=5,
             f_bullet_map=jnp.zeros((10, 10)),
             e_bullet_map=jnp.zeros((10, 10)),
-            alien_map=jnp.zeros((10, 10)).at[0:4, 2:9].set(True),
+            alien_map=jnp.zeros((10, 10)).at[0:4, 2:8].set(True),
             alien_dir=-1,
             enemy_move_interval=params.enemy_move_interval,
             alien_move_timer=params.enemy_move_interval,
@@ -239,7 +239,7 @@ def step_agent(action: jax.Array, state: EnvState, params: EnvParams) -> EnvStat
     e_bullet_map = e_bullet_map.at[0, :].set(0)
 
     # Check for terminal collision
-    bullet_terminal = e_bullet_map[9, state.pos]
+    bullet_terminal = e_bullet_map[9, pos]
     terminal = jnp.logical_or(state.terminal, bullet_terminal)
     return state.replace(
         pos=pos,
