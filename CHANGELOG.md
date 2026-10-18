@@ -26,6 +26,8 @@ Thanks to @YannBerthelot and @jadkins99!
   against the cannon's position after it moves, and the first wave has 24
   aliens instead of 28. Returns are not comparable with earlier versions.
 
+Thanks to @raashish1601 for the contribution!
+
 ### [v1.0.0] - 16/08/2026
 
 - Added Gymnasium-compatible `FrozenLake-misc`, including configurable static
