@@ -14,6 +14,8 @@ from .cartpole import CartPole
 from .continuous_mountain_car import ContinuousMountainCar
 from .mountain_car import MountainCar
 from .pendulum import Pendulum
+from .snake import Snake
+
 
 __all__ = [
     "Acrobot",
@@ -21,4 +23,5 @@ __all__ = [
     "MountainCar",
     "ContinuousMountainCar",
     "Pendulum",
+    "Snake",
 ]
