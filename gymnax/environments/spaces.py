@@ -170,16 +170,10 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
     if isinstance(space, Discrete):
         return gspc.Discrete(space.n)
     elif isinstance(space, Box):
-        low = (
-            float(space.low)
-            if (np.isscalar(space.low) or space.low.size == 1)
-            else np.array(space.low)
-        )
-        high = (
-            float(space.high)
-            if (np.isscalar(space.high) or space.low.size == 1)
-            else np.array(space.high)
-        )
+        # Gymnasium may normalize array bounds in place for integer spaces.
+        low, high = np.array(space.low), np.array(space.high)
+        low = low.item() if low.size == 1 else low
+        high = high.item() if high.size == 1 else high
         return gspc.Box(low, high, space.shape, space.dtype)
     elif isinstance(space, Dict):
         return gspc.Dict(
