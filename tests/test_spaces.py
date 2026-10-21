@@ -1,11 +1,14 @@
 """Tests for Gymnax space contracts."""
 
+from collections import OrderedDict
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
 
 from gymnax.environments import spaces
+from gymnax.environments.classic_control.cartpole import CartPole
 from gymnax.environments.spaces import Discrete
 
 
@@ -108,3 +111,34 @@ def test_spaces_have_readable_constructor_style_representations():
         "Tuple((Discrete(3, dtype=int32), "
         "Box(low=-1.0, high=1.0, shape=(2,), dtype=float32)))"
     )
+
+
+@pytest.mark.parametrize("mapping_type", [dict, OrderedDict])
+def test_dict_contains_accepts_sampled_mappings(mapping_type):
+    """Nested dictionary samples must pass their own space's membership check."""
+    space = spaces.Dict(
+        {
+            "choice": spaces.Discrete(3),
+            "vector": spaces.Box(-1.0, 1.0, (2,)),
+            "nested": spaces.Dict({"flag": spaces.Discrete(2)}),
+        }
+    )
+
+    def check_sample(key):
+        sample = mapping_type(space.sample(key))
+        return space.contains(sample)
+
+    keys = jax.random.split(jax.random.key(0), 3)
+    assert bool(jnp.all(jax.jit(jax.vmap(check_sample))(keys)))
+    invalid = mapping_type(space.sample(keys[0]))
+    invalid["choice"] = jnp.array(3)
+    assert not bool(jax.jit(space.contains)(invalid))
+
+
+def test_dict_contains_keeps_attribute_based_environment_states():
+    """Built-in dataclass environment states still pass membership checks."""
+    env = CartPole()
+    params = env.default_params
+    _, state = env.reset(jax.random.key(0), params)
+
+    assert bool(jax.jit(env.state_space(params).contains)(state))
