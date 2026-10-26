@@ -43,6 +43,10 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 
     def __init__(self, height: int = 10, width: int = 10):
         super().__init__()
+        if height < 2 or width < 2:
+            raise ValueError(
+                f"Board dimensions must be at least 2x2, got {height}x{width}"
+            )
         self.height = height
         self.width = width
         self.obs_shape = (height, width, 3)
@@ -56,7 +60,9 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         free = (board == 0).reshape(-1).astype(jnp.float32)
         free = jnp.where(free.sum() > 0, free, jnp.ones_like(free))
         idx = jax.random.choice(key, free.shape[0], p=free / free.sum())
-        return jnp.stack([idx // self.width, idx % self.width]).astype(jnp.int32)
+        row = idx // self.width
+        col = idx % self.width
+        return jnp.stack([row, col]).astype(jnp.int32)
 
     def step_env(
         self,
@@ -91,12 +97,20 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 
         length = state.length + ate.astype(jnp.int32)
         board = board.at[new_head[0], new_head[1]].set(length)
-        apple = jnp.where(ate, self._sample_apple(key, board), state.apple)
+        
+        # Only sample new apple when one was eaten (using lax.cond for efficiency)
+        apple = jax.lax.cond(
+            ate,
+            lambda k, b: self._sample_apple(k, b),
+            lambda k, b: state.apple,
+            key,
+            board,
+        )
 
         reward = (
-            ate * params.reward_apple
-            + dead * params.reward_death
-            + params.reward_step
+            ate * params.reward_apple +
+            dead * params.reward_death +
+            params.reward_step
         ).astype(jnp.float32)
 
         state = EnvState(
@@ -108,7 +122,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
             alive=jnp.logical_not(dead),
             time=state.time + 1,
         )
-        terminated = self.is_terminal(state, params)
+        terminated = self.is_terminated(state, params)
 
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
@@ -151,19 +165,15 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         body = (state.board > 0).astype(jnp.float32) - head
         return jnp.stack([body, head, apple], axis=-1)
 
-    def is_terminal(self, state: EnvState, params: EnvParams) -> jax.Array:
-        """Collision, or board completely filled."""
+    def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
+        """Check whether state is naturally terminated (collision or board filled)."""
         done_dead = jnp.logical_not(state.alive)
         done_full = state.length >= self.height * self.width
         return jnp.logical_or(done_dead, done_full)
 
-    def discount(self, state: EnvState, params: EnvParams) -> jax.Array:
-        """Return a discount of zero if the episode has terminated."""
-        return jax.lax.select(self.is_terminal(state, params), 0.0, 1.0)
-
     @property
     def name(self) -> str:
-        return "Snake"
+        return "Snake-misc"
 
     @property
     def num_actions(self) -> int:
@@ -180,9 +190,19 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         return spaces.Dict(
             {
                 "board": spaces.Box(0, n, (self.height, self.width), jnp.int32),
-                "head": spaces.Box(0, max(self.height, self.width), (2,), jnp.int32),
+                "head": spaces.Box(
+                    0,
+                    jnp.array([self.height - 1, self.width - 1]),
+                    (2,),
+                    jnp.int32,
+                ),
                 "direction": spaces.Discrete(4),
-                "apple": spaces.Box(0, max(self.height, self.width), (2,), jnp.int32),
+                "apple": spaces.Box(
+                    0,
+                    jnp.array([self.height - 1, self.width - 1]),
+                    (2,),
+                    jnp.int32,
+                ),
                 "length": spaces.Discrete(n + 1),
                 "alive": spaces.Discrete(2),
                 "time": spaces.Discrete(params.max_steps_in_episode),
