@@ -18,7 +18,6 @@ from gymnax.environments.classic_control import (
     continuous_mountain_car,
     mountain_car,
     pendulum,
-    snake,
 )
 from gymnax.environments.minatar import (
     asterix,
@@ -36,6 +35,7 @@ from gymnax.environments.misc import (
     pong,
     reacher,
     rooms,
+    snake,
     swimmer,
 )
 
@@ -47,7 +47,7 @@ _BUILTIN_ENV_IDS = [
     "Acrobot-v1",
     "MountainCar-v0",
     "MountainCarContinuous-v0",
-    "Snake-v0",
+    "Snake-misc",
     "Asterix-MinAtar",
     "Breakout-MinAtar",
     "Freeway-MinAtar",
@@ -75,7 +75,7 @@ _builtins: dict[str, EnvironmentFactory] = {
     "Pendulum-v1": pendulum.Pendulum,
     "CartPole-v1": cartpole.CartPole,
     "MountainCar-v0": mountain_car.MountainCar,
-    "Snake-v0": snake.Snake,
+    "Snake-misc": snake.Snake,
     "MountainCarContinuous-v0": continuous_mountain_car.ContinuousMountainCar,
     "Acrobot-v1": acrobot.Acrobot,
     "Catch-bsuite": catch.Catch,
