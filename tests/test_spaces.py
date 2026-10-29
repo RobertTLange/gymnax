@@ -108,3 +108,20 @@ def test_spaces_have_readable_constructor_style_representations():
         "Tuple((Discrete(3, dtype=int32), "
         "Box(low=-1.0, high=1.0, shape=(2,), dtype=float32)))"
     )
+
+
+def test_box_representation_with_traced_bounds_inside_jit():
+    """Box repr does not crash when its bounds are tracers inside jit."""
+    reprs = []
+
+    @jax.jit
+    def describe(high):
+        box = spaces.Box(-high, high, (3,))
+        reprs.append(repr(box))
+        return box.high
+
+    describe(jnp.array([1.0, 1.0, 8.0]))
+
+    assert len(reprs) == 1
+    assert reprs[0].startswith("Box(low=")
+    assert reprs[0].endswith("shape=(3,), dtype=float32)")

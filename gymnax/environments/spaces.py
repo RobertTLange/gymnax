@@ -199,6 +199,9 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
 
 def _format_bound(value: jax.Array | float) -> str:
     """Format scalar and array bounds without JAX device details."""
+    if isinstance(value, jax.core.Tracer):
+        # Traced bounds (e.g. inside jit) have no concrete values to print.
+        return repr(value)
     array = np.asarray(value)
     if array.ndim == 0:
         return repr(array.item())
