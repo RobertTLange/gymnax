@@ -122,6 +122,25 @@ def test_box_representation_with_traced_bounds_inside_jit():
 
     describe(jnp.array([1.0, 1.0, 8.0]))
 
-    assert len(reprs) == 1
-    assert reprs[0].startswith("Box(low=")
-    assert reprs[0].endswith("shape=(3,), dtype=float32)")
+    assert reprs == [
+        "Box(low=<traced float32[3]>, high=<traced float32[3]>, "
+        "shape=(3,), dtype=float32)"
+    ]
+
+
+def test_box_representation_with_traced_bounds_inside_grad():
+    """Box repr under grad shows bound metadata, not the primal values."""
+    reprs = []
+
+    def loss(high):
+        box = spaces.Box(-high, high, (100,))
+        reprs.append(repr(box))
+        return jnp.sum(box.high)
+
+    jax.grad(loss)(jnp.arange(100, dtype=jnp.float32) + 1234.5)
+
+    assert reprs == [
+        "Box(low=<traced float32[100]>, high=<traced float32[100]>, "
+        "shape=(100,), dtype=float32)"
+    ]
+    assert "1234.5" not in reprs[0]
