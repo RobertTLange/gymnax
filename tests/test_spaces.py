@@ -108,3 +108,39 @@ def test_spaces_have_readable_constructor_style_representations():
         "Tuple((Discrete(3, dtype=int32), "
         "Box(low=-1.0, high=1.0, shape=(2,), dtype=float32)))"
     )
+
+
+def test_box_representation_with_traced_bounds_inside_jit():
+    """Box repr does not crash when its bounds are tracers inside jit."""
+    reprs = []
+
+    @jax.jit
+    def describe(high):
+        box = spaces.Box(-high, high, (3,))
+        reprs.append(repr(box))
+        return box.high
+
+    describe(jnp.array([1.0, 1.0, 8.0]))
+
+    assert reprs == [
+        "Box(low=<traced float32[3]>, high=<traced float32[3]>, "
+        "shape=(3,), dtype=float32)"
+    ]
+
+
+def test_box_representation_with_traced_bounds_inside_grad():
+    """Box repr under grad shows bound metadata, not the primal values."""
+    reprs = []
+
+    def loss(high):
+        box = spaces.Box(-high, high, (100,))
+        reprs.append(repr(box))
+        return jnp.sum(box.high)
+
+    jax.grad(loss)(jnp.arange(100, dtype=jnp.float32) + 1234.5)
+
+    assert reprs == [
+        "Box(low=<traced float32[100]>, high=<traced float32[100]>, "
+        "shape=(100,), dtype=float32)"
+    ]
+    assert "1234.5" not in reprs[0]
