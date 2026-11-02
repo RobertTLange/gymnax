@@ -1,5 +1,10 @@
 ### [Unreleased]
 
+- Fixed `Box` representations for traced bounds under JIT and autodiff, using
+  concise dtype/shape metadata without exposing primal values.
+
+Thanks to @mayuriphad and @YannBerthelot for the contribution!
+
 ### [v1.0.1] - 18/10/2026
 
 - Widened the `jax` and `gymnasium` upper bounds (to `<0.12` and `<1.4`) so
