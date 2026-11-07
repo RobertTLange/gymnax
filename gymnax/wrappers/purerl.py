@@ -105,14 +105,19 @@ class FlattenObservationWrapper(GymnaxWrapper):
     #     super().__init__(env)
 
     def observation_space(self, params) -> spaces.Box:
-        assert isinstance(self._env.observation_space(params), spaces.Box), (
-            "Only Box spaces are supported for now."
-        )
+        space = self._env.observation_space(params)
+        assert isinstance(space, spaces.Box), "Only Box spaces are supported for now."
+
+        def flatten_bound(bound):
+            if jnp.ndim(bound) == 0:
+                return bound
+            return jnp.broadcast_to(bound, space.shape).reshape(-1)
+
         return spaces.Box(
-            low=self._env.observation_space(params).low,
-            high=self._env.observation_space(params).high,
-            shape=(np.prod(self._env.observation_space(params).shape),),
-            dtype=self._env.observation_space(params).dtype,
+            low=flatten_bound(space.low),
+            high=flatten_bound(space.high),
+            shape=(np.prod(space.shape),),
+            dtype=space.dtype,
         )
 
     @partial(jax.jit, static_argnames=("self",))
