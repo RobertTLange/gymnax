@@ -1,10 +1,12 @@
 """JAX implementation of the Snake (apple-eating) environment for gymnax."""
 
+from dataclasses import replace
 from typing import Any
 
 import jax
 import jax.numpy as jnp
 from flax import struct
+from jax.custom_batching import custom_vmap
 
 from gymnax.environments import environment, spaces
 
@@ -64,6 +66,40 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         col = idx % self.width
         return jnp.stack([row, col]).astype(jnp.int32)
 
+    def _update_apple(self, key: jax.Array, state: EnvState) -> jax.Array:
+        """Respawn consumed apples, skipping sampling when the whole batch can wait."""
+
+        @custom_vmap
+        def update(key, state):
+            consumed = jnp.all(state.head == state.apple, axis=-1)
+            needs_apple = consumed & (state.length < self.height * self.width)
+            sample = self._sample_apple
+            for _ in range(state.board.ndim - 2):
+                sample = jax.vmap(sample)
+            return jax.lax.cond(
+                jnp.any(needs_apple),
+                lambda: jnp.where(
+                    needs_apple[..., None], sample(key, state.board), state.apple
+                ),
+                lambda: state.apple,
+            )
+
+        @update.def_vmap
+        def update_batch(axis_size, in_batched, key, state):
+            # Reapply the rule so nested vmaps retain one aggregate conditional.
+            key, state = jax.tree.map(
+                lambda batched, value: (
+                    value
+                    if batched
+                    else jnp.broadcast_to(value, (axis_size, *jnp.shape(value)))
+                ),
+                tuple(in_batched),
+                (key, state),
+            )
+            return update(key, state), True
+
+        return update(key, state)
+
     def step_env(
         self,
         key: jax.Array,
@@ -98,15 +134,6 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         length = state.length + ate.astype(jnp.int32)
         board = board.at[new_head[0], new_head[1]].set(length)
 
-        # Only sample new apple when one was eaten (using lax.cond for efficiency)
-        apple = jax.lax.cond(
-            ate,
-            lambda k, b: self._sample_apple(k, b),
-            lambda k, b: state.apple,
-            key,
-            board,
-        )
-
         reward = (
             ate * params.reward_apple + dead * params.reward_death + params.reward_step
         ).astype(jnp.float32)
@@ -115,11 +142,12 @@ class Snake(environment.Environment[EnvState, EnvParams]):
             board=board,
             head=new_head,
             direction=direction,
-            apple=apple,
+            apple=state.apple,
             length=length,
             alive=jnp.logical_not(dead),
             time=state.time + 1,
         )
+        state = replace(state, apple=self._update_apple(key, state))
         terminated = self.is_terminated(state, params)
 
         return (
@@ -143,11 +171,18 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         ).astype(jnp.int32)
         board = jnp.zeros((self.height, self.width), dtype=jnp.int32)
         board = board.at[head[0], head[1]].set(1)
+        # Skip the head index in a uniform draw over the remaining cells.
+        head_index = head[0] * self.width + head[1]
+        apple_index = jax.random.randint(
+            key_apple, (), 0, self.height * self.width - 1, dtype=jnp.int32
+        )
+        apple_index += (apple_index >= head_index).astype(jnp.int32)
+        apple = jnp.stack([apple_index // self.width, apple_index % self.width])
         state = EnvState(
             board=board,
             head=head,
             direction=jax.random.randint(key_dir, (), 0, 4, dtype=jnp.int32),
-            apple=self._sample_apple(key_apple, board),
+            apple=apple,
             length=jnp.int32(1),
             alive=jnp.bool_(True),
             time=jnp.int32(0),
