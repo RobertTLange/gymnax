@@ -31,6 +31,30 @@ def test_box_bounds_convert_independently(low, high):
     assert not converted.contains((expected_high + 1).astype(np.float32))
 
 
+@pytest.mark.parametrize("dtype", [jnp.float32, jnp.bool_])
+@pytest.mark.parametrize(
+    "low, high",
+    [
+        (False, True),
+        (np.bool_(False), np.bool_(True)),
+        (np.array(False), np.array(True)),
+        (jnp.array(False), jnp.array(True)),
+        (jnp.array([False]), jnp.array([True])),
+    ],
+    ids=["python", "numpy-scalar", "numpy-array", "jax-array", "jax-singleton"],
+)
+def test_box_boolean_bounds_preserve_values_and_dtype(low, high, dtype):
+    """Boolean bounds remain convertible for floating and boolean Box spaces."""
+    converted = spaces.gymnax_space_to_gym_space(
+        spaces.Box(low, high, (2,), dtype=dtype)
+    )
+
+    assert converted.dtype == np.dtype(dtype)
+    np.testing.assert_array_equal(converted.low, np.zeros(2, dtype=dtype))
+    np.testing.assert_array_equal(converted.high, np.ones(2, dtype=dtype))
+    assert converted.contains(np.array([False, True], dtype=dtype))
+
+
 def test_box_conversion_does_not_mutate_caller_bounds():
     """Gymnasium's integer-bound normalization must not alter caller arrays."""
     low = np.array([-np.inf, 0.0], dtype=np.float64)
