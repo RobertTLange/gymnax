@@ -1,7 +1,7 @@
 """Gymnax space classes."""
 
 import collections
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import jax
@@ -134,7 +134,8 @@ class Dict(Space):
         # Check for each space individually
         out_of_space = 0
         for k, space in self.spaces.items():
-            out_of_space += 1 - space.contains(getattr(x, k)).astype(jnp.int32)
+            value = x[k] if isinstance(x, Mapping) else getattr(x, k)
+            out_of_space += 1 - space.contains(value).astype(jnp.int32)
         return out_of_space == 0
 
 
