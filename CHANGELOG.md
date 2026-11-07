@@ -1,9 +1,11 @@
-### [Unreleased]
+### [Unreleased] - TBD
 
+- Added `Snake-misc`, a JAX-native Snake environment with configurable grid sizes,
+  three-channel observations, and JIT/vmap support (#119).
 - Fixed `Box` representations for traced bounds under JIT and autodiff, using
   concise dtype/shape metadata without exposing primal values.
 
-Thanks to @mayuriphad and @YannBerthelot for the contribution!
+Thanks to @sanepunk, @mayuriphad, and @YannBerthelot for the contributions!
 
 ### [v1.0.1] - 18/10/2026
 
