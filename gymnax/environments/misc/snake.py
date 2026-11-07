@@ -14,7 +14,7 @@ DIRECTIONS = jnp.array([[-1, 0], [0, 1], [1, 0], [0, -1]], dtype=jnp.int32)
 
 @struct.dataclass
 class EnvState(environment.EnvState):
-    board: jax.Array  # (H, W) int32; >0 marks a snake cell, value = ticks until it vacates (head = length)
+    board: jax.Array  # (H, W) int32; positive ticks until vacated, head = length
     head: jax.Array  # (2,) int32, (row, col)
     direction: jax.Array  # int32 scalar, last executed action
     apple: jax.Array  # (2,) int32, (row, col)
@@ -97,7 +97,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 
         length = state.length + ate.astype(jnp.int32)
         board = board.at[new_head[0], new_head[1]].set(length)
-        
+
         # Only sample new apple when one was eaten (using lax.cond for efficiency)
         apple = jax.lax.cond(
             ate,
@@ -108,9 +108,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
         )
 
         reward = (
-            ate * params.reward_apple +
-            dead * params.reward_death +
-            params.reward_step
+            ate * params.reward_apple + dead * params.reward_death + params.reward_step
         ).astype(jnp.float32)
 
         state = EnvState(
