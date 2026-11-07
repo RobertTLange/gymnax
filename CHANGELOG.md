@@ -4,8 +4,15 @@
   three-channel observations, and JIT/vmap support (#119).
 - Fixed `Box` representations for traced bounds under JIT and autodiff, using
   concise dtype/shape metadata without exposing primal values.
+- Fixed `Dict.contains()` to accept sampled and nested mappings while preserving
+  attribute-based environment states (#122).
+- Fixed Gymnasium conversion of broadcastable `Box` bounds, preserving boolean
+  bounds and caller-owned arrays (#123).
+- Fixed `FlattenObservationWrapper` to broadcast and flatten array bounds with
+  observations (#124).
 
-Thanks to @sanepunk, @mayuriphad, and @YannBerthelot for the contributions!
+Thanks to @AHMETHAKANBEZIR1, @sanepunk, @mayuriphad, and @YannBerthelot for the
+contributions!
 
 ### [v1.0.1] - 18/10/2026
 
