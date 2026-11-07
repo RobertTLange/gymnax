@@ -20,6 +20,7 @@ from .point_robot import PointRobot
 from .pong import Pong
 from .reacher import Reacher
 from .rooms import FourRooms
+from .snake import Snake
 from .swimmer import Swimmer
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "MetaMaze",
     "PointRobot",
     "Reacher",
+    "Snake",
     "Swimmer",
     "Pong",
 ]
