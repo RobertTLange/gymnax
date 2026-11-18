@@ -18,7 +18,7 @@ class GymnaxWrapper:
     wrapped environment.
 
     Args:
-        env: Environment to wrap.
+        env (Environment): Environment to wrap.
     """
 
     def __init__(self, env):
@@ -50,7 +50,7 @@ class StickyActionWrapper(GymnaxWrapper):
     action space.
 
     Args:
-        env: Environment to wrap.
+        env (Environment): Environment to wrap.
         sticky_action_prob: Probability in `[0, 1]` of repeating the previous
             action.
 
@@ -132,7 +132,7 @@ class FlattenObservationWrapper(GymnaxWrapper):
     `Box` observation spaces are supported.
 
     Args:
-        env: Environment to wrap.
+        env (Environment): Environment to wrap.
     """
 
     #   def __init__(self, env: environment.Environment):
@@ -216,7 +216,7 @@ class LogWrapper(GymnaxWrapper):
       then the two counters above hold the placeholder value 0.
 
     Args:
-        env: Environment to wrap.
+        env (Environment): Environment to wrap.
     """
 
     #   def __init__(self, env: environment.Environment):

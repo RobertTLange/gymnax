@@ -198,8 +198,8 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
                 stored environment parameters.
 
         Returns:
-            A tuple `(obs, info)` with batched observations and an empty `info`
-            dictionary.
+            (tuple): A tuple `(obs, info)` with batched observations and an empty
+                `info` dictionary.
         """
         if seed is not None:
             self._seed(seed)
@@ -218,10 +218,11 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         """Step all environments and update the stored states.
 
         Args:
-            action: Batch of actions, one per environment.
+            action (Array): Batch of actions, one per environment.
 
         Returns:
-            A tuple `(obs, reward, terminated, truncated, info)` of batched arrays.
+            (tuple): A tuple `(obs, reward, terminated, truncated, info)` of batched
+                arrays.
         """
         self.key, step_key = self._batched_key_split(self.key)
         o, self.env_state, r, terminated, truncated, info = self._env.step(

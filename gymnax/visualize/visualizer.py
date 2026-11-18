@@ -18,11 +18,11 @@ class Visualizer:
     Other environments are not drawn.
 
     Args:
-        env_arg: Environment that produced the states.
-        env_params_arg: Environment parameters used for the rollout.
-        state_seq_arg: List of environment states, one per frame.
-        reward_seq_arg: Optional sequence with one value per frame, shown in the
-            title as the return so far; typically the cumulative reward.
+        env_arg (Environment): Environment that produced the states.
+        env_params_arg (EnvParams): Environment parameters used for the rollout.
+        state_seq_arg (list[EnvState]): List of environment states, one per frame.
+        reward_seq_arg (Array | None): Sequence with one value per frame, shown
+            in the title as the return so far; typically the cumulative reward.
     """
 
     def __init__(self, env_arg, env_params_arg, state_seq_arg, reward_seq_arg=None):

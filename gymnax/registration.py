@@ -145,7 +145,7 @@ def make(
     Args:
         env_id: ID of a built-in environment or one added with `register`. All
             available IDs are listed in `registered_envs`.
-        **env_kwargs: Keyword arguments forwarded to the environment constructor.
+        **env_kwargs (Any): Keyword arguments forwarded to the environment constructor.
 
     Returns:
         A tuple `(env, params)` of the environment and `env.default_params`.

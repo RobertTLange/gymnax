@@ -36,7 +36,7 @@ class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
     the `TimeStep`, which is passed back into `step`.
 
     Args:
-        env: Environment to wrap.
+        env (Environment): Environment to wrap.
     """
 
     @partial(jax.jit, static_argnames=("self",))

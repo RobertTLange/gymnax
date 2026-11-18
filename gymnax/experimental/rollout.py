@@ -19,8 +19,9 @@ class RolloutWrapper:
     quantity.
 
     Args:
-        model_forward: Policy function `(policy_params, obs, key) -> action`. If
-            `None`, actions are sampled uniformly from the action space.
+        model_forward (Callable | None): Policy function
+            `(policy_params, obs, key) -> action`. If `None`, actions are sampled
+            uniformly from the action space.
         env_name: Registered Gymnax environment ID. Defaults to `Pendulum-v1`.
         num_env_steps: Number of transitions in each rollout. Defaults to
             `max_steps_in_episode` of the environment parameters.
@@ -65,12 +66,13 @@ class RolloutWrapper:
         """Roll out a population of policies, each on the same batch of keys.
 
         Args:
-            key_eval: Batch of PRNG keys, one per rollout of each policy.
-            policy_params: Policy parameters with a leading population axis.
+            key_eval (Array): Batch of PRNG keys, one per rollout of each policy.
+            policy_params (Any): Policy parameters with a leading population
+                axis.
 
         Returns:
-            The tuple described in `single_rollout`, with leading axes
-            `(population, keys)`.
+            (tuple): The tuple described in `single_rollout`, with leading axes
+                `(population, keys)`.
         """
         # Evaluate population of nets on gymnax task - vmap over key & params
         pop_rollout = jax.vmap(self.batch_rollout, in_axes=(None, 0))
@@ -81,11 +83,12 @@ class RolloutWrapper:
         """Roll out one policy once per key.
 
         Args:
-            key_eval: Batch of PRNG keys, one per rollout.
-            policy_params: Parameters of a single policy.
+            key_eval (Array): Batch of PRNG keys, one per rollout.
+            policy_params (Any): Parameters of a single policy.
 
         Returns:
-            The tuple described in `single_rollout`, with a leading key axis.
+            (tuple): The tuple described in `single_rollout`, with a leading key
+                axis.
         """
         # vmap over different MC fitness evaluations for single network
         batch_rollout = jax.vmap(self.single_rollout, in_axes=(0, None))
@@ -99,14 +102,14 @@ class RolloutWrapper:
         episodes. Only rewards of the first episode count towards the return.
 
         Args:
-            key_input: PRNG key.
-            policy_params: Parameters of a single policy.
+            key_input (Array): PRNG key.
+            policy_params (Any): Parameters of a single policy.
 
         Returns:
-            A tuple `(obs, action, reward, next_obs, done, cum_return)`. The first
-            five entries have a leading time axis of length `num_env_steps`;
-            `cum_return` has shape `(1,)` and holds the return of the first
-            episode.
+            (tuple): A tuple `(obs, action, reward, next_obs, done, cum_return)`.
+                The first five entries have a leading time axis of length
+                `num_env_steps`; `cum_return` has shape `(1,)` and holds the return
+                of the first episode.
         """
         # Reset the environment
         key_reset, key_episode = jax.random.split(key_input)
