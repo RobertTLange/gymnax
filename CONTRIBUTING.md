@@ -50,6 +50,23 @@ Use an issue for public bugs and feature proposals.
 The codebase uses [Ruff](https://docs.astral.sh/ruff/) for linting and
 formatting. Run the commands above before opening a pull request.
 
+## Documentation
+
+The documentation is built from the pages under `docs/` and the docstrings in
+`gymnax/`. If you changed either, build the site (requires Python >= 3.11):
+
+```bash
+uv sync --locked --all-extras
+uv run zensical build --clean  # fails on broken links or references
+uv run zensical serve          # live preview at http://localhost:8000
+```
+
+Docstrings follow the [Google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+with Markdown markup. Constructor arguments are documented in the `Args:` section of
+the class docstring, and the fields of `EnvState` and `EnvParams` in `Attributes:`.
+When you add an environment, also add a page under `docs/reference/environments/`, an
+entry in the `nav` of `zensical.toml` and a row in `docs/environments.md`.
+
 ## References
 This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/a9316a723f9e918afde44dea68b5f9f39b7d9b00/CONTRIBUTING.md) and from the [Transcriptase adapted version](https://gist.github.com/briandk/3d2e8b3ec8daf5a27a62).
 
@@ -64,5 +81,5 @@ You can find a couple things that need to be tackled in the [issues of this proj
     - [ ] Sticky actions
     - [ ] Greyscaling
     - [ ] Observation normalization
-- [ ] Better documentation via `mkdocs`.
+- [x] Better documentation: [roberttlange.github.io/gymnax](https://roberttlange.github.io/gymnax/).
 - [ ] More examples for doing cool stuff with vectorized environments.
