@@ -1,13 +1,14 @@
 """Bsuite environments in JAX.
 
-This module provides JAX implementations of bsuite environments, including:
-- Catch
-- DeepSea
-- DiscountingChain
-- MemoryChain
-- UmbrellaChain
-- MNISTBandit
-- SimpleBandit
+JAX ports of the bsuite environments:
+
+- `Catch`: `Catch-bsuite`
+- `DeepSea`: `DeepSea-bsuite`
+- `DiscountingChain`: `DiscountingChain-bsuite`
+- `MemoryChain`: `MemoryChain-bsuite`
+- `UmbrellaChain`: `UmbrellaChain-bsuite`
+- `MNISTBandit`: `MNISTBandit-bsuite`
+- `SimpleBandit`: `SimpleBandit-bsuite`
 """
 
 from .bandit import SimpleBandit

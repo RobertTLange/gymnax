@@ -1,8 +1,4 @@
-"""JAX implementation of Catch bsuite environment.
-
-
-Source: github.com/deepmind/bsuite/blob/master/bsuite/environments/catch.py.
-"""
+"""JAX implementation of the bsuite Catch environment."""
 
 from typing import Any
 
@@ -16,6 +12,19 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Catch environment.
+
+    Attributes:
+        ball_x: Column of the ball.
+        ball_y: Row of the ball. Starts at 0 and increases by one every step.
+        paddle_x: Column of the paddle.
+        paddle_y: Row of the paddle, always `rows - 1`.
+        prev_done: Whether the ball reached the paddle row in the previous step. If
+            set, `step_env` starts from a freshly sampled initial state instead of
+            moving the ball and the paddle.
+        time: Number of steps taken in the current episode.
+    """
+
     ball_x: jax.Array
     ball_y: jax.Array
     paddle_x: int
@@ -26,11 +35,40 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Catch environment.
+
+    Attributes:
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     max_steps_in_episode: int = 1000
 
 
 class Catch(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Catch bsuite environment."""
+    """Catch a falling ball by moving a paddle along the bottom row of a grid.
+
+    JAX port of the bsuite Catch environment. The ball starts in a uniformly random
+    column of row 0 and falls one row per step. The paddle starts in column
+    `columns // 2` of the last row.
+
+    - Observation: `Box` of shape `(rows, columns)` that is 0 everywhere except for
+      a 1 at the ball position and a 1 at the paddle position.
+    - Actions: `Discrete(3)`. 0 moves the paddle one column to the left, 1 keeps it
+      in place and 2 moves it one column to the right. The paddle stays within the
+      grid.
+    - Reward: on the step in which the ball reaches the last row, 1 if the paddle is
+      in the ball's column and -1 otherwise. 0 on all other steps.
+    - Termination: the ball reaches the last row, which takes `rows - 1` steps.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        rows: Number of rows of the grid.
+        columns: Number of columns of the grid.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+        - [bsuite implementation](https://github.com/google-deepmind/bsuite/blob/main/bsuite/environments/catch.py)
+    """
 
     def __init__(self, rows: int = 10, columns: int = 5):
         super().__init__()
@@ -39,7 +77,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Catch-bsuite."""
         return EnvParams()
 
     def step_env(

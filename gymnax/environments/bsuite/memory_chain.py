@@ -1,9 +1,4 @@
-"""JAX implementation of MemoryChain bsuite environment.
-
-
-Source:
-github.com/deepmind/bsuite/blob/master/bsuite/environments/memory_chain.py
-"""
+"""JAX implementation of the bsuite MemoryChain environment."""
 
 from typing import Any
 
@@ -16,6 +11,17 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the MemoryChain environment.
+
+    Attributes:
+        context: Context bits to remember, an array of `num_bits` values in
+            `{0, 1}`.
+        query: Index of the context bit the agent is asked for.
+        total_perfect: Number of correct answers in the current episode.
+        total_regret: Regret of the current episode. A wrong answer adds 2.
+        time: Number of steps taken in the current episode.
+    """
+
     context: int
     query: int
     total_perfect: int
@@ -25,12 +31,47 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the MemoryChain environment.
+
+    Attributes:
+        memory_length: Number of steps before the step in which the agent answers
+            the query.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     memory_length: int = 5
     max_steps_in_episode: int = 1000
 
 
 class MemoryChain(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of MemoryChain bsuite environment."""
+    """Remember a context bit and report it at the end of the episode.
+
+    JAX port of the bsuite MemoryChain environment, a test of memory. Each reset
+    samples `num_bits` context bits and the index of the bit that is queried, both
+    uniformly at random. The context is only observed at the start of the episode
+    and the query only before the last step, in which the action is the answer.
+
+    `step_env` returns the observation of the state before the transition, so the
+    first step repeats the observation returned by the reset.
+
+    - Observation: `Box` of shape `(num_bits + 2,)`. Entry 0 is the remaining time
+      `1 - time / params.memory_length`. Entry 1 is the query index when
+      `time == params.memory_length - 1` and 0 otherwise. The other entries are the
+      context bits encoded as -1 and 1 when `time == 0` and 0 otherwise.
+    - Actions: `Discrete(2)`. The value of the queried context bit. Actions before
+      the last step are ignored.
+    - Reward: on the last step, 1 if the action equals the queried context bit and
+      -1 otherwise. 0 on all other steps.
+    - Termination: after `params.memory_length + 1` steps (6 by default).
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        num_bits: Number of context bits.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+        - [bsuite implementation](https://github.com/google-deepmind/bsuite/blob/main/bsuite/environments/memory_chain.py)
+    """
 
     def __init__(self, num_bits: int = 1):
         super().__init__()
@@ -38,7 +79,7 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for MemoryChain-bsuite."""
         return EnvParams()
 
     def step_env(
@@ -82,7 +123,7 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling a new context and query."""
         key_context, key_query = jax.random.split(key)
         context = jax.random.bernoulli(key_context, p=0.5, shape=(self.num_bits,))
         query = jax.random.randint(key_query, minval=0, maxval=self.num_bits, shape=())
