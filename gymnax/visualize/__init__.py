@@ -1,4 +1,4 @@
-"""Visualizer module."""
+"""Animated visualization of environment rollouts."""
 
 from gymnax.visualize import visualizer
 
