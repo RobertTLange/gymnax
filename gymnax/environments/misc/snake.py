@@ -1,4 +1,4 @@
-"""JAX implementation of the Snake (apple-eating) environment for gymnax."""
+"""JAX implementation of the Snake (apple-eating) environment."""
 
 from dataclasses import replace
 from typing import Any
@@ -16,17 +16,41 @@ DIRECTIONS = jnp.array([[-1, 0], [0, 1], [1, 0], [0, -1]], dtype=jnp.int32)
 
 @struct.dataclass
 class EnvState(environment.EnvState):
-    board: jax.Array  # (H, W) int32; positive ticks until vacated, head = length
-    head: jax.Array  # (2,) int32, (row, col)
-    direction: jax.Array  # int32 scalar, last executed action
-    apple: jax.Array  # (2,) int32, (row, col)
-    length: jax.Array  # int32 scalar
-    alive: jax.Array  # bool scalar, False after wall/self collision
+    """State of the Snake environment.
+
+    Attributes:
+        board: Integer array of shape `(height, width)`. A positive entry is the
+            number of steps until the snake vacates the cell, so the head cell
+            equals `length`. Free cells are 0.
+        head: Position of the head as `(row, column)`.
+        direction: Last executed action.
+        apple: Position of the apple as `(row, column)`.
+        length: Number of cells occupied by the snake.
+        alive: Whether the snake is alive. `False` after a wall or self
+            collision.
+        time: Number of steps taken in the current episode.
+    """
+
+    board: jax.Array
+    head: jax.Array
+    direction: jax.Array
+    apple: jax.Array
+    length: jax.Array
+    alive: jax.Array
     time: int
 
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Snake environment.
+
+    Attributes:
+        reward_apple: Reward for eating an apple.
+        reward_death: Reward for a wall or self collision.
+        reward_step: Reward added at every step.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     reward_apple: float = 1.0
     reward_death: float = -1.0
     reward_step: float = 0.0
@@ -34,13 +58,26 @@ class EnvParams(environment.EnvParams):
 
 
 class Snake(environment.Environment[EnvState, EnvParams]):
-    """Snake on a fixed-size grid.
+    """Steer a growing snake to eat apples on a fixed-size grid.
 
-    Observation: (H, W, 3) float32 with channels [body, head, apple].
-    Actions: 0=up, 1=right, 2=down, 3=left. An action opposite to the current
-    direction is ignored while length > 1.
-    Termination: wall/self collision, or board completely filled.
-    Truncation: ``params.max_steps_in_episode``.
+    The snake starts with length 1 at a uniformly random cell with a random
+    direction, and the apple at a uniformly random other cell. Eating an apple
+    increases the length by one and places a new apple on a uniformly random free
+    cell. The current length is returned as `info["length"]`.
+
+    - Observation: `Box` of shape `(height, width, 3)` with binary channels for
+      the body, the head and the apple.
+    - Actions: `Discrete(4)`. 0 moves up, 1 right, 2 down and 3 left. An action
+      opposite to the current direction is ignored while the length exceeds 1.
+    - Reward: `params.reward_apple` for eating an apple, plus
+      `params.reward_death` for a wall or self collision, plus
+      `params.reward_step` at every step.
+    - Termination: wall or self collision, or the board is completely filled.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        height: Number of rows of the board. Must be at least 2.
+        width: Number of columns of the board. Must be at least 2.
     """
 
     def __init__(self, height: int = 10, width: int = 10):
@@ -55,6 +92,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
+        """Default environment parameters for Snake-misc."""
         return EnvParams()
 
     def _sample_apple(self, key: jax.Array, board: jax.Array) -> jax.Array:
@@ -206,19 +244,24 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 
     @property
     def name(self) -> str:
+        """Environment name."""
         return "Snake-misc"
 
     @property
     def num_actions(self) -> int:
+        """Number of actions possible in environment."""
         return 4
 
     def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
+        """Action space of the environment."""
         return spaces.Discrete(4)
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
+        """Observation space of the environment."""
         return spaces.Box(0.0, 1.0, self.obs_shape, dtype=jnp.float32)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
+        """State space of the environment."""
         n = self.height * self.width
         return spaces.Dict(
             {

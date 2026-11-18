@@ -1,4 +1,4 @@
-"""JAX implementation of Gymnasium's FrozenLake environment."""
+"""JAX implementation of the FrozenLake Gymnasium environment."""
 
 from collections.abc import Sequence
 from typing import Any
@@ -29,20 +29,62 @@ _DIRECTIONS = jnp.array(((0, -1), (1, 0), (0, 1), (-1, 0)))
 
 @struct.dataclass
 class EnvState(environment.EnvState):
-    """FrozenLake's agent position and elapsed episode time."""
+    """State of the FrozenLake environment.
+
+    Attributes:
+        position: Row-major index of the agent's tile, `row * ncol + col`.
+        time: Number of steps taken in the current episode.
+    """
 
     position: jax.Array
 
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
-    """Runtime episode-limit configuration."""
+    """Parameters of the FrozenLake environment.
+
+    Attributes:
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
 
     max_steps_in_episode: int = 100
 
 
 class FrozenLake(environment.Environment[EnvState, EnvParams]):
-    """Frozen Lake with Gymnasium-compatible maps, dynamics, and rewards."""
+    """Cross a frozen lake from the start tile to the goal without falling in.
+
+    JAX port of the Gymnasium `FrozenLake` environment with compatible maps,
+    dynamics and rewards. The map is a grid of start (`S`), frozen (`F`), hole
+    (`H`) and goal (`G`) tiles, and every episode starts on the start tile. Moves
+    off the grid leave the position unchanged. If `is_slippery`, the agent moves
+    in the chosen direction with probability `success_rate` and otherwise in one
+    of the two perpendicular directions with equal probability. The probability
+    of the executed move is returned as `info["p"]`.
+
+    - Observation: `Discrete(nrow * ncol)`. The row-major index of the agent's
+      tile, `row * ncol + col`.
+    - Actions: `Discrete(4)`. 0 moves left, 1 down, 2 right and 3 up.
+    - Reward: given by `reward_schedule` for the tile the agent lands on. By
+      default 1 for the goal and 0 for all other tiles.
+    - Termination: the agent lands on a hole or the goal.
+    - Truncation: after `params.max_steps_in_episode` steps (by default 200 for
+      8 x 8 maps and 100 otherwise).
+
+    Args:
+        desc: Custom map as a sequence of equally long row strings made of the
+            tiles `S`, `F`, `H` and `G`, with exactly one `S` and one `G`. If
+            `None`, the map is selected by `map_name`.
+        map_name: Name of the built-in map, `"4x4"` or `"8x8"`. Only used if
+            `desc` is `None`.
+        is_slippery: Whether moves are stochastic.
+        success_rate: Probability of moving in the chosen direction if
+            `is_slippery`. Must be in `[0, 1]`.
+        reward_schedule: Rewards for landing on a goal, a hole and any other
+            tile, in that order.
+
+    References:
+        - [Gymnasium FrozenLake](https://gymnasium.farama.org/environments/toy_text/frozen_lake/)
+    """
 
     def __init__(
         self,
@@ -66,18 +108,18 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        """Return Gymnasium's standard 4x4 and 8x8 time limits."""
+        """Default parameters with a limit of 200 steps for 8x8 maps, else 100."""
         max_steps = 200 if self.desc.shape == (8, 8) else 100
         return EnvParams(max_steps_in_episode=max_steps)
 
     @property
     def name(self) -> str:
-        """Return the public Gymnax identifier."""
+        """Environment name."""
         return "FrozenLake-misc"
 
     @property
     def num_actions(self) -> int:
-        """Return the four cardinal actions."""
+        """Number of actions possible in environment."""
         return 4
 
     def step_env(
@@ -147,6 +189,7 @@ class FrozenLake(environment.Environment[EnvState, EnvParams]):
     def _transition_action(
         self, key: jax.Array, action: int | float | jax.Array
     ) -> tuple[jax.Array, jax.Array]:
+        """Sample the executed action and return it with its probability."""
         action = jnp.asarray(action, dtype=jnp.int32)
         if not self.is_slippery:
             return action, jnp.array(1.0, dtype=jnp.float32)

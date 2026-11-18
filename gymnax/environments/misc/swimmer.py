@@ -1,4 +1,4 @@
-"""JAX implementation of Swimmer environment."""
+"""JAX implementation of a 2D swimmer environment with urchin obstacles."""
 
 from typing import Any
 
@@ -11,6 +11,17 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Swimmer environment.
+
+    Attributes:
+        urchin_xys: Array of shape `(num_urchins, 2)` with the `(x, y)` position
+            of each urchin.
+        xy: Position of the swimmer as `(x, y)`.
+        xy_vel: Velocity of the swimmer as `(x, y)`.
+        goal_xy: Position of the goal as `(x, y)`.
+        time: Number of steps taken in the current episode.
+    """
+
     urchin_xys: jax.Array
     xy: jax.Array
     xy_vel: jax.Array
@@ -20,15 +31,41 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Swimmer environment.
+
+    Attributes:
+        dt: Duration of one step, used for Euler integration.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     dt: float = 0.05
-    max_steps_in_episode: int = 500  # Steps in an episode (constant goal)
+    max_steps_in_episode: int = 500
 
 
 class Swimmer(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Swimmer environment.
+    """Swim to a goal position in the plane while keeping away from urchins.
 
+    The action sets the acceleration of the swimmer, which is integrated with step
+    size `params.dt`. At every reset the positions of the urchins, the swimmer and
+    the goal are sampled uniformly in `[-1, 1]` for both coordinates and the
+    swimmer starts at rest. Urchins and goal stay fixed for the whole episode.
+    Supports differentiable transitions via `with_transition_gradients()`.
 
-    Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py
+    - Observation: `Box` of shape `(2 * num_urchins + 6,)` with the urchin
+      positions, the swimmer position, the swimmer velocity and the goal position.
+    - Actions: `Box` of shape `(2,)` with bounds `[-1, 1]`. The acceleration of the
+      swimmer in x and y.
+    - Reward: `exp(-0.5 * d**2)`, where `d` is the distance between swimmer and
+      goal after the step, multiplied by `1 - exp(-30 * u**2)` for every urchin
+      at distance `u` from the swimmer.
+    - Termination: never.
+    - Truncation: after `params.max_steps_in_episode` steps (500 by default).
+
+    Args:
+        num_urchins: Number of urchins placed in the environment.
+
+    References:
+        - [ivy_gym implementation](https://github.com/unifyai/gym/blob/master/ivy_gym/swimmer.py)
     """
 
     _supports_transition_gradients = True
@@ -39,7 +76,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Swimmer-misc."""
         return EnvParams()
 
     def step_env(
@@ -49,7 +86,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
         action: int | float | jax.Array,
         params: EnvParams,
     ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
-        """Sample bernoulli reward, increase counter, construct input."""
+        """Integrate the swimmer dynamics and compute the goal and urchin reward."""
         xy_vel = state.xy_vel + params.dt * action
         xy = state.xy + params.dt * xy_vel
 
@@ -83,7 +120,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling urchins, swimmer position and goal."""
         # Sample reward function + construct state as concat with timestamp
         key_urchin, key_xy, key_goal = jax.random.split(key, 3)
 
@@ -104,7 +141,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
-        """Concatenate reward, one-hot action and time stamp."""
+        """Concatenate urchin positions, swimmer position, velocity and goal."""
         ob = (
             jnp.reshape(state.urchin_xys, (-1, 2)),
             jnp.reshape(state.xy, (-1, 2)),
