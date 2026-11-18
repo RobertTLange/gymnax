@@ -1,4 +1,4 @@
-"""Gymnax space classes."""
+"""Jittable spaces describing actions, observations and states."""
 
 import collections
 from collections.abc import Mapping, Sequence
@@ -11,22 +11,43 @@ from gymnasium import spaces as gspc
 
 
 class Space:
-    """Minimal jittable class for abstract gymnax space."""
+    """Abstract base class of all spaces."""
 
     def sample(self, key: jax.Array) -> jax.Array:
+        """Sample a random element of the space.
+
+        Args:
+            key: PRNG key.
+
+        Returns:
+            A random element of the space.
+        """
         raise NotImplementedError
 
     def contains(self, x: jax.Array) -> Any:
+        """Check whether `x` is an element of the space.
+
+        Args:
+            x: Candidate element.
+
+        Returns:
+            A boolean scalar array.
+        """
         raise NotImplementedError
 
 
 class Discrete(Space):
-    """Minimal jittable class for discrete Gymnax spaces.
+    """Space of the integers `0, ..., num_categories - 1`.
 
     Args:
         num_categories: Number of integer values in the space.
-        dtype: Keyword-only action dtype. Supports ``int32`` by default and
-            ``int64`` when JAX x64 mode is enabled.
+        dtype: Integer dtype of sampled elements. `int32` by default; `int64` is
+            available when JAX x64 mode is enabled.
+
+    Attributes:
+        n: Number of integer values in the space.
+        shape: Shape of an element, always `()`.
+        dtype: Integer dtype of sampled elements.
     """
 
     def __init__(self, num_categories: int, *, dtype: Any = jnp.int32):
@@ -49,7 +70,7 @@ class Discrete(Space):
         return f"Discrete({self.n}, dtype={self.dtype.name})"
 
     def sample(self, key: jax.Array) -> jax.Array:
-        """Sample random action uniformly from set of categorical choices."""
+        """Sample an integer uniformly from the space."""
         return jax.random.randint(
             key,
             shape=self.shape,
@@ -59,7 +80,7 @@ class Discrete(Space):
         )
 
     def contains(self, x: jax.Array) -> jax.Array:
-        """Check whether specific object is within space."""
+        """Check whether `x` lies in `[0, n)` after casting it to the space dtype."""
         x = jnp.asarray(x, dtype=self.dtype)
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
@@ -71,7 +92,14 @@ class Discrete(Space):
 
 
 class Box(Space):
-    """Minimal jittable class for array-shaped gymnax spaces."""
+    """Space of arrays with elementwise lower and upper bounds.
+
+    Args:
+        low: Lower bound, a scalar or an array broadcastable to `shape`.
+        high: Upper bound, a scalar or an array broadcastable to `shape`.
+        shape: Shape of an element.
+        dtype: Dtype of sampled elements.
+    """
 
     def __init__(
         self,
@@ -93,13 +121,13 @@ class Box(Space):
         )
 
     def sample(self, key: jax.Array) -> jax.Array:
-        """Sample random action uniformly from 1D continuous range."""
+        """Sample an array uniformly between `low` and `high`."""
         return jax.random.uniform(
             key, shape=self.shape, minval=self.low, maxval=self.high
         ).astype(self.dtype)
 
     def contains(self, x: jax.Array) -> jax.Array:
-        """Check whether specific object is within space."""
+        """Check whether all entries of `x` lie within the bounds."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)
         range_cond = jnp.logical_and(jnp.all(x >= self.low), jnp.all(x <= self.high))
@@ -107,7 +135,11 @@ class Box(Space):
 
 
 class Dict(Space):
-    """Minimal jittable class for dictionary of simpler jittable spaces."""
+    """Space of dictionaries whose values come from named subspaces.
+
+    Args:
+        spaces: Mapping from key to subspace.
+    """
 
     def __init__(self, spaces: Any):
         self.spaces = spaces
@@ -118,7 +150,7 @@ class Dict(Space):
         return f"Dict({self.spaces!r})"
 
     def sample(self, key: jax.Array) -> Any:
-        """Sample random action from all subspaces."""
+        """Sample every subspace and return the samples as an ordered dictionary."""
         key_split = jax.random.split(key, self.num_spaces)
         return collections.OrderedDict(
             [
@@ -128,7 +160,11 @@ class Dict(Space):
         )
 
     def contains(self, x: jax.Array) -> bool:
-        """Check whether dimensions of object are within subspace."""
+        """Check whether every entry of `x` lies in its subspace.
+
+        `x` may be a mapping or an object with one attribute per key, such as an
+        environment state.
+        """
         # type_cond = isinstance(x, Dict)
         # num_space_cond = len(x) != len(self.spaces)
         # Check for each space individually
@@ -140,7 +176,11 @@ class Dict(Space):
 
 
 class Tuple(Space):
-    """Minimal jittable class for tuple (product) of jittable spaces."""
+    """Space of tuples whose entries come from a sequence of subspaces.
+
+    Args:
+        spaces: Subspaces, one per tuple entry.
+    """
 
     def __init__(self, spaces: Sequence[Space]):
         self.spaces = spaces
@@ -151,12 +191,12 @@ class Tuple(Space):
         return f"Tuple({tuple(self.spaces)!r})"
 
     def sample(self, key: jax.Array) -> Any:
-        """Sample random action from all subspaces."""
+        """Sample every subspace and return the samples as a tuple."""
         key_split = jax.random.split(key, self.num_spaces)
         return tuple([s.sample(key_split[i]) for i, s in enumerate(self.spaces)])
 
     def contains(self, x: jax.Array) -> bool:
-        """Check whether dimensions of object are within subspace."""
+        """Check whether every entry of `x` lies in its subspace."""
         # type_cond = isinstance(x, tuple)
         # num_space_cond = len(x) != len(self.spaces)
         # Check for each space individually
@@ -167,7 +207,17 @@ class Tuple(Space):
 
 
 def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
-    """Convert Gymnax space to equivalent Gym space."""
+    """Convert a Gymnax space to the equivalent Gymnasium space.
+
+    Args:
+        space: Gymnax space; `Dict` and `Tuple` spaces are converted recursively.
+
+    Returns:
+        The equivalent `gymnasium.spaces` space.
+
+    Raises:
+        NotImplementedError: If the space type has no Gymnasium equivalent.
+    """
     if isinstance(space, Discrete):
         return gspc.Discrete(space.n)
     elif isinstance(space, Box):

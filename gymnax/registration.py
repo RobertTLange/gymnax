@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import Any
 
+from gymnax.environments import environment
 from gymnax.environments.bsuite import (
     bandit,
     catch,
@@ -107,16 +108,17 @@ _registry: dict[str, EnvironmentFactory] = {
 }
 
 registered_envs = list(_registry)
-"""Public environment IDs, updated in place by :func:`register`."""
+"""IDs of all environments that `make` can construct, updated in place by `register`."""
 
 
 def register(env_id: str, factory: EnvironmentFactory) -> None:
-    """Register a factory used by :func:`make` to construct an environment.
+    """Register a factory used by `make` to construct an environment.
 
     Args:
         env_id: Unique public ID for the environment.
-        factory: Callable that accepts ``make`` keyword arguments and returns a
-            new environment instance.
+        factory: Callable that accepts the keyword arguments passed to `make` and
+            returns a new environment instance. An `Environment` subclass works
+            as its own factory.
 
     Raises:
         TypeError: If the ID or factory has an invalid type.
@@ -135,8 +137,23 @@ def register(env_id: str, factory: EnvironmentFactory) -> None:
     registered_envs.append(env_id)
 
 
-def make(env_id: str, **env_kwargs):
-    """Construct a registered environment and return it with default params."""
+def make(
+    env_id: str, **env_kwargs
+) -> tuple[environment.Environment, environment.EnvParams]:
+    """Construct a registered environment and return it with its default parameters.
+
+    Args:
+        env_id: ID of a built-in environment or one added with `register`. All
+            available IDs are listed in `registered_envs`.
+        **env_kwargs: Keyword arguments forwarded to the environment constructor.
+
+    Returns:
+        A tuple `(env, params)` of the environment and `env.default_params`.
+
+    Raises:
+        ValueError: If `env_id` is not registered.
+        TypeError: If the registered factory does not return an environment.
+    """
     try:
         factory = _registry[env_id]
     except KeyError as error:
