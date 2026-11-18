@@ -45,8 +45,9 @@ class EnvState(environment.EnvState):
         e_subs_count: Number of active rows in `e_subs`.
         e_subs: Enemy submarines, with columns
             `[x, y, direction, move_timer, shot_timer]`.
-        diver_count: Number of divers carried by the player's submarine, at most 6.
-            Set to -1 after surfacing with six divers.
+        diver_count: Counter of divers carried by the player's submarine, at most 6.
+            Set to -1, not 0, after surfacing with six divers; from then on it is
+            one less than the number of divers actually carried.
         divers_count: Number of active rows in `divers`.
         divers: Divers in the water, with columns `[x, y, direction, move_timer]`.
         e_spawn_speed: Current number of steps between enemy spawns.
@@ -169,7 +170,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
     - Reward: +1 for each enemy fish or submarine shot, and
       `oxygen * 10 // params.max_oxygen` for surfacing with six divers.
     - Termination: the player's submarine is hit by an enemy fish, submarine or
-      bullet, runs out of oxygen, or surfaces without carrying a diver.
+      bullet, runs out of oxygen, or surfaces while `state.diver_count` is 0.
     - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
 
     Args:

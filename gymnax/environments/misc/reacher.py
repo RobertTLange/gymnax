@@ -65,7 +65,8 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
     - Truncation: after `params.max_steps_in_episode` steps (100 by default).
 
     Args:
-        num_joints: Number of joints of the arm.
+        num_joints: Number of joints of the arm. Only the default of 2 is
+            supported; other values fail when the observation is built.
 
     References:
         - [ivy_gym implementation](https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py)

@@ -86,7 +86,8 @@ class FourRooms(environment.Environment[EnvState, EnvParams]):
     - Observation: `Box` of shape `(4,)` with the row and column of the agent
       followed by the row and column of the goal. If `use_visual_obs`, a `Box` of
       shape `(13, 13, 2)` with a wall map (1 for walls) and a one-hot map of the
-      agent position.
+      agent position. The agent map is indexed as `[column, row]`, transposed
+      relative to the wall map.
     - Actions: `Discrete(4)`. 0 moves up, 1 right, 2 down and 3 left.
     - Reward: 1 for reaching the goal, otherwise 0.
     - Termination: the agent reaches the goal.

@@ -36,7 +36,8 @@ class EnvParams(environment.EnvParams):
         min_position: Lower bound to which the position is clipped.
         max_position: Upper bound to which the position is clipped.
         max_speed: Maximum absolute velocity of the car.
-        goal_position: Position at or beyond which the goal is reached.
+        goal_position: Position at or beyond which the goal is reached. A negative
+            velocity is set to 0 while the car is at or beyond it.
         goal_velocity: Minimum velocity required at the goal for termination.
         power: Change in velocity per step caused by a unit of clipped action.
         gravity: Scale of the slope term `cos(3 * position)` that is subtracted

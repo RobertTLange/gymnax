@@ -87,7 +87,8 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
     which every second cell of every second row is a wall, surrounded by an outer
     wall. The goal is sampled uniformly from all walkable cells at every reset and
     stays fixed for the whole episode. The agent starts at `center_position`, the
-    centre of the maze for the default sizes, and is moved to a uniformly sampled
+    centre of the maze for the default `rf_size` (other values shift it; `rf_size = 5`
+    places it on a wall), and is moved to a uniformly sampled
     walkable cell each time it reaches the goal. Moving into a wall leaves the
     position unchanged.
 

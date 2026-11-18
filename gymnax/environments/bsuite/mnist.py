@@ -48,9 +48,10 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
     if it is not cached. Each reset shows an image drawn uniformly at random from
     the first `fraction` of the training set.
 
-    - Observation: `Box` with the shape of one MNIST image, `(28, 28)`. The reset
-      returns the sampled image as `float32` divided by 255, the step an array of
-      zeros.
+    - Observation: `Box` with the shape of one MNIST image, `(28, 28)`. `reset`
+      returns the sampled image as `float32` divided by 255. Every step ends the
+      episode, so `step` returns the image of the next episode, while
+      `info["final_observation"]` is an array of zeros.
     - Actions: `Discrete(10)`. The predicted digit.
     - Reward: 1 if the action equals the label of the image and -1 otherwise.
     - Termination: after every step.
