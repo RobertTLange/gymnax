@@ -22,5 +22,8 @@ wheels/
 output/
 *.gif
 
+# Documentation build
+/site
+
 # Local planning notes
 /HANDOFF.md
