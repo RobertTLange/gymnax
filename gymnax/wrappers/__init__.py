@@ -1,4 +1,4 @@
-"""Wrappers for Gymnax environments."""
+"""Wrappers that modify Gymnax environments or adapt them to other APIs."""
 
 from gymnax.wrappers import compat, dm_env, gym, purerl
 
