@@ -1,10 +1,12 @@
-"""Minatar environments in JAX.
+"""JAX implementations of the MinAtar environments.
 
-This module provides JAX implementations of MinAtar environments, including:
-- Asterix
-- Breakout
-- Freeway
-- Space Invaders
+This package provides the following environments (environment name in parentheses):
+
+- `MinAsterix` (`Asterix-MinAtar`)
+- `MinBreakout` (`Breakout-MinAtar`)
+- `MinFreeway` (`Freeway-MinAtar`)
+- `MinSeaquest` (`Seaquest-MinAtar`)
+- `MinSpaceInvaders` (`SpaceInvaders-MinAtar`)
 """
 
 from .asterix import MinAsterix

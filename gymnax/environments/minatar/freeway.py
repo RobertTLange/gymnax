@@ -1,24 +1,4 @@
-"""JAX implementation of Freeway MinAtar environment.
-
-
-Source:
-github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py
-
-
-ENVIRONMENT DESCRIPTION - 'Freeway-MinAtar'
-- Player starts at bottom of screen and can travel up/down.
-- Player speed is restricted s.t. player only moves every 3 frames.
-- Reward +1 given when player reaches top of screen -> returns to bottom.
-- 8 cars travel horizontally on screen and teleport to other side at edge.
-- When player is hit by a car, he is returned to the bottom of the screen.
-- Car direction and speed are indicated by 5 trail channels.
-- Each time player reaches top of screen, car speeds are randomized.
-- Termination occurs after 2500 frames.
-- Channels are encoded as follows: 'chicken':0, 'car':1, 'speed1':2,
-- 'speed2':3, 'speed3':4, 'speed4':5, 'speed5':6
-- Observation has dimensionality (10, 10, 4)
-- Actions are encoded as follows: ['n', 'u', 'd']
-"""
+"""JAX implementation of the MinAtar Freeway environment."""
 
 from typing import Any
 
@@ -31,6 +11,19 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Freeway environment.
+
+    Attributes:
+        pos: Row of the chicken; its column is fixed at 4.
+        cars: Array of shape `(8, 4)` with one car for each of the rows 1 to 8.
+            Columns are `[x, y, timer, speed]`: `timer` counts the steps left until
+            the car moves next and the sign of `speed` is its direction (positive
+            moves right). A car moves one cell every `abs(speed) + 1` steps.
+        move_timer: Steps left until the chicken can move again.
+        time: Number of steps taken in the current episode.
+        terminal: Whether the episode has terminated; always `False` in Freeway.
+    """
+
     pos: int
     cars: jax.Array
     move_timer: int
@@ -40,12 +33,47 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Freeway environment.
+
+    Attributes:
+        player_speed: Number of steps between two moves of the chicken.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     player_speed: int = 3
     max_steps_in_episode: int = 2500
 
 
 class MinFreeway(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Freeway MinAtar environment."""
+    """Guide a chicken across a freeway with eight lanes of traffic.
+
+    JAX port of the MinAtar Freeway environment. The chicken starts in the bottom
+    row of a 10x10 grid and can travel up and down in column 4, moving at most once
+    every `params.player_speed` steps (3 by default). Eight cars, one in each of the
+    rows 1 to 8, travel horizontally and teleport to the other side at the edge.
+    Each car has a random direction and a random speed `s` between 1 and 5, with
+    which it moves one cell every `s + 1` steps. When the chicken is hit by a car, it
+    is returned to the bottom row. Each time it reaches the top row, it is returned
+    to the bottom row and the car speeds and directions are randomized.
+
+    - Observation: `Box` of shape `(10, 10, 7)` with binary channels: 0 chicken, 1
+      car, 2 to 6 trail. The cell behind a car with speed `s` is set in channel
+      `s + 1`, so the trail indicates both the direction and the speed of the car.
+    - Actions: `Discrete(3)` with the minimal action set: 0 no-op, 1 up, 2 down.
+      `Discrete(6)` with the full action set: 0 no-op, 2 up, 4 down; the actions 1,
+      3 and 5 have no effect.
+    - Reward: +1 each time the chicken reaches the top row.
+    - Termination: never; episodes only end by truncation.
+    - Truncation: after `params.max_steps_in_episode` steps (2500 by default).
+
+    Args:
+        use_minimal_action_set: Whether to expose only the actions that have an
+            effect in this game instead of all six MinAtar actions.
+
+    References:
+        - [Young & Tian (2019)](https://arxiv.org/abs/1903.03176)
+        - [MinAtar implementation](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/freeway.py)
+    """
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -63,7 +91,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Freeway-MinAtar."""
         return EnvParams()
 
     def step_env(
@@ -106,7 +134,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling car speeds and directions."""
         # Sample the initial speeds and directions of the cars
         key_speed, key_dirs = jax.random.split(key)
         speeds = jax.random.randint(key_speed, shape=(8,), minval=1, maxval=6)
@@ -148,7 +176,7 @@ class MinFreeway(environment.Environment[EnvState, EnvParams]):
         return obs.astype(jnp.float32)
 
     def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
-        """Check whether state is terminal."""
+        """Check whether state is terminal; Freeway never terminates."""
         return jnp.array(False)
 
     @property
@@ -205,7 +233,7 @@ def step_agent(
 
 
 def step_cars(state: EnvState) -> EnvState:
-    """Perform 3rd part of step transition for car."""
+    """Perform 3rd part of step transition for cars and update the move timer."""
     # Update cars and check for collisions! - respawn agent at bottom
     pos = state.pos
     cars = state.cars
