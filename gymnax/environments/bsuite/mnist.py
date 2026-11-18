@@ -88,7 +88,7 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
     @property
     def name(self) -> str:
         """Environment name."""
-        return "MNSITBandit-bsuite"
+        return "MNISTBandit-bsuite"
 
     @property
     def num_actions(self) -> int:

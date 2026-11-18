@@ -101,7 +101,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
     @property
     def name(self) -> str:
         """Environment name."""
-        return "DiscountingChain-v0"
+        return "DiscountingChain-bsuite"
 
     @property
     def num_actions(self) -> int:
