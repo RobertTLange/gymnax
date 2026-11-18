@@ -1,9 +1,4 @@
-"""JAX implementation of Acrobot-v1 OpenAI gym environment.
-
-
-Source: github.com/openai/gym/blob/master/gym/envs/classic_control/acrobot.py
-Note that we only implement the default 'book' version.
-"""
+"""JAX implementation of the Acrobot-v1 Gymnasium environment."""
 
 import dataclasses
 from typing import Any
@@ -17,6 +12,20 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Acrobot environment.
+
+    Attributes:
+        joint_angle1: Angle of the first link in radians, wrapped to `[-pi, pi)`.
+            0 is the link hanging straight down.
+        joint_angle2: Angle of the second link relative to the first in radians,
+            wrapped to `[-pi, pi)`.
+        velocity_1: Angular velocity of `joint_angle1`, clipped to
+            `[-params.max_vel_1, params.max_vel_1]`.
+        velocity_2: Angular velocity of `joint_angle2`, clipped to
+            `[-params.max_vel_2, params.max_vel_2]`.
+        time: Number of steps taken in the current episode.
+    """
+
     joint_angle1: jax.Array
     joint_angle2: jax.Array
     velocity_1: jax.Array
@@ -26,7 +35,27 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
-    """Environment parameters for Acrobot."""
+    """Parameters of the Acrobot environment.
+
+    Gravity is fixed at 9.8 in the dynamics and is not a parameter.
+
+    Attributes:
+        available_torque: Torque applied at the joint between the two links for
+            each of the three actions.
+        dt: Duration of one step, covered by a single Runge-Kutta step.
+        link_length_1: Length of the first link.
+        link_length_2: Length of the second link. Not used by the dynamics.
+        link_mass_1: Mass of the first link.
+        link_mass_2: Mass of the second link.
+        link_com_pos_1: Position of the centre of mass of the first link.
+        link_com_pos_2: Position of the centre of mass of the second link.
+        link_moi: Moment of inertia, shared by both links.
+        max_vel_1: Maximum absolute angular velocity of the first joint.
+        max_vel_2: Maximum absolute angular velocity of the second joint.
+        torque_noise_max: Half-width of the uniform noise added to the torque in
+            every step. 0 disables the noise.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
 
     available_torque: jax.Array = dataclasses.field(
         default_factory=lambda: jnp.array([-1.0, 0.0, +1.0])
@@ -46,7 +75,26 @@ class EnvParams(environment.EnvParams):
 
 
 class Acrobot(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Acrobot-v1 OpenAI gym environment."""
+    """Swing the free end of a two-link pendulum above a target height.
+
+    JAX port of the Gymnasium `Acrobot-v1` environment, implementing only its
+    default "book" dynamics. Both joint angles and both angular velocities start at
+    uniformly random values in `[-0.1, 0.1]`.
+
+    - Observation: `Box` of shape `(6,)` with the cosine and sine of the first joint
+      angle, the cosine and sine of the second joint angle and the two angular
+      velocities.
+    - Actions: `Discrete(3)`. The action indexes `params.available_torque`: by
+      default 0 applies a torque of -1, 1 no torque and 2 a torque of +1.
+    - Reward: -1 for every step, 0 for the step that reaches the target height.
+    - Termination: the free end is above the target height, i.e.
+      `-cos(joint_angle1) - cos(joint_angle1 + joint_angle2) > 1`.
+    - Truncation: after `params.max_steps_in_episode` steps (500 by default).
+
+    References:
+        - [Sutton (1996)](https://papers.nips.cc/paper/1995/hash/8f1d43620bc6bb580df6e80b0dc05c48-Abstract.html)
+        - [Gymnasium implementation](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/classic_control/acrobot.py)
+    """
 
     def __init__(self):
         super().__init__()
@@ -54,7 +102,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Acrobot-v1."""
         return EnvParams(available_torque=jnp.array([-1.0, 0.0, +1.0]))
 
     def step_env(
@@ -114,7 +162,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling angles and velocities."""
         init_state = jax.random.uniform(key, shape=(4,), minval=-0.1, maxval=0.1)
         state = EnvState(
             joint_angle1=init_state[0],
@@ -126,7 +174,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
-        """Return observation from raw state trafo."""
+        """Return cosine and sine of the joint angles and the velocities."""
         return jnp.array(
             [
                 jnp.cos(state.joint_angle1),
@@ -200,7 +248,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
 
 
 def dsdt(s_augmented: jax.Array, _: float, params: EnvParams) -> jax.Array:
-    """Compute time derivative of the state change - Use for ODE int."""
+    """Compute the time derivative of the torque-augmented state."""
     m1, m2 = params.link_mass_1, params.link_mass_2
     l1 = params.link_length_1
     lc1, lc2 = params.link_com_pos_1, params.link_com_pos_2
@@ -226,7 +274,10 @@ def dsdt(s_augmented: jax.Array, _: float, params: EnvParams) -> jax.Array:
 
 
 def wrap(x: float, m: float, big_m: float) -> jax.Array:
-    """For example, m = -180, M = 180 (degrees), x = 360 --> returns 0."""
+    """Wrap `x` into the interval `[m, big_m)`.
+
+    For example, `m = -180`, `big_m = 180` (degrees) and `x = 360` returns 0.
+    """
     diff = big_m - m
     go_up = x < m  # Wrap if x is outside the left bound
     go_down = x >= big_m  # Wrap if x is outside OR on the right bound
@@ -241,7 +292,7 @@ def wrap(x: float, m: float, big_m: float) -> jax.Array:
 
 
 def rk4(y0: jax.Array, params: EnvParams):
-    """Runge-Kutta integration of ODE - Difference to OpenAI: Only 1 step!"""
+    """Integrate the dynamics with one Runge-Kutta step of size `params.dt`."""
     dt2 = params.dt / 2.0
     k1 = dsdt(y0, 0, params)
     k2 = dsdt(y0 + dt2 * k1, dt2, params)

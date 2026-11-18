@@ -1,9 +1,4 @@
-"""JAX implementation of MountainCar-v0 OpenAI gym environment.
-
-
-Source:
-github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
-"""
+"""JAX implementation of the MountainCar-v0 Gymnasium environment."""
 
 from typing import Any
 
@@ -16,6 +11,16 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the MountainCar environment.
+
+    Attributes:
+        position: Position of the car, clipped to
+            `[params.min_position, params.max_position]`.
+        velocity: Velocity of the car, clipped to
+            `[-params.max_speed, params.max_speed]`.
+        time: Number of steps taken in the current episode.
+    """
+
     position: jax.Array
     velocity: jax.Array
     time: int
@@ -23,6 +28,21 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the MountainCar environment.
+
+    Attributes:
+        min_position: Lower bound to which the position is clipped. The velocity
+            is set to 0 when the car reaches it while moving left.
+        max_position: Upper bound to which the position is clipped.
+        max_speed: Maximum absolute velocity of the car.
+        goal_position: Position at or beyond which the goal is reached.
+        goal_velocity: Minimum velocity required at the goal for termination.
+        force: Change in velocity per step caused by accelerating left or right.
+        gravity: Scale of the slope term `cos(3 * position)` that is subtracted
+            from the velocity in every step.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     min_position: float = -1.2
     max_position: float = 0.6
     max_speed: float = 0.07
@@ -34,11 +54,27 @@ class EnvParams(environment.EnvParams):
 
 
 class MountainCar(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of MountainCar-v0 OpenAI gym environment."""
+    """Drive an underpowered car up a hill by building momentum in a valley.
+
+    JAX port of the Gymnasium `MountainCar-v0` environment. The car starts at a
+    uniformly random position in `[-0.6, -0.4]` with zero velocity.
+
+    - Observation: `Box` of shape `(2,)` with the position and velocity of the car.
+    - Actions: `Discrete(3)`. 0 accelerates to the left, 1 does not accelerate and
+      2 accelerates to the right.
+    - Reward: -1 for every step, including the terminating one.
+    - Termination: the position is at least `params.goal_position` and the
+      velocity at least `params.goal_velocity`.
+    - Truncation: after `params.max_steps_in_episode` steps (200 by default).
+
+    References:
+        - [Moore (1990)](https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-209.pdf)
+        - [Gymnasium implementation](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/classic_control/mountain_car.py)
+    """
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for MountainCar-v0."""
         return EnvParams()
 
     def step_env(
@@ -82,7 +118,7 @@ class MountainCar(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
-        """Return observation from raw state trafo."""
+        """Return the position and velocity of the car."""
         return jnp.array([state.position, state.velocity])
 
     def is_terminated(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
