@@ -1,4 +1,4 @@
-"""Rollout wrapper for gymnax environments."""
+"""Compiled policy rollouts over batches of keys and parameters."""
 
 from collections.abc import Mapping
 from functools import partial
@@ -11,7 +11,26 @@ import gymnax
 
 
 class RolloutWrapper:
-    """Wrapper to define batch evaluation for generation parameters."""
+    """Roll out a policy in an environment with `jax.lax.scan`.
+
+    `single_rollout` runs one rollout, `batch_rollout` maps it over a batch of PRNG
+    keys and `population_rollout` additionally maps it over a batch of policy
+    parameters. All three return the same tuple, with one leading axis per mapped
+    quantity.
+
+    Args:
+        model_forward (Callable | None): Policy function
+            `(policy_params, obs, key) -> action`. If `None`, actions are sampled
+            uniformly from the action space.
+        env_name: Registered Gymnax environment ID. Defaults to `Pendulum-v1`.
+        num_env_steps: Number of transitions in each rollout. Defaults to
+            `max_steps_in_episode` of the environment parameters.
+        env_kwargs: Constructor keyword arguments for `env_name`.
+        env_params: Parameter overrides as a mapping of field names to values, or
+            a complete parameter object.
+        env: Pre-constructed environment, bypassing `gymnax.make`. Cannot be
+            combined with `env_name` or `env_kwargs`.
+    """
 
     def __init__(
         self,
@@ -22,18 +41,6 @@ class RolloutWrapper:
         env_params: Any | None = None,
         env: Any | None = None,
     ):
-        """Create a rollout wrapper for a registered or external environment.
-
-        Args:
-            model_forward: Policy function accepting parameters, observations,
-                and a PRNG key.
-            env_name: Registered Gymnax environment ID. Defaults to Pendulum.
-            num_env_steps: Number of transitions in each rollout.
-            env_kwargs: Constructor keyword arguments for ``env_name``.
-            env_params: Parameter overrides as a mapping, or a complete params
-                object when ``env`` is provided.
-            env: Pre-constructed environment, bypassing ``gymnax.make``.
-        """
         self.env_name = env_name
         if env is not None:
             if env_name is not None:
@@ -56,21 +63,54 @@ class RolloutWrapper:
 
     @partial(jax.jit, static_argnames=("self",))
     def population_rollout(self, key_eval, policy_params):
-        """Reshape parameter vector and evaluate the generation."""
+        """Roll out a population of policies, each on the same batch of keys.
+
+        Args:
+            key_eval (Array): Batch of PRNG keys, one per rollout of each policy.
+            policy_params (Any): Policy parameters with a leading population
+                axis.
+
+        Returns:
+            (tuple): The tuple described in `single_rollout`, with leading axes
+                `(population, keys)`.
+        """
         # Evaluate population of nets on gymnax task - vmap over key & params
         pop_rollout = jax.vmap(self.batch_rollout, in_axes=(None, 0))
         return pop_rollout(key_eval, policy_params)
 
     @partial(jax.jit, static_argnames=("self",))
     def batch_rollout(self, key_eval, policy_params):
-        """Evaluate a generation of networks on RL/Supervised/etc. task."""
+        """Roll out one policy once per key.
+
+        Args:
+            key_eval (Array): Batch of PRNG keys, one per rollout.
+            policy_params (Any): Parameters of a single policy.
+
+        Returns:
+            (tuple): The tuple described in `single_rollout`, with a leading key
+                axis.
+        """
         # vmap over different MC fitness evaluations for single network
         batch_rollout = jax.vmap(self.single_rollout, in_axes=(0, None))
         return batch_rollout(key_eval, policy_params)
 
     @partial(jax.jit, static_argnames=("self",))
     def single_rollout(self, key_input, policy_params):
-        """Rollout a pendulum episode with lax.scan."""
+        """Roll out one policy for `num_env_steps` transitions.
+
+        The environment resets automatically, so a rollout can span several
+        episodes. Only rewards of the first episode count towards the return.
+
+        Args:
+            key_input (Array): PRNG key.
+            policy_params (Any): Parameters of a single policy.
+
+        Returns:
+            (tuple): A tuple `(obs, action, reward, next_obs, done, cum_return)`.
+                The first five entries have a leading time axis of length
+                `num_env_steps`; `cum_return` has shape `(1,)` and holds the return
+                of the first episode.
+        """
         # Reset the environment
         key_reset, key_episode = jax.random.split(key_input)
         obs, state = self.env.reset(key_reset, self.env_params)
@@ -121,7 +161,7 @@ class RolloutWrapper:
 
     @property
     def input_shape(self):
-        """Get the shape of the observation."""
+        """Shape of a single observation."""
         key = jax.random.key(0)
         obs, _ = self.env.reset(key, self.env_params)
         return obs.shape

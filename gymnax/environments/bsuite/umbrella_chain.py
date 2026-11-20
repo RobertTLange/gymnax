@@ -1,9 +1,4 @@
-"""JAX implementation of UmbrellaChain bsuite environment.
-
-
-Source:
-github.com/deepmind/bsuite/blob/master/bsuite/environments/umbrella_chain.py
-"""
+"""JAX implementation of the bsuite UmbrellaChain environment."""
 
 from typing import Any
 
@@ -16,6 +11,18 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the UmbrellaChain environment.
+
+    Attributes:
+        need_umbrella: Whether the umbrella is needed at the end of the chain, 0 or
+            1.
+        has_umbrella: Whether the agent carries the umbrella, 0 or 1. Sampled at
+            reset and overwritten by the first action of the episode.
+        total_regret: Regret of the current episode. A wrong umbrella choice adds 2
+            on the last step.
+        time: Number of steps taken in the current episode.
+    """
+
     need_umbrella: int
     has_umbrella: int
     total_regret: int
@@ -24,12 +31,43 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the UmbrellaChain environment.
+
+    Attributes:
+        chain_length: Number of steps in an episode.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     chain_length: int = 10
     max_steps_in_episode: int = 100
 
 
 class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of UmbrellaChain bsuite environment."""
+    """Decide at the first step whether to take an umbrella needed at the last.
+
+    JAX port of the bsuite UmbrellaChain environment, a test of credit assignment.
+    Only the first action of an episode matters: it sets whether the agent carries
+    the umbrella. The reward that depends on it arrives at the end of the chain,
+    after random rewards that are unrelated to the actions. Each reset samples
+    `need_umbrella` and the initial `has_umbrella` with probability 0.5 each.
+
+    - Observation: `Box` of shape `(3 + n_distractor,)` with `need_umbrella`,
+      `has_umbrella`, the remaining time `1 - time / params.chain_length` and
+      `n_distractor` random bits that are resampled at every step.
+    - Actions: `Discrete(2)`. The first action of the episode sets `has_umbrella`,
+      later actions are ignored.
+    - Reward: on the last step, 1 if `has_umbrella` equals `need_umbrella` and -1
+      otherwise. On all other steps, 1 or -1 with equal probability.
+    - Termination: after `params.chain_length` steps (10 by default).
+    - Truncation: after `params.max_steps_in_episode` steps (100 by default).
+
+    Args:
+        n_distractor: Number of random distractor bits appended to the observation.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+        - [bsuite implementation](https://github.com/google-deepmind/bsuite/blob/main/bsuite/environments/umbrella_chain.py)
+    """
 
     def __init__(self, n_distractor: int = 0):
         super().__init__()
@@ -37,7 +75,7 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for UmbrellaChain-bsuite."""
         return EnvParams()
 
     def step_env(
@@ -86,7 +124,7 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling the umbrella need and possession."""
         key_need, key_has, key_distractor = jax.random.split(key, 3)
         need_umbrella = jnp.int32(jax.random.bernoulli(key_need, p=0.5, shape=()))
         has_umbrella = jnp.int32(jax.random.bernoulli(key_has, p=0.5, shape=()))

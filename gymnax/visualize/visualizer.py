@@ -1,4 +1,4 @@
-"""Visualizer for Gymnax environments."""
+"""Matplotlib animations of environment rollouts."""
 
 import jax
 import jax.numpy as jnp
@@ -10,7 +10,20 @@ from gymnax.visualize import vis_catch, vis_circle, vis_gym, vis_maze, vis_minat
 
 
 class Visualizer:
-    """Visualizer for Gymnax environments."""
+    """Animate a sequence of environment states with Matplotlib.
+
+    Supported environments are the classic control tasks (rendered through
+    Gymnasium, which requires the `visualize` extra), `Catch-bsuite`, the MinAtar
+    games, `Pong-misc`, `PointRobot-misc`, `MetaMaze-misc` and `FourRooms-misc`.
+    Other environments are not drawn.
+
+    Args:
+        env_arg (Environment): Environment that produced the states.
+        env_params_arg (EnvParams): Environment parameters used for the rollout.
+        state_seq_arg (list[EnvState]): List of environment states, one per frame.
+        reward_seq_arg (Array | None): Sequence with one value per frame, shown
+            in the title as the return so far; typically the cumulative reward.
+    """
 
     def __init__(self, env_arg, env_params_arg, state_seq_arg, reward_seq_arg=None):
         self.env = env_arg
@@ -34,7 +47,16 @@ class Visualizer:
         save_fname: str | None = "test.gif",
         view: bool = False,
     ):
-        """Anim for 2D fct - x (#steps, #pop, 2) & fitness (#steps, #pop)."""
+        """Render the animation and optionally save or show it.
+
+        The figure is closed afterwards.
+
+        Args:
+            save_fname: Output file. A `.gif` name is written with Pillow, any
+                other extension with the default Matplotlib writer. `None` skips
+                saving.
+            view: Whether to show the animation in a window for three seconds.
+        """
         ani = animation.FuncAnimation(
             self.fig,
             self.update,
@@ -59,7 +81,7 @@ class Visualizer:
             plt.close(self.fig)
 
     def init(self):
-        """Plot placeholder points."""
+        """Draw the first frame."""
         if self.env.name in [
             "Acrobot-v1",
             "CartPole-v1",
@@ -96,7 +118,7 @@ class Visualizer:
         self.fig.tight_layout(rect=[0.02, 0.03, 1.0, 0.95])
 
     def update(self, frame):
-        """Update the animation."""
+        """Draw the given frame and update the title."""
         if self.env.name in [
             "Acrobot-v1",
             "CartPole-v1",

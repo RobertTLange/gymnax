@@ -1,4 +1,4 @@
-"""JAX implementation of Reacher environment."""
+"""JAX implementation of a planar multi-joint reacher environment."""
 
 from typing import Any
 
@@ -11,6 +11,17 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Reacher environment.
+
+    Attributes:
+        angles: Array of shape `(num_joints,)` with the angle of each link, in
+            radians.
+        angle_vels: Array of shape `(num_joints,)` with the angular velocity of
+            each link.
+        goal_xy: Position of the goal as `(x, y)`.
+        time: Number of steps taken in the current episode.
+    """
+
     angles: jax.Array
     angle_vels: jax.Array
     goal_xy: jax.Array
@@ -19,16 +30,46 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Reacher environment.
+
+    Attributes:
+        torque_scale: Factor by which the action is scaled to obtain the angular
+            accelerations.
+        dt: Duration of one step, used for Euler integration.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     torque_scale: float = 1.0
     dt: float = 0.05
-    max_steps_in_episode: int = 100  # Steps in an episode (constant goal)
+    max_steps_in_episode: int = 100
 
 
 class Reacher(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Reacher environment.
+    """Move the tip of a planar arm to a goal position by applying joint torques.
 
+    The arm consists of `num_joints` links of unit length. The action, scaled by
+    `params.torque_scale`, sets the angular acceleration of every link, which is
+    integrated with step size `params.dt`. The tip position is the sum of the link
+    vectors `(cos(angle), sin(angle))`. At every reset the angles are sampled
+    uniformly in `[-pi, pi]`, the angular velocities in `[-1, 1]` and both goal
+    coordinates in `[-num_joints, num_joints]`. The goal stays fixed for the whole
+    episode. Supports differentiable transitions via `with_transition_gradients()`.
 
-    Adapted from: https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py
+    - Observation: `Box` of shape `(3 * num_joints + 2,)` with the cosines and
+      sines of the angles, the angular velocities and the goal position.
+    - Actions: `Box` of shape `(num_joints,)` with bounds `[-1, 1]`. The torque
+      applied to each joint.
+    - Reward: `exp(-d**2)`, where `d` is the distance between the tip of the arm
+      and the goal after the step.
+    - Termination: never.
+    - Truncation: after `params.max_steps_in_episode` steps (100 by default).
+
+    Args:
+        num_joints: Number of joints of the arm. Only the default of 2 is
+            supported; other values fail when the observation is built.
+
+    References:
+        - [ivy_gym implementation](https://github.com/unifyai/gym/blob/master/ivy_gym/reacher.py)
     """
 
     _supports_transition_gradients = True
@@ -39,7 +80,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Reacher-misc."""
         return EnvParams()
 
     def step_env(
@@ -49,7 +90,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
         action: int | float | jax.Array,
         params: EnvParams,
     ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
-        """Sample bernoulli reward, increase counter, construct input."""
+        """Integrate the joint dynamics and compute the goal distance reward."""
         angle_accs = params.torque_scale * action
         angle_vels = state.angle_vels + params.dt * angle_accs
         angles = state.angles + params.dt * angle_vels
@@ -86,7 +127,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling angles, velocities and goal."""
         # Sample reward function + construct state as concat with timestamp
         key_angle, key_angle_v, key_goal = jax.random.split(key, 3)
 
@@ -112,7 +153,7 @@ class Reacher(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
-        """Concatenate reward, one-hot action and time stamp."""
+        """Concatenate angle cosines and sines, angular velocities and goal."""
         ob = (
             jnp.reshape(jnp.cos(state.angles), (1, self.num_joints)),
             jnp.reshape(jnp.sin(state.angles), (1, self.num_joints)),

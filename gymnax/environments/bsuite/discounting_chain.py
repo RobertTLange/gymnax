@@ -1,9 +1,4 @@
-"""JAX implementation of DiscountingChain bsuite environment.
-
-
-Source:
-github.com/deepmind/bsuite/blob/master/bsuite/environments/discounting_chain.py.
-"""
+"""JAX implementation of the bsuite DiscountingChain environment."""
 
 import dataclasses
 from typing import Any
@@ -17,6 +12,15 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the DiscountingChain environment.
+
+    Attributes:
+        rewards: Reward paid by each chain, shape `(n_actions,)`.
+        context: Index of the chain selected by the first action of the episode, -1
+            before the first step.
+        time: Number of steps taken in the current episode.
+    """
+
     rewards: jax.Array
     context: jax.Array
     time: int
@@ -24,6 +28,16 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the DiscountingChain environment.
+
+    Attributes:
+        reward_timestep: Step at which each chain pays its reward, one entry per
+            action.
+        optimal_return: Reward paid by the chain with index `mapping_seed`. All other
+            chains pay 1.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     reward_timestep: jax.Array = dataclasses.field(
         default_factory=lambda: jnp.array([1, 3, 10, 30, 100])
     )
@@ -32,7 +46,32 @@ class EnvParams(environment.EnvParams):
 
 
 class DiscountingChain(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of DiscountingChain bsuite environment."""
+    """Choose between chains that pay their reward after different delays.
+
+    JAX port of the bsuite DiscountingChain environment. The first action of an
+    episode selects one of `n_actions` chains and all later actions are ignored.
+    Each chain pays a single reward after its own delay, which tests how an agent
+    values rewards that arrive at different times. Resets are deterministic.
+
+    - Observation: `Box` of shape `(2,)` with the index of the selected chain (-1
+      before the first step) and the fraction `time / params.max_steps_in_episode`
+      of the episode that has elapsed.
+    - Actions: `Discrete(n_actions)`. The first action selects the chain.
+    - Reward: the reward of the selected chain at step
+      `params.reward_timestep[chain]`, 0 on all other steps. The chain with index
+      `mapping_seed` pays `params.optimal_return` (1.1 by default), all others 1.
+    - Termination: never.
+    - Truncation: after `params.max_steps_in_episode` steps (100 by default).
+
+    Args:
+        n_actions: Number of actions and chains. `params.reward_timestep` needs one
+            entry per action; the default has 5.
+        mapping_seed: Index of the chain that pays `params.optimal_return`.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+        - [bsuite implementation](https://github.com/google-deepmind/bsuite/blob/main/bsuite/environments/discounting_chain.py)
+    """
 
     def __init__(self, n_actions: int = 5, mapping_seed: int = 0):
         super().__init__()
@@ -41,7 +80,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for DiscountingChain-bsuite."""
         return EnvParams(reward_timestep=jnp.array([1, 3, 10, 30, 100]))
 
     def step_env(
@@ -77,7 +116,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state deterministically; `key` is not used."""
         # Setup reward fct from mapping seed - random sampling outside of env
         reward = (
             jnp.ones(self.n_actions).at[self.mapping_seed].set(params.optimal_return)
@@ -101,7 +140,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
     @property
     def name(self) -> str:
         """Environment name."""
-        return "DiscountingChain-v0"
+        return "DiscountingChain-bsuite"
 
     @property
     def num_actions(self) -> int:

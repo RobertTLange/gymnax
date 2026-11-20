@@ -1,0 +1,149 @@
+[project]
+site_name = "gymnax"
+site_description = "Reinforcement learning environments in JAX"
+site_url = "https://roberttlange.github.io/gymnax/"
+repo_url = "https://github.com/RobertTLange/gymnax"
+repo_name = "RobertTLange/gymnax"
+docs_dir = "docs"
+strict = true
+copyright = "Copyright &copy; Robert Tjarko Lange"
+extra_css = ["stylesheets/extra.css"]
+nav = [
+  { "Home" = "index.md" },
+  { "Getting started" = [
+    { "Installation" = "getting-started/installation.md" },
+    { "Quickstart" = "getting-started/quickstart.md" },
+  ] },
+  { "Guides" = [
+    { "Concepts" = "guides/concepts.md" },
+    { "Wrappers" = "guides/wrappers.md" },
+    { "Custom environments" = "guides/custom-environments.md" },
+    { "Differentiable transitions" = "guides/differentiable-transitions.md" },
+    { "Visualization" = "guides/visualization.md" },
+    { "Upgrading to 1.0" = "guides/upgrading.md" },
+    { "1.0 API RFC" = "api_rfc.md" },
+  ] },
+  { "Environments" = "environments.md" },
+  { "Examples" = "examples.md" },
+  { "API reference" = [
+    { "Core" = [
+      { "Environment" = "reference/environment.md" },
+      { "Spaces" = "reference/spaces.md" },
+      { "Registration" = "reference/registration.md" },
+    ] },
+    { "Environments" = [
+      { "Classic control" = [
+        { "CartPole" = "reference/environments/classic_control/cartpole.md" },
+        { "Pendulum" = "reference/environments/classic_control/pendulum.md" },
+        { "Acrobot" = "reference/environments/classic_control/acrobot.md" },
+        { "MountainCar" = "reference/environments/classic_control/mountain_car.md" },
+        { "MountainCarContinuous" = "reference/environments/classic_control/continuous_mountain_car.md" },
+      ] },
+      { "bsuite" = [
+        { "Catch" = "reference/environments/bsuite/catch.md" },
+        { "DeepSea" = "reference/environments/bsuite/deep_sea.md" },
+        { "MemoryChain" = "reference/environments/bsuite/memory_chain.md" },
+        { "UmbrellaChain" = "reference/environments/bsuite/umbrella_chain.md" },
+        { "DiscountingChain" = "reference/environments/bsuite/discounting_chain.md" },
+        { "MNISTBandit" = "reference/environments/bsuite/mnist.md" },
+        { "SimpleBandit" = "reference/environments/bsuite/bandit.md" },
+      ] },
+      { "MinAtar" = [
+        { "Asterix" = "reference/environments/minatar/asterix.md" },
+        { "Breakout" = "reference/environments/minatar/breakout.md" },
+        { "Freeway" = "reference/environments/minatar/freeway.md" },
+        { "Seaquest" = "reference/environments/minatar/seaquest.md" },
+        { "SpaceInvaders" = "reference/environments/minatar/space_invaders.md" },
+      ] },
+      { "Miscellaneous" = [
+        { "FourRooms" = "reference/environments/misc/rooms.md" },
+        { "MetaMaze" = "reference/environments/misc/meta_maze.md" },
+        { "PointRobot" = "reference/environments/misc/point_robot.md" },
+        { "BernoulliBandit" = "reference/environments/misc/bernoulli_bandit.md" },
+        { "GaussianBandit" = "reference/environments/misc/gaussian_bandit.md" },
+        { "Reacher" = "reference/environments/misc/reacher.md" },
+        { "Swimmer" = "reference/environments/misc/swimmer.md" },
+        { "Pong" = "reference/environments/misc/pong.md" },
+        { "FrozenLake" = "reference/environments/misc/frozen_lake.md" },
+        { "Snake" = "reference/environments/misc/snake.md" },
+      ] },
+    ] },
+    { "Wrappers" = [
+      { "Functional wrappers" = "reference/wrappers/purerl.md" },
+      { "Legacy step API" = "reference/wrappers/compat.md" },
+      { "Gymnasium" = "reference/wrappers/gym.md" },
+      { "dm_env" = "reference/wrappers/dm_env.md" },
+      { "Brax" = "reference/wrappers/brax.md" },
+      { "EvoJAX" = "reference/wrappers/evojax.md" },
+    ] },
+    { "Visualization" = "reference/visualize.md" },
+    { "Experimental" = "reference/experimental.md" },
+  ] },
+]
+
+[project.theme]
+language = "en"
+logo = "logo.png"
+favicon = "logo.png"
+features = [
+  "content.code.copy",
+  "navigation.footer",
+  "navigation.instant",
+  "navigation.tabs",
+  "navigation.top",
+  "search.highlight",
+]
+
+# Follow the system colour scheme, with a manual toggle
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+tables = {}
+toc.permalink = true
+pymdownx.details = {}
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.superfences = {}
+pymdownx.tabbed.alternate_style = true
+
+# API reference generated from docstrings. Sources are parsed statically, so the
+# package does not need to be importable.
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["."]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+docstring_section_style = "list"
+filters = ["!^_"]
+inherited_members = false
+members_order = "source"
+merge_init_into_class = true
+separate_signature = true
+show_if_no_docstring = false
+show_root_full_path = false
+show_root_heading = true
+show_signature_annotations = true
+show_source = false
+
+# Treat a wrapped "Returns:" section as one description, not one item per line
+[project.plugins.mkdocstrings.handlers.python.options.docstring_options]
+returns_multiple_items = false

@@ -1,15 +1,17 @@
 """Miscellaneous environments in JAX.
 
-This module provides JAX implementations of miscellaneous environments, including:
-- BernoulliBandit
-- GaussianBandit
-- FourRooms
-- FrozenLake
-- MetaMaze
-- PointRobot
-- Reacher
-- Swimmer
-- Pong
+This package provides JAX implementations of the following environments:
+
+- `BernoulliBandit`
+- `GaussianBandit`
+- `FourRooms`
+- `FrozenLake`
+- `MetaMaze`
+- `PointRobot`
+- `Reacher`
+- `Snake`
+- `Swimmer`
+- `Pong`
 """
 
 from .bernoulli_bandit import BernoulliBandit

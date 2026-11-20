@@ -53,6 +53,14 @@ def test_registered_environment_resets_and_steps_when_jitted(
     jax.block_until_ready((next_observation, next_state, reward, done))
 
 
+@pytest.mark.parametrize("env_name", gymnax.registered_envs)
+def test_registered_environment_name_matches_its_id(env_name, local_mnist_dataset):
+    """`env.name` is the ID the environment is registered under."""
+    env, _ = gymnax.make(env_name)
+
+    assert env.name == env_name
+
+
 def test_brax_adapter_resets_and_steps_when_available():
     """The optional Brax adapter supports its direct reset and step contract."""
     pytest.importorskip("brax")

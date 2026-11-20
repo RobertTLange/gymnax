@@ -1,4 +1,4 @@
-"""DM env API wrapper for gymnax environment."""
+"""Wrapper exposing Gymnax environments through a dm_env-style API."""
 
 from functools import partial
 
@@ -12,6 +12,16 @@ from gymnax.wrappers import purerl
 
 @struct.dataclass
 class TimeStep:
+    """Transition returned by `GymnaxToDmEnvWrapper`.
+
+    Attributes:
+        state: Environment state, already reset if the episode ended.
+        reward: Reward of the transition, 0 after a reset.
+        discount: 0 if the episode terminated, 1 otherwise (including truncation).
+        observation: Observation matching `state`.
+        final_observation: Observation before any automatic reset.
+    """
+
     state: environment.EnvState
     reward: jax.Array
     discount: jax.Array
@@ -20,12 +30,20 @@ class TimeStep:
 
 
 class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
-    """DM env API wrapper for gymnax environment."""
+    """Return `TimeStep` objects from `reset` and `step`, as in dm_env.
+
+    The wrapper stays functional and jittable: the environment state travels inside
+    the `TimeStep`, which is passed back into `step`.
+
+    Args:
+        env (Environment): Environment to wrap.
+    """
 
     @partial(jax.jit, static_argnames=("self",))
     def reset(
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> TimeStep:
+        """Start a new episode and return its first `TimeStep`."""
         obs, state = self._env.reset(key, params)
         return TimeStep(
             state=state,
@@ -43,6 +61,7 @@ class GymnaxToDmEnvWrapper(purerl.GymnaxWrapper):
         action: int | float,
         params: environment.EnvParams | None = None,
     ) -> TimeStep:
+        """Advance the environment from the state stored in `timestep`."""
         obs, state, reward, terminated, truncated, info = self._env.step(
             key, timestep.state, action, params
         )

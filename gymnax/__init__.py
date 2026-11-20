@@ -1,4 +1,4 @@
-"""Gymnax: A library for creating and registering Gym environments."""
+"""Gymnax: reinforcement learning environments written in JAX."""
 
 from gymnax import environments, registration
 

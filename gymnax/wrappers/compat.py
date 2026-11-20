@@ -9,7 +9,17 @@ from gymnax.environments import environment
 
 
 class LegacyStepAPIWrapper:
-    """Expose Gymnax 1.0 environments through the removed five-value API."""
+    """Expose an environment through the five-value step API of Gymnax 0.x.
+
+    `step` returns `(obs, state, reward, done, info)` with
+    `done = terminated | truncated`. The separate flags and the pre-reset
+    observation stay available as `info["terminated"]`, `info["truncated"]` and
+    `info["final_observation"]`. Intended as a migration aid; new code should use
+    the six-value API.
+
+    Args:
+        env: Environment to wrap.
+    """
 
     def __init__(self, env: environment.Environment):
         self._env = env
@@ -21,7 +31,7 @@ class LegacyStepAPIWrapper:
     def reset(
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> tuple[Any, environment.EnvState]:
-        """Delegate reset without changing its two-value contract."""
+        """Reset the wrapped environment; identical to its own `reset`."""
         return self._env.reset(key, params)
 
     @partial(jax.jit, static_argnames=("self",))
@@ -32,7 +42,7 @@ class LegacyStepAPIWrapper:
         action: int | float | jax.Array,
         params: environment.EnvParams | None = None,
     ) -> tuple[Any, environment.EnvState, jax.Array, jax.Array, dict[Any, Any]]:
-        """Return the historical done flag while retaining terminal metadata."""
+        """Step the wrapped environment and merge both flags into `done`."""
         obs, next_state, reward, terminated, truncated, info = self._env.step(
             key, state, action, params
         )

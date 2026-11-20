@@ -1,4 +1,4 @@
-"""JAX implementation of the bandit environment from bsuite."""
+"""JAX implementation of the bsuite SimpleBandit environment."""
 
 from typing import Any
 
@@ -11,6 +11,16 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the SimpleBandit environment.
+
+    Attributes:
+        rewards: Reward of each action, shape `(num_actions,)`. A random permutation
+            of `num_actions` evenly spaced values from 0 to 1.
+        total_regret: Sum of `params.optimal_return - reward` over the steps of the
+            current episode.
+        time: Number of steps taken in the current episode.
+    """
+
     rewards: float
     total_regret: float
     time: float
@@ -18,15 +28,37 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the SimpleBandit environment.
+
+    Attributes:
+        optimal_return: Reward of the best action, used to compute the regret.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     optimal_return: float = 1.0
     max_steps_in_episode: int = 100
 
 
 class SimpleBandit(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of SimpleBandit bsuite environment.
+    """Pull the arm with the highest reward in a deterministic multi-armed bandit.
 
+    JAX port of the bsuite bandit environment. Each reset assigns `num_actions`
+    evenly spaced rewards from 0 to 1 to the actions in a random order. Every step
+    is a complete episode, so `step` redraws the assignment after each action.
 
-    Source: github.com/deepmind/bsuite/blob/master/bsuite/environments/bandit.py.
+    - Observation: `Box` of shape `(1, 1)` that always contains 1.
+    - Actions: `Discrete(num_actions)`. The index of the arm to pull.
+    - Reward: the reward assigned to the chosen action, a value from 0 to 1.
+    - Termination: after every step.
+    - Truncation: after `params.max_steps_in_episode` steps (100 by default). Not
+      reached with the default, since every episode terminates after one step.
+
+    Args:
+        num_actions: Number of arms.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+        - [bsuite implementation](https://github.com/google-deepmind/bsuite/blob/main/bsuite/environments/bandit.py)
     """
 
     def __init__(self, num_actions: int = 11):
@@ -35,7 +67,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for SimpleBandit-bsuite."""
         return EnvParams()
 
     def step_env(
@@ -67,7 +99,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, Any]:  # dict]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling a new reward for each action."""
         action_mask = jax.random.choice(
             key,
             jnp.arange(self.num_actions),
@@ -80,7 +112,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
-        """Return observation from raw state trafo."""
+        """Return the constant observation, which does not depend on the state."""
         return jnp.ones(shape=(1, 1), dtype=jnp.float32)
 
     def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:

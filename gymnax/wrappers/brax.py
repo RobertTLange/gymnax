@@ -1,4 +1,4 @@
-"""Wrappers for Gymnax environments to be compatible with Brax."""
+"""Wrapper exposing Gymnax environments through the Brax API."""
 
 import jax
 
@@ -14,11 +14,15 @@ except ImportError as exc:
 
 
 class GymnaxToBraxWrapper(envs.Env):
-    """Wrap Gymnax environment as Brax environment.
+    """Wrap a Gymnax environment as a Brax environment.
 
-    Primarily useful for including obs, reward, and done as part of state.
-    Compatible with all brax wrappers, but AutoResetWrapper is redundant
-    since Gymnax environments already reset state.
+    Observation, reward and done flag become part of the Brax `State`, and the PRNG
+    key and environment parameters are carried in `state.info`. Compatible with all
+    Brax wrappers; `AutoResetWrapper` is redundant because Gymnax environments
+    already reset automatically. Importing this module requires `brax`.
+
+    Args:
+        env: Gymnax environment to wrap.
     """
 
     def __init__(self, env: environment.Environment):
@@ -28,7 +32,10 @@ class GymnaxToBraxWrapper(envs.Env):
     def reset(
         self, key: jax.Array, params: environment.EnvParams | None = None
     ):  # -> State:
-        """Reset, return brax State. Save key and params in info field for step."""
+        """Reset the environment and return a Brax `State`.
+
+        The key and parameters are stored in `state.info` for use by `step`.
+        """
         if params is None:
             params = self.env.default_params
         obs, env_state = self.env.reset(key, params)
@@ -54,7 +61,11 @@ class GymnaxToBraxWrapper(envs.Env):
         action,  #: Union[jax.Array, jax.Array],
         params=None,  #: Optional[environment.EnvParams] = None,
     ):  # -> State:
-        """Step brax State. Update stored key and params in info field."""
+        """Advance a Brax `State` by one step.
+
+        Uses the key stored in `state.info`. If `params` is given it replaces the
+        stored parameters.
+        """
         key, step_key = jax.random.split(state.info["_key"])
         if params is None:
             params = state.info["_env_params"]
@@ -79,17 +90,17 @@ class GymnaxToBraxWrapper(envs.Env):
         )
 
     def action_size(self) -> int:
-        """DEFAULT size of action vector expected by step."""
+        """Number of leaves in an action sampled under the default parameters."""
         a_space = self.env.action_space(self.env.default_params)
         example_a = a_space.sample(jax.random.key(0))
         return len(jax.tree.flatten(example_a)[0])
 
     def observation_size(self) -> int:
-        """DEFAULT size of observation vector expected by step."""
+        """Number of leaves in an observation sampled under the default parameters."""
         o_space = self.env.observation_space(self.env.default_params)
         example_o = o_space.sample(jax.random.key(0))
         return len(jax.tree.flatten(example_o)[0])
 
     def backend(self) -> str:
-        """Return backend of the environment."""
+        """Name of the backend, always `"jax"`."""
         return "jax"

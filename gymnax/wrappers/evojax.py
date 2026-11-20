@@ -1,4 +1,4 @@
-"""Utility wrapper to port gymnax env to evoJAX tasks."""
+"""Wrapper exposing Gymnax environments as EvoJAX tasks."""
 
 import jax
 
@@ -15,13 +15,30 @@ from flax import struct
 
 @struct.dataclass
 class GymState(TaskState):
+    """Task state of `GymnaxToEvoJaxTask`.
+
+    Attributes:
+        state: Environment state.
+        obs: Current observation.
+        key: PRNG key used for the next step.
+    """
+
     state: environment.EnvState
     obs: jax.Array
     key: jax.Array
 
 
 class GymnaxToEvoJaxTask(VectorizedTask):
-    """Task wrapper for gymnax environments."""
+    """Wrap a registered Gymnax environment as a vectorized EvoJAX task.
+
+    Importing this module requires `evojax`. The environment must define
+    `obs_shape`.
+
+    Args:
+        env_name: ID of the environment, as passed to `gymnax.make`.
+        max_steps: Number of steps after which episodes are truncated.
+        test: Stored as `self.test`; not used by the wrapper itself.
+    """
 
     def __init__(self, env_name: str, max_steps: int = 1000, test: bool = False):
         self.max_steps = max_steps
@@ -53,7 +70,9 @@ class GymnaxToEvoJaxTask(VectorizedTask):
         self._step_fn = jax.jit(jax.vmap(step_fn))
 
     def reset(self, key: jax.Array) -> GymState:
+        """Reset a batch of environments, one per key."""
         return self._reset_fn(key)
 
     def step(self, state, action):  # -> Tuple[GymState, jax.Array, jax.Array]:
+        """Step a batch of environments and return `(state, reward, done)`."""
         return self._step_fn(state, action)

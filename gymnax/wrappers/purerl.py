@@ -1,4 +1,4 @@
-"""Wrappers for pure RL."""
+"""Jittable wrappers that keep the functional Gymnax API."""
 
 from functools import partial
 from typing import Any
@@ -12,7 +12,14 @@ from gymnax.environments import environment, spaces
 
 
 class GymnaxWrapper:
-    """Base class for Gymnax wrappers."""
+    """Base class for Gymnax wrappers.
+
+    Attributes and methods that a wrapper does not override are forwarded to the
+    wrapped environment.
+
+    Args:
+        env (Environment): Environment to wrap.
+    """
 
     def __init__(self, env):
         self._env = env
@@ -24,14 +31,33 @@ class GymnaxWrapper:
 
 @struct.dataclass
 class StickyActionState:
-    """State for :class:`StickyActionWrapper`."""
+    """State of an environment wrapped in `StickyActionWrapper`.
+
+    Attributes:
+        env_state: State of the wrapped environment.
+        last_action: Action executed in the previous step, 0 after a reset.
+    """
 
     env_state: Any
     last_action: jax.Array
 
 
 class StickyActionWrapper(GymnaxWrapper):
-    """Replay the previous discrete action with a configurable probability."""
+    """Repeat the previously executed action with a fixed probability.
+
+    At every step the requested action is replaced by the action executed in the
+    previous step with probability `sticky_action_prob`. Requires a `Discrete`
+    action space.
+
+    Args:
+        env (Environment): Environment to wrap.
+        sticky_action_prob: Probability in `[0, 1]` of repeating the previous
+            action.
+
+    Raises:
+        ValueError: If the probability is not a finite value in `[0, 1]` or the
+            action space is not `Discrete`.
+    """
 
     def __init__(self, env, sticky_action_prob: float = 0.0):
         super().__init__(env)
@@ -59,7 +85,7 @@ class StickyActionWrapper(GymnaxWrapper):
     def reset(
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> tuple[jax.Array, StickyActionState]:
-        """Reset the inner environment and initialize the replay action to zero."""
+        """Reset the wrapped environment and set the previous action to 0."""
         obs, env_state = self._env.reset(key, params)
         return obs, StickyActionState(
             env_state=env_state,
@@ -76,7 +102,7 @@ class StickyActionWrapper(GymnaxWrapper):
     ) -> tuple[
         jax.Array, StickyActionState, jax.Array, jax.Array, jax.Array, dict[Any, Any]
     ]:
-        """Step with either the requested action or the recorded previous action."""
+        """Step with the requested action or, when it sticks, the previous one."""
         requested_action = jnp.asarray(action, dtype=self._action_dtype)
         if self._sticky_action_prob == 0.0:
             executed_action = requested_action
@@ -99,12 +125,21 @@ class StickyActionWrapper(GymnaxWrapper):
 
 
 class FlattenObservationWrapper(GymnaxWrapper):
-    """Flatten the observations of the environment."""
+    """Flatten observations into one-dimensional arrays.
+
+    Applies to the observations returned by `reset` and `step`, to
+    `info["final_observation"]` and to the bounds of the observation space. Only
+    `Box` observation spaces are supported.
+
+    Args:
+        env (Environment): Environment to wrap.
+    """
 
     #   def __init__(self, env: environment.Environment):
     #     super().__init__(env)
 
     def observation_space(self, params) -> spaces.Box:
+        """Observation space of the wrapped environment with a flat shape."""
         space = self._env.observation_space(params)
         assert isinstance(space, spaces.Box), "Only Box spaces are supported for now."
 
@@ -124,6 +159,7 @@ class FlattenObservationWrapper(GymnaxWrapper):
     def reset(
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> tuple[jax.Array, environment.EnvState]:
+        """Reset the wrapped environment and flatten the observation."""
         obs, state = self._env.reset(key, params)
         obs = jnp.reshape(obs, (-1,))
         return obs, state
@@ -136,6 +172,7 @@ class FlattenObservationWrapper(GymnaxWrapper):
         action: int | float,
         params: environment.EnvParams | None = None,
     ) -> tuple[jax.Array, environment.EnvState, float, bool, bool, Any]:  # dict]:
+        """Step the wrapped environment and flatten both observations."""
         obs, state, reward, terminated, truncated, info = self._env.step(
             key, state, action, params
         )
@@ -147,6 +184,18 @@ class FlattenObservationWrapper(GymnaxWrapper):
 
 @struct.dataclass
 class LogEnvState:
+    """State of an environment wrapped in `LogWrapper`.
+
+    Attributes:
+        env_state: State of the wrapped environment.
+        episode_returns: Sum of rewards in the running episode.
+        episode_lengths: Number of steps in the running episode.
+        returned_episode_returns: Return of the most recently completed episode.
+        returned_episode_lengths: Length of the most recently completed episode.
+        returned_episode_valid: Whether an episode has completed since the wrapper
+            was reset.
+    """
+
     env_state: environment.EnvState
     episode_returns: jax.Array
     episode_lengths: jax.Array
@@ -156,11 +205,18 @@ class LogEnvState:
 
 
 class LogWrapper(GymnaxWrapper):
-    """Log episode returns and lengths.
+    """Track episode returns and lengths and report them through `info`.
 
-    ``returned_episode`` marks a transition that completed an episode, while
-    ``returned_episode_valid`` remains true after the first completed episode.
-    Until then, the returned episode counters contain reset placeholders.
+    `step` adds four entries to `info`:
+
+    - `returned_episode_returns`: return of the most recently completed episode.
+    - `returned_episode_lengths`: length of the most recently completed episode.
+    - `returned_episode`: whether this transition completed an episode.
+    - `returned_episode_valid`: whether any episode has completed so far. Until
+      then the two counters above hold the placeholder value 0.
+
+    Args:
+        env (Environment): Environment to wrap.
     """
 
     #   def __init__(self, env: environment.Environment):
@@ -170,6 +226,7 @@ class LogWrapper(GymnaxWrapper):
     def reset(
         self, key: jax.Array, params: environment.EnvParams | None = None
     ) -> tuple[jax.Array, LogEnvState]:
+        """Reset the wrapped environment and all episode statistics."""
         obs, env_state = self._env.reset(key, params)
         state = LogEnvState(
             env_state,
@@ -189,18 +246,17 @@ class LogWrapper(GymnaxWrapper):
         action: int | float,
         params: environment.EnvParams | None = None,
     ) -> tuple[jax.Array, LogEnvState, jax.Array, bool, bool, dict[Any, Any]]:
-        """Step the environment.
-
+        """Step the wrapped environment and update the episode statistics.
 
         Args:
-          key: Pkey key.
-          state: The current state of the environment.
-          action: The action to take.
-          params: The parameters of the environment.
-
+            key: PRNG key.
+            state: Current wrapper state.
+            action: Action to take.
+            params: Environment parameters. Defaults to the environment defaults.
 
         Returns:
-          A tuple of (observation, state, reward, terminated, truncated, info).
+            A tuple `(obs, state, reward, terminated, truncated, info)`, where `info`
+            additionally holds the episode statistics.
         """
         obs, env_state, reward, terminated, truncated, info = self._env.step(
             key, state.env_state, action, params

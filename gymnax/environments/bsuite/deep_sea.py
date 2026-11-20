@@ -1,4 +1,4 @@
-"""JAX implementation of DeepSea bsuite environment."""
+"""JAX implementation of the bsuite DeepSea environment."""
 
 from functools import partial
 from typing import Any
@@ -12,6 +12,26 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the DeepSea environment.
+
+    Attributes:
+        row: Row of the agent. Starts at 0 and increases by one every step.
+        column: Column of the agent.
+        bad_episode: Whether the agent has taken the "left" action in a cell with
+            `row == column` during the current episode.
+        total_bad_episodes: Number of finished episodes in which `bad_episode` was
+            set. `step` carries it over when the environment auto-resets.
+        denoised_return: Number of times the goal reward of 1 was collected, without
+            move costs or reward noise. `step` carries it over when the environment
+            auto-resets.
+        optimal_return: Expected return of always choosing the "right" action: the
+            probability of reaching the last column (1 if `params.deterministic`,
+            else `(1 - 1 / size) ** (size - 1)`) minus `params.unscaled_move_cost`.
+        action_mapping: Integer array of shape `(size, size)` holding, for every
+            cell, the action that moves the agent to the right.
+        time: Number of steps taken in the current episode.
+    """
+
     row: int
     column: int
     bad_episode: bool
@@ -24,6 +44,24 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the DeepSea environment.
+
+    Attributes:
+        deterministic: If `True`, the "right" action always moves the agent to the
+            right. If `False`, it only does so with probability `1 - 1 / size` and
+            otherwise leaves the column unchanged, and standard normal noise is added
+            to the reward in the first and last column of the last row.
+        sample_action_map: If `True`, sample a new action mapping at every reset
+            instead of using a fixed one.
+        unscaled_move_cost: Cost of the "right" action. It is divided by `size`
+            before it is subtracted from the reward.
+        randomize_actions: If `True`, use the action mapping drawn when the
+            environment was constructed. If `False`, action 1 moves right in every
+            cell. Ignored if `sample_action_map` is `True`.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+            `DeepSea.default_params` sets it to `size`.
+    """
+
     deterministic: bool = True
     sample_action_map: bool = False
     unscaled_move_cost: float = 0.01
@@ -32,15 +70,39 @@ class EnvParams(environment.EnvParams):
 
 
 class DeepSea(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of DeepSea bsuite environment.
+    """Reach the last column of a square grid by moving right in every row.
 
+    JAX port of the bsuite DeepSea environment. The agent starts in row 0 and
+    column 0 and moves down one row per step, so an episode lasts `size` steps. The
+    only positive reward requires the "right" action in every row, while each
+    "right" action has a small cost, which makes the task a test of exploration.
 
-    Source:
-    github.com/deepmind/bsuite/blob/master/bsuite/environments/deep_sea.py.
+    - Observation: `Box` of shape `(size, size)` that is 0 everywhere except for a 1
+      at the agent's cell. All zeros once the agent has left the last row.
+    - Actions: `Discrete(2)`. In each cell one action moves the agent one column to
+      the right and the other one column to the left, as given by
+      `state.action_mapping`. The agent stays within the grid.
+    - Reward: 1 for choosing the "right" action in the last column, which can only
+      be reached in the last row. Every "right" action costs
+      `params.unscaled_move_cost / size`. If `params.deterministic` is `False`,
+      standard normal noise is added in the first and last column of the last row.
+    - Termination: the agent leaves the last row, which takes `size` steps.
+    - Truncation: after `params.max_steps_in_episode` steps. `default_params` sets
+      this to `size`, so the last step of an episode is then flagged as both
+      terminated and truncated.
+
+    Args:
+        size: Number of rows and columns of the grid.
+        action_mapping_key: PRNG key used to draw the fixed action mapping, which
+            assigns the "right" action to 0 or 1 independently for every cell.
+            Defaults to `jax.random.key(0)`.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+        - [bsuite implementation](https://github.com/google-deepmind/bsuite/blob/main/bsuite/environments/deep_sea.py)
     """
 
     def __init__(self, size: int = 8, action_mapping_key: jax.Array | None = None):
-        """Create a DeepSea instance with a fixed, reproducible action mapping."""
         super().__init__()
         self.size = size
         if action_mapping_key is None:
@@ -51,6 +113,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
+        """Default environment parameters, with the step limit set to `size`."""
         return EnvParams(max_steps_in_episode=self.size)
 
     @partial(jax.jit, static_argnames=("self",))
@@ -147,7 +210,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state to the first cell and select the action mapping."""
         optimal_no_cost = (1 - params.deterministic) * (1 - 1 / self.size) ** (
             self.size - 1
         ) + params.deterministic * 1.0

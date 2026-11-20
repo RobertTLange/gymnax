@@ -1,9 +1,4 @@
-"""JAX implementation of meta-maze environment (Miconi et al., 2019).
-
-
-Source: Comparable to
-github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py
-"""
+"""JAX implementation of the meta-maze environment of Miconi et al. (2019)."""
 
 from typing import Any
 
@@ -17,6 +12,16 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the MetaMaze environment.
+
+    Attributes:
+        last_action: Action taken in the previous step (0 after a reset).
+        last_reward: Reward received in the previous step (0 after a reset).
+        pos: Agent position as `(row, column)` in the padded maze map.
+        goal: Goal position as `(row, column)` in the padded maze map.
+        time: Number of steps taken in the current episode.
+    """
+
     last_action: int
     last_reward: jax.Array
     pos: jax.Array
@@ -26,11 +31,18 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
-    """Parameters for the MetaMaze environment.
+    """Parameters of the MetaMaze environment.
 
-    The default values are inspired by the SimpleMaze implementation:
-    github.com/uber-research/backpropamine/blob/
-    180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431
+    The default values are inspired by the
+    [SimpleMaze implementation](https://github.com/uber-research/backpropamine/blob/180c9101fa5be5a2da205da3399a92773d395091/simplemaze/maze.py#L414-L431).
+
+    Attributes:
+        reward: Reward for reaching the goal.
+        punishment: Value added to the reward when the agent moves into a wall.
+        normalize_time: Whether the time step in the observation is rescaled so
+            that steps 0 and 100 map to -1 and 1, instead of given as a raw step
+            count.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
     """
 
     reward: float = 10.0
@@ -40,7 +52,7 @@ class EnvParams(environment.EnvParams):
 
 
 def generate_maze_layout(maze_size: int, rf_size: int) -> jax.Array:
-    """Generate array representation of maze layout with walls."""
+    """Generate a boolean maze map in which `True` marks walkable cells."""
     # Need to add wall offset if receptive field size is large
     rf_offset = int((rf_size - 1) / 2)
 
@@ -69,7 +81,39 @@ def generate_maze_layout(maze_size: int, rf_size: int) -> jax.Array:
 
 
 class MetaMaze(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of meta-maze environment (Miconi et al., 2019)."""
+    """Repeatedly find a hidden goal in a grid maze from local observations.
+
+    Meta-learning maze as in Miconi et al. (2019). The maze is a square grid in
+    which every second cell of every second row is a wall, surrounded by an outer
+    wall. The goal is sampled uniformly from all walkable cells at every reset and
+    stays fixed for the whole episode. The agent starts at `center_position`, the
+    centre of the maze for the default `rf_size` (other values shift it; `rf_size = 5`
+    places it on a wall), and is moved to a uniformly sampled
+    walkable cell each time it reaches the goal. Moving into a wall leaves the
+    position unchanged.
+
+    - Observation: `Box` of shape `(rf_size**2 + 6,)` with the flattened
+      `rf_size x rf_size` wall map around the agent (1 for walls), the one-hot
+      encoded last action, the last reward and the time step (normalized if
+      `params.normalize_time`).
+    - Actions: `Discrete(4)`. 0 moves up, 1 right, 2 down and 3 left.
+    - Reward: `params.reward` for reaching the goal, plus `params.punishment` for
+      moving into a wall.
+    - Termination: the agent's position equals the goal at the end of a step. As
+      the agent is moved on reaching the goal, this only happens if the newly
+      sampled position is the goal cell itself.
+    - Truncation: after `params.max_steps_in_episode` steps (200 by default).
+
+    Args:
+        maze_size: Number of rows and columns of the maze without the outer wall.
+            Must be odd.
+        rf_size: Side length of the square receptive field observed around the
+            agent. Must be odd and larger than 1.
+
+    References:
+        - [Miconi et al. (2019)](https://arxiv.org/abs/2002.10585)
+        - [SimpleMaze implementation](https://github.com/uber-research/backpropamine/blob/master/simplemaze/maze.py)
+    """
 
     def __init__(self, maze_size: int = 9, rf_size: int = 3):
         super().__init__()
@@ -99,7 +143,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for MetaMaze-misc."""
         return EnvParams()
 
     def step_env(
@@ -144,7 +188,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling a new goal position."""
         # Reset both the agents position and the goal location
         goal = reset_goal(key, self.available_goals, params)
         # Initialize agent always at fixed center position of maze
@@ -158,7 +202,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
-        """Return observation from raw state trafo."""
+        """Concatenate local wall map, one-hot action, reward and time stamp."""
         rf_obs = jax.lax.dynamic_slice(
             self.occupied_map,
             (state.pos[0] - self.rf_off, state.pos[1] - self.rf_off),
@@ -180,7 +224,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         return done_goal
 
     def render(self, state: EnvState, _: EnvParams):
-        """Small utility for plotting the agent's state."""
+        """Plot the maze with the agent (A) and the goal (G)."""
 
         fig, ax = plt.subplots()
         ax.imshow(self.occupied_map, cmap="Greys")
@@ -261,14 +305,14 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
 
 
 def reset_goal(key: jax.Array, available_goals: jax.Array, _: EnvParams) -> jax.Array:
-    """Reset the goal state/position in the environment."""
+    """Sample a goal position uniformly from the available goals."""
     goal_index = jax.random.randint(key, (), 0, available_goals.shape[0])
     goal = available_goals[goal_index][:]
     return goal
 
 
 def reset_pos(key: jax.Array, coords: jax.Array) -> jax.Array:
-    """Reset the position of the agent."""
+    """Sample an agent position uniformly from the walkable coordinates."""
     pos_index = jax.random.randint(key, (), 0, coords.shape[0])
     return coords[pos_index][:]
 
@@ -276,5 +320,5 @@ def reset_pos(key: jax.Array, coords: jax.Array) -> jax.Array:
 def time_normalization(
     t: float, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
 ) -> float:
-    """Normalize time integer into range given max time."""
+    """Linearly rescale `t` so that 0 maps to `min_lim` and `t_max` to `max_lim`."""
     return (max_lim - min_lim) * t / t_max + min_lim

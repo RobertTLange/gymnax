@@ -1,10 +1,4 @@
-"""JAX implementation of Pong-like environment.
-
-
-Adapted from:
-https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py -
-Actions are encoded as: ['n', 'u', 'd']
-"""
+"""JAX implementation of a Pong-like environment."""
 
 from typing import Any
 
@@ -20,6 +14,19 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Pong environment.
+
+    Attributes:
+        paddle_centers: Array of shape `(2,)` with the row of the centre of the
+            left and the right paddle.
+        ball_position: Position of the ball as `(row, column)`.
+        last_ball_position: Position of the ball in the previous step.
+        ball_velocity: Velocity of the ball as `(row, column)` change per step.
+        time: Number of steps taken in the current episode.
+        terminal: Terminal flag checked by `is_terminated`. Set to `False` on
+            reset and not updated by the step transition.
+    """
+
     paddle_centers: jax.Array
     ball_position: jax.Array
     last_ball_position: jax.Array
@@ -30,6 +37,19 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Pong environment.
+
+    Attributes:
+        ball_max_y_speed: Maximum absolute vertical speed of the ball after it is
+            reflected by a paddle.
+        paddle_y_speed: Number of rows a paddle moves per step.
+        ball_x_speed: Horizontal speed of the ball after a reset.
+        use_ai_policy: Whether the right paddle follows a built-in policy that
+            moves towards the ball. Otherwise it executes the same action as the
+            left paddle.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     ball_max_y_speed: int = 3
     paddle_y_speed: int = 1
     ball_x_speed: int = 1
@@ -38,7 +58,34 @@ class EnvParams(environment.EnvParams):
 
 
 class Pong(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Pong-like environment."""
+    """Keep the ball in play by moving the left paddle up and down.
+
+    Pong-like game on a `height x width` grid, adapted from the vanilla Pong of
+    `batch_pong_poc`. The agent controls the left paddle. The right paddle follows
+    a built-in policy that moves towards the ball, or copies the agent's action
+    if `params.use_ai_policy` is `False`. Every episode starts with both paddles
+    and the ball centred and the ball moving horizontally to the right. A paddle
+    hit reflects the ball and changes its vertical speed depending on where it
+    hits the paddle.
+
+    - Observation: `Box` of shape `(height, width, 3)` with three binary channels:
+      both paddles, the ball, and the ball at the previous step.
+    - Actions: `Discrete(3)`. 0 does nothing, 1 moves the paddle up and 2 moves it
+      down.
+    - Reward: 1 for every step in which the ball stays in play, 0 for the
+      terminating step.
+    - Termination: the ball leaves the field across the left or the right border.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        width: Number of columns of the playing field.
+        height: Number of rows of the playing field.
+        paddle_half_height: Number of cells a paddle extends above and below its
+            centre.
+
+    References:
+        - [batch_pong_poc implementation](https://github.com/BlackHC/batch_pong_poc/blob/master/src/vanilla_pong.py)
+    """
 
     def __init__(
         self,
@@ -56,7 +103,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Pong-misc."""
         return EnvParams()
 
     def step_env(
@@ -100,7 +147,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by centring the paddles and the ball."""
         paddle_centers = jnp.array([self.height / 2, self.height / 2])
         ball_position = jnp.array([self.height / 2, self.width / 2])
         ball_velocity = jnp.array([0, params.ball_x_speed])
@@ -115,7 +162,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
-        """Return observation from raw state trafo."""
+        """Render paddles, ball and previous ball position into image channels."""
         obs = jnp.zeros((self.height, self.width, 3))
         ball_index = jnp.floor(state.ball_position)
         h = jnp.clip(ball_index[0], 0, self.height - 1).astype(jnp.int32)
@@ -179,7 +226,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         )
 
     def render(self, state: EnvState, _: EnvParams):
-        """Small utility for plotting the agent's state."""
+        """Plot the observation with one colour per channel."""
 
         _, ax = plt.subplots()
         obs = self.get_obs(state)
@@ -200,14 +247,14 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
 
 def update_game_state(state: EnvState, width: int) -> jax.Array:
-    """Check if right or left border win conditions are met."""
+    """Check whether the ball crossed the left or the right border."""
     win_right = state.ball_position[1] < 0
     win_left = state.ball_position[1] >= width
     return jnp.logical_or(win_right, win_left)
 
 
 def reflect_on_borders(state: EnvState, height: int) -> EnvState:
-    """Reflect ball at the bottom/top border of the frame."""
+    """Reflect ball when its row index reaches `height`."""
     # these are not really used?
     #   reflect_bottom = state.ball_position[0] < 0
     #   ball_position = jax.lax.select(

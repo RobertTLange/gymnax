@@ -1,12 +1,12 @@
 """Classic control environments in JAX.
 
-This module provides JAX implementations of classic control environments
-from OpenAI Gym, including:
-- Acrobot
-- CartPole
-- MountainCar
-- ContinuousMountainCar
-- Pendulum
+JAX ports of the Gymnasium classic control environments:
+
+- `Acrobot`: `Acrobot-v1`
+- `CartPole`: `CartPole-v1`
+- `MountainCar`: `MountainCar-v0`
+- `ContinuousMountainCar`: `MountainCarContinuous-v0`
+- `Pendulum`: `Pendulum-v1`
 """
 
 from .acrobot import Acrobot

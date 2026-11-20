@@ -1,21 +1,4 @@
-"""JAX implementation of Asterix MinAtar environment.
-
-
-Source:
-github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py
-
-
-ENVIRONMENT DESCRIPTION - 'Asterix-MinAtar'
-- Player moves freely along 4 cardinal dirs.
-- Enemies and treasure spawn from the sides.
-- A reward of +1 is given for picking up treasure.
-- Termination occurs if the player makes contact with an enemy.
-- Enemy and treasure direction are indicated by a trail channel.
-- Difficulty periodically increases: the speed/spawn rate of enemies/treasure.
-- Channels are encoded as: 'player':0, 'enemy':1, 'trail':2, 'gold':3
-- Observation has dimensionality (10, 10, 4)
-- Actions are encoded as: ['n', 'l', 'u', 'r', 'd']
-"""
+"""JAX implementation of the MinAtar Asterix environment."""
 
 from typing import Any
 
@@ -28,7 +11,24 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
-    """State of the environment."""
+    """State of the Asterix environment.
+
+    Attributes:
+        player_x: Column of the player.
+        player_y: Row of the player.
+        shot_timer: Unused; stays at 0.
+        spawn_speed: Current number of steps between entity spawns.
+        spawn_timer: Steps left until the next entity spawns.
+        move_speed: Current number of steps between entity moves.
+        move_timer: Steps left until the entities move next.
+        ramp_timer: Countdown to the next difficulty increase.
+        ramp_index: Number of difficulty increases so far.
+        entities: Array of shape `(8, 5)` with one entity slot for each of the rows 1
+            to 8. Columns are `[x, y, direction, is_gold, active]`, where `direction`
+            is 1 for entities moving right and 0 for entities moving left.
+        time: Number of steps taken in the current episode.
+        terminal: Whether the episode has terminated.
+    """
 
     player_x: int
     player_y: int
@@ -46,6 +46,17 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Asterix environment.
+
+    Attributes:
+        ramping: Whether the difficulty increases over the course of an episode.
+        ramp_interval: Start value of the countdown between difficulty increases.
+        init_spawn_speed: Initial number of steps between entity spawns.
+        init_move_interval: Initial number of steps between entity moves.
+        shot_cool_down: Unused.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     ramping: bool = True
     ramp_interval: int = 100
     init_spawn_speed: int = 10
@@ -55,7 +66,33 @@ class EnvParams(environment.EnvParams):
 
 
 class MinAsterix(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Asterix MinAtar environment."""
+    """Collect treasure while dodging enemies that cross the screen.
+
+    JAX port of the MinAtar Asterix environment. The player starts at column 5, row 5
+    of a 10x10 grid and moves freely in the four cardinal directions within rows 1 to
+    8. Enemies and treasure spawn at the left and right edges of these rows and cross
+    the grid horizontally, with at most one entity per row; each spawned entity is
+    treasure with probability 1/3. If `params.ramping` is set, the difficulty
+    increases periodically: entities spawn and move faster.
+
+    - Observation: `Box` of shape `(10, 10, 4)` with binary channels: 0 player, 1
+      enemy, 2 trail (the cell behind each enemy and treasure, indicating its
+      direction), 3 treasure.
+    - Actions: `Discrete(5)` with the minimal action set: 0 no-op, 1 left, 2 up, 3
+      right, 4 down. `Discrete(6)` with the full action set, which adds 5 (fire)
+      without any effect.
+    - Reward: +1 for each treasure collected.
+    - Termination: the player makes contact with an enemy.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        use_minimal_action_set: Whether to expose only the actions that have an
+            effect in this game instead of all six MinAtar actions.
+
+    References:
+        - [Young & Tian (2019)](https://arxiv.org/abs/1903.03176)
+        - [MinAtar implementation](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/asterix.py)
+    """
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -73,7 +110,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Asterix-MinAtar."""
         return EnvParams()
 
     def step_env(
@@ -122,7 +159,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state to the fixed initial configuration."""
         state = EnvState(
             player_x=5,
             player_y=5,
@@ -227,7 +264,8 @@ def spawn_entity(key: jax.Array, state: EnvState) -> tuple[jax.Array, jax.Array]
     )
     x = (1 - lr) * 9  # l-to-r starts at 0
     # Entities are represented as 5 dimensional arrays
-    # 0: Position y, 1: Slot x, 2: lr (from l to r dir), 3: Gold indicator
+    # 0: Position x, 1: Position y (slot + 1), 2: lr (from l to r dir),
+    # 3: Gold indicator
     # 4: whether entity is filled/not an open slot
 
     # Sampling problem: Need to get rid of jnp.where due to concretization

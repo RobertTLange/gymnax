@@ -1,4 +1,4 @@
-"""JAX implementation of Breakout MinAtar environment."""
+"""JAX implementation of the MinAtar Breakout environment."""
 
 from typing import Any
 
@@ -11,6 +11,23 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Breakout environment.
+
+    Attributes:
+        ball_y: Row of the ball.
+        ball_x: Column of the ball.
+        ball_dir: Direction of the ball: 0 up-left, 1 up-right, 2 down-right, 3
+            down-left.
+        pos: Column of the paddle.
+        brick_map: Array of shape `(10, 10)` that is 1 where a brick is present.
+        strike: Whether the ball ran into a brick in the previous step, in which case
+            it cannot break another brick in the current step.
+        last_y: Row of the ball in the previous step.
+        last_x: Column of the ball in the previous step.
+        time: Number of steps taken in the current episode.
+        terminal: Whether the episode has terminated.
+    """
+
     ball_y: jax.Array
     ball_x: jax.Array
     ball_dir: jax.Array
@@ -25,29 +42,43 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Breakout environment.
+
+    Attributes:
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     max_steps_in_episode: int = 1000
 
 
 class MinBreakout(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Breakout MinAtar environment.
+    """Bounce a ball off a paddle to break rows of bricks.
 
+    JAX port of the MinAtar Breakout environment. The player controls a paddle in
+    the bottom row of a 10x10 grid and must bounce the ball to break the three rows
+    of bricks in rows 1 to 3. The ball travels only along diagonals and bounces off
+    the paddle, the walls and the bricks. It starts in row 3 at the left or right
+    wall, chosen at random, and moves down towards the centre. Once all bricks are
+    cleared, another three rows are added when the ball next reaches the bottom row.
+    There is no difficulty increase.
 
-    Source:
-    github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py
+    - Observation: `Box` of shape `(10, 10, 4)` with binary channels: 0 paddle, 1
+      ball, 2 trail (the previous position of the ball, indicating its direction), 3
+      brick.
+    - Actions: `Discrete(3)` with the minimal action set: 0 no-op, 1 left, 2 right.
+      `Discrete(6)` with the full action set: 0 no-op, 1 left, 3 right; the actions
+      2, 4 and 5 have no effect.
+    - Reward: +1 for each broken brick.
+    - Termination: the ball reaches the bottom row without hitting the paddle.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
 
+    Args:
+        use_minimal_action_set: Whether to expose only the actions that have an
+            effect in this game instead of all six MinAtar actions.
 
-    ENVIRONMENT DESCRIPTION - 'Breakout-MinAtar'
-    - Player controls paddle on bottom of screen.
-    - Must bounce ball to break 3 rows if bricks along top of screen.
-    - A reward of +1 is given for each broken brick.
-    - If all bricks are cleared another 3 rows are added.
-    - Ball travels only along diagonals, when paddle/wall hit it bounces off
-    - Termination if ball hits bottom of screen.
-    - Ball direction is indicated by a trail channel.
-    - There is no difficulty increase.
-    - Channels are encoded as follows: 'paddle':0, 'ball':1, 'trail':2, 'brick':3
-    - Observation has dimensionality (10, 10, 4)
-    - Actions are encoded as follows: ['n','l','r']
+    References:
+        - [Young & Tian (2019)](https://arxiv.org/abs/1903.03176)
+        - [MinAtar implementation](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/breakout.py)
     """
 
     def __init__(self, use_minimal_action_set: bool = True):
@@ -66,7 +97,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for Breakout-MinAtar."""
         return EnvParams()
 
     def step_env(
@@ -97,7 +128,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling the initial ball position."""
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
             ball_y=jnp.array(3),
@@ -116,7 +147,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
         obs = jnp.zeros(self.obs_shape, dtype=jnp.bool)
-        # Set the position of the player paddle, paddle, trail & brick map
+        # Set the position of the player paddle, ball, trail & brick map
         obs = obs.at[9, state.pos, 0].set(True)
         obs = obs.at[state.ball_y, state.ball_x, 1].set(True)
         obs = obs.at[state.last_y, state.last_x, 2].set(True)

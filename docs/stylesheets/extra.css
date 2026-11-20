@@ -1,0 +1,30 @@
+/* Render the "References" section of a docstring like the other docstring
+   sections (bold title, plain list) instead of a collapsible callout. */
+.md-typeset details.references {
+  margin: 1em 0;
+  padding: 0;
+  font-size: inherit;
+  background: none;
+}
+
+.md-typeset details.references > summary {
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.md-typeset details.references > summary::before {
+  display: none;
+}
+
+.md-typeset details.references > summary::after {
+  position: static;
+  display: inline;
+  width: auto;
+  height: auto;
+  background: none;
+  content: ":";
+  -webkit-mask: none;
+  mask: none;
+  transform: none;
+}

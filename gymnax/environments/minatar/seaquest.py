@@ -1,9 +1,4 @@
-"""JAX implementation of the Seaquest MinAtar environment.
-
-The transition order and ten observation channels follow MinAtar's reference
-implementation.  Entity lists are represented by fixed-capacity arrays so the
-environment remains compatible with ``jax.jit`` and ``jax.vmap``.
-"""
+"""JAX implementation of the MinAtar Seaquest environment."""
 
 from typing import Any
 
@@ -28,6 +23,46 @@ from gymnax.environments.minatar.seaquest_helpers import (
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Seaquest environment.
+
+    Entities are stored in buffers with `MAX_ENTITIES` rows. Only the leading rows of
+    a buffer are active; their number is stored in the matching count field. In
+    every buffer, `direction` is nonzero for entities moving right and zero for
+    entities moving left.
+
+    Attributes:
+        oxygen: Remaining oxygen of the player's submarine.
+        sub_x: Column of the player's submarine.
+        sub_y: Row of the player's submarine; row 0 is the surface.
+        sub_or: Orientation of the player's submarine: `True` facing right, `False`
+            facing left.
+        f_bullet_count: Number of active rows in `f_bullets`.
+        f_bullets: Bullets of the player, with columns `[x, y, direction]`.
+        e_bullet_count: Number of active rows in `e_bullets`.
+        e_bullets: Bullets of the enemy submarines, with columns `[x, y, direction]`.
+        e_fish_count: Number of active rows in `e_fish`.
+        e_fish: Enemy fish, with columns `[x, y, direction, move_timer]`.
+        e_subs_count: Number of active rows in `e_subs`.
+        e_subs: Enemy submarines, with columns
+            `[x, y, direction, move_timer, shot_timer]`.
+        diver_count: Counter of divers carried by the player's submarine, at most 6.
+            Set to -1, not 0, after surfacing with six divers; from then on it is
+            one less than the number of divers actually carried.
+        divers_count: Number of active rows in `divers`.
+        divers: Divers in the water, with columns `[x, y, direction, move_timer]`.
+        e_spawn_speed: Current number of steps between enemy spawns.
+        e_spawn_timer: Steps left until the next enemy spawns.
+        d_spawn_timer: Steps left until the next diver spawns.
+        move_speed: Current move interval of the enemies; a fish or enemy submarine
+            moves one cell every `move_speed + 1` steps.
+        ramp_index: Number of difficulty increases so far.
+        shot_timer: Steps left until the player can fire again.
+        surface: Whether the player's submarine was at the surface after the
+            previous step.
+        time: Number of steps taken in the current episode.
+        terminal: Whether the episode has terminated.
+    """
+
     oxygen: jax.Array
     sub_x: jax.Array
     sub_y: jax.Array
@@ -56,6 +91,26 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Seaquest environment.
+
+    Attributes:
+        ramping: Whether the difficulty increases each time the player surfaces.
+        ramp_interval: Unused.
+        init_spawn_speed: Initial number of steps between enemy spawns.
+        init_move_interval: Initial move interval of the enemies; a fish or enemy
+            submarine moves one cell every `init_move_interval + 1` steps.
+        max_oxygen: Oxygen of the player's submarine after a reset or after
+            surfacing.
+        diver_spawn_speed: Number of steps between diver spawns.
+        shot_cool_down: Number of steps between two shots of the player.
+        enemy_shot_interval: Shot interval of the enemy submarines; each of them
+            shoots every `enemy_shot_interval + 1` steps.
+        enemy_move_interval: Unused.
+        diver_move_interval: Move interval of the divers; a diver moves one cell
+            every `diver_move_interval + 1` steps.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     ramping: bool = True
     ramp_interval: int = 100
     init_spawn_speed: int = 20
@@ -70,6 +125,7 @@ class EnvParams(environment.EnvParams):
 
 
 def _hits_sub(entities: jax.Array, count: jax.Array, state: EnvState) -> jax.Array:
+    """Check whether any active entity is at the position of the player's sub."""
     active = active_mask(count)
     at_sub = (entities[:, 0] == state.sub_x) & (entities[:, 1] == state.sub_y)
     return jnp.any(active & at_sub)
@@ -85,7 +141,47 @@ def _pick_up_divers(
 
 
 class MinSeaquest(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Seaquest from the MinAtar benchmark."""
+    """Rescue divers with a submarine while fighting off fish and enemy submarines.
+
+    JAX port of the MinAtar Seaquest environment. The player controls a submarine in
+    a 10x10 grid whose top row is the surface. It moves in rows 0 to 8 and fires
+    bullets in the direction it is facing. Enemy fish and submarines spawn at the
+    left and right edges of rows 1 to 8 and cross the grid horizontally; enemy
+    submarines also shoot. Divers spawn in the same way and are picked up on contact,
+    up to six at a time. The submarine uses one unit of oxygen for every step below
+    the surface. Surfacing refills the oxygen and removes one carried diver, or all
+    of them for a reward when six are carried. If `params.ramping` is set, the
+    difficulty increases each time the player surfaces: enemies spawn and move
+    faster.
+
+    The transition order and the ten observation channels follow the MinAtar
+    reference implementation. Entity lists are represented by fixed-capacity arrays
+    so that the environment remains compatible with `jax.jit` and `jax.vmap`.
+
+    - Observation: `Box` of shape `(10, 10, 10)` with binary channels: 0 player
+      submarine, 1 cell behind the player submarine (indicating its orientation), 2
+      friendly bullet, 3 trail (the cell behind each fish, enemy submarine and diver,
+      indicating its direction), 4 enemy bullet, 5 enemy fish, 6 enemy submarine, 7
+      oxygen gauge, 8 diver gauge, 9 diver. Both gauges are drawn in the bottom row:
+      the oxygen gauge fills `oxygen * 10 // params.max_oxygen` cells from the left
+      and the diver gauge marks one cell for each carried diver.
+    - Actions: `Discrete(6)`: 0 no-op, 1 left, 2 up, 3 right, 4 down, 5 fire. The
+      minimal and the full action set are identical.
+    - Reward: +1 for each enemy fish or submarine shot, and
+      `oxygen * 10 // params.max_oxygen` for surfacing with six divers.
+    - Termination: the player's submarine is hit by an enemy fish, submarine or
+      bullet, runs out of oxygen, or surfaces while `state.diver_count` is 0.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        use_minimal_action_set: Whether to use the minimal instead of the full
+            action set. Has no effect in Seaquest, since both sets contain all six
+            actions.
+
+    References:
+        - [Young & Tian (2019)](https://arxiv.org/abs/1903.03176)
+        - [MinAtar implementation](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/seaquest.py)
+    """
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -98,6 +194,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
+        """Default environment parameters for Seaquest-MinAtar."""
         return EnvParams()
 
     def step_env(
@@ -142,6 +239,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         params: EnvParams,
     ) -> EnvState:
+        """Spawn an enemy and a diver when their spawn timers have run out."""
         enemy_choice_key, enemy_y_key = jax.random.split(key_enemy)
         enemy_values = jax.random.uniform(enemy_choice_key, shape=(2,))
         enemy_direction = enemy_values[0] < 0.5
@@ -209,6 +307,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
     def _step_agent(
         self, state: EnvState, action: jax.Array, params: EnvParams
     ) -> EnvState:
+        """Move the player's submarine and fire a bullet if requested and possible."""
         is_left, is_up, is_right, is_down, is_fire = (
             action == 1,
             action == 2,
@@ -236,6 +335,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
         )
 
     def _step_friendly_bullets(self, state: EnvState) -> tuple[EnvState, jax.Array]:
+        """Move the player's bullets and resolve their hits on fish and subs."""
         bullets, bullet_count = move_bullets(state.f_bullets, state.f_bullet_count)
         bullets, bullet_count, fish, fish_count, fish_reward = collide_bullets(
             bullets, bullet_count, state.e_fish, state.e_fish_count
@@ -253,6 +353,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
         ), fish_reward + sub_reward
 
     def _step_divers(self, state: EnvState, params: EnvParams) -> EnvState:
+        """Move the divers and pick up those at the player's sub, before and after."""
         # Diver capacity is deliberately separate from the fixed entity-buffer count.
         active = active_mask(state.divers_count)
         at_sub = (state.divers[:, 0] == state.sub_x) & (
@@ -277,6 +378,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
     def _step_enemy_subs(
         self, state: EnvState, params: EnvParams
     ) -> tuple[EnvState, jax.Array, jax.Array]:
+        """Move the enemy subs, let them shoot and check hits and collisions."""
         terminal_before = _hits_sub(state.e_subs, state.e_subs_count, state)
         subs, sub_count = move_entities(
             state.e_subs, state.e_subs_count, state.move_speed
@@ -309,6 +411,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
         )
 
     def _step_enemy_bullets(self, state: EnvState) -> tuple[EnvState, jax.Array]:
+        """Move the enemy bullets and check whether one hits the player's sub."""
         terminal_before = _hits_sub(state.e_bullets, state.e_bullet_count, state)
         bullets, bullet_count = move_bullets(state.e_bullets, state.e_bullet_count)
         return state.replace(
@@ -318,6 +421,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
     def _step_enemy_fish(
         self, state: EnvState
     ) -> tuple[EnvState, jax.Array, jax.Array]:
+        """Move the enemy fish and check bullet hits and collisions with the sub."""
         terminal_before = _hits_sub(state.e_fish, state.e_fish_count, state)
         fish, fish_count = move_entities(
             state.e_fish, state.e_fish_count, state.move_speed
@@ -340,6 +444,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
     def _step_timers(
         self, state: EnvState, params: EnvParams
     ) -> tuple[EnvState, jax.Array, jax.Array]:
+        """Update timers and oxygen, and handle surfacing and difficulty ramping."""
         state = state.replace(
             e_spawn_timer=jnp.maximum(state.e_spawn_timer - 1, 0),
             d_spawn_timer=jnp.maximum(state.d_spawn_timer - 1, 0),
@@ -391,6 +496,7 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
+        """Reset environment state to the fixed initial configuration."""
         del key
         state = EnvState(
             oxygen=jnp.array(params.max_oxygen, dtype=jnp.int32),
@@ -445,25 +551,31 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
         return draw_entities(obs, state.divers, state.divers_count, 9, True)
 
     def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
+        """Check whether state is terminal."""
         return state.terminal
 
     @property
     def name(self) -> str:
+        """Environment name."""
         return "Seaquest-MinAtar"
 
     @property
     def num_actions(self) -> int:
+        """Number of actions possible in environment."""
         return len(self.action_set)
 
     def action_space(self, params: EnvParams | None = None) -> spaces.Discrete:
+        """Action space of the environment."""
         del params
         return spaces.Discrete(len(self.action_set))
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
+        """Observation space of the environment."""
         del params
         return spaces.Box(0, 1, self.obs_shape)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
+        """State space of the environment."""
         return spaces.Dict(
             {
                 "oxygen": spaces.Discrete(params.max_oxygen + 1),
@@ -495,4 +607,5 @@ class MinSeaquest(environment.Environment[EnvState, EnvParams]):
 
 
 def rescue_count(rescued: jax.Array, picked_up: jax.Array) -> jax.Array:
+    """Add the picked-up divers to the carried count, capped at six."""
     return jnp.minimum(6, rescued + jnp.sum(picked_up, dtype=jnp.int32))

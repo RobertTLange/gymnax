@@ -1,8 +1,4 @@
-"""JAX implementation of Pendulum-v0 OpenAI gym environment.
-
-
-Source: github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
-"""
+"""JAX implementation of the Pendulum-v1 Gymnasium environment."""
 
 from typing import Any
 
@@ -15,6 +11,17 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the Pendulum environment.
+
+    Attributes:
+        theta: Angle of the pendulum in radians, 0 being upright. Not wrapped.
+        theta_dot: Angular velocity of the pendulum, clipped to
+            `[-params.max_speed, params.max_speed]`.
+        last_u: Torque applied in the last step, after clipping. Only needed for
+            rendering.
+        time: Number of steps taken in the current episode.
+    """
+
     theta: jax.Array
     theta_dot: jax.Array
     last_u: jax.Array  # Only needed for rendering
@@ -23,6 +30,18 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Pendulum environment.
+
+    Attributes:
+        max_speed: Maximum absolute angular velocity of the pendulum.
+        max_torque: Maximum absolute torque; actions are clipped to it.
+        dt: Duration of one step, used for Euler integration.
+        g: Gravitational acceleration.
+        m: Mass of the pendulum.
+        l: Length of the pendulum.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     max_speed: float = 8.0
     max_torque: float = 2.0
     dt: float = 0.05
@@ -33,7 +52,26 @@ class EnvParams(environment.EnvParams):
 
 
 class Pendulum(environment.Environment[EnvState, EnvParams]):
-    """JAX Compatible version of Pendulum-v0 OpenAI gym environment."""
+    """Swing a pendulum upright and keep it there by applying torque.
+
+    JAX port of the Gymnasium `Pendulum-v1` environment. The angle starts at a
+    uniformly random value in `[-pi, pi]` and the angular velocity in `[-1, 1]`.
+    Supports differentiable transitions via `with_transition_gradients()`.
+
+    - Observation: `Box` of shape `(3,)` with the cosine and sine of the angle and
+      the angular velocity.
+    - Actions: `Box` of shape `(1,)` with the torque on the pendulum, bounded by
+      `params.max_torque` (2 by default) in either direction. Actions outside the
+      bounds are clipped.
+    - Reward: `-(theta**2 + 0.1 * theta_dot**2 + 0.001 * u**2)`, using the angle
+      (normalized to `[-pi, pi)`) and angular velocity before the step and the
+      clipped torque `u`.
+    - Termination: never.
+    - Truncation: after `params.max_steps_in_episode` steps (200 by default).
+
+    References:
+        - [Gymnasium implementation](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/classic_control/pendulum.py)
+    """
 
     _supports_transition_gradients = True
 
@@ -43,7 +81,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        """Default environment parameters for Pendulum-v0."""
+        """Default environment parameters for Pendulum-v1."""
         return EnvParams()
 
     def step_env(
@@ -104,7 +142,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state), state
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
-        """Return angle in polar coordinates and change."""
+        """Return cosine and sine of the angle and the angular velocity."""
         return jnp.array(
             [
                 jnp.cos(state.theta),
@@ -114,7 +152,7 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
         ).squeeze()
 
     def is_terminated(self, state: EnvState, params: EnvParams) -> jax.Array:
-        """Check whether state is terminal."""
+        """Check whether state is terminal, which is never the case."""
         return jnp.array(False)
 
     @property
@@ -171,5 +209,5 @@ class Pendulum(environment.Environment[EnvState, EnvParams]):
 
 
 def angle_normalize(x: jax.Array) -> jax.Array:
-    """Normalize the angle - radians."""
+    """Normalize an angle in radians to the interval `[-pi, pi)`."""
     return ((x + jnp.pi) % (2 * jnp.pi)) - jnp.pi

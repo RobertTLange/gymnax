@@ -1,4 +1,4 @@
-"""Abstract base class for all gymnax Environments."""
+"""Base class, state and parameters shared by all Gymnax environments."""
 
 import copy
 from functools import partial
@@ -15,16 +15,45 @@ TEnvironment = TypeVar("TEnvironment", bound="Environment")
 
 @struct.dataclass
 class EnvState:
+    """Base state shared by all environments.
+
+    Environments subclass this dataclass and add their own fields. States are
+    immutable PyTrees: `step` returns a new state and never modifies its input.
+
+    Attributes:
+        time: Number of steps taken in the current episode.
+    """
+
     time: int
 
 
 @struct.dataclass
 class EnvParams:
+    """Base parameters shared by all environments.
+
+    Parameters are passed explicitly to `reset` and `step`, so they can be changed,
+    traced by `jax.jit` or batched with `jax.vmap` without rebuilding the
+    environment. Use `params.replace(...)` to override individual fields.
+
+    Attributes:
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     max_steps_in_episode: int = 1
 
 
 class Environment(Generic[TEnvState, TEnvParams]):
-    """Abstract base class for environments."""
+    """Abstract base class for environments.
+
+    An environment is a stateless collection of pure functions. Everything that
+    changes during an episode lives in an explicit state, and everything that
+    configures the dynamics lives in explicit parameters, so `reset` and `step` work
+    with `jax.jit`, `jax.vmap` and `jax.lax.scan`.
+
+    Users call `reset` and `step`. Subclasses implement `step_env`, `reset_env`,
+    `observe`, `default_params` and the space methods; see the custom environments
+    guide for a complete example.
+    """
 
     _supports_transition_gradients = False
     _transition_gradients_enabled = False
@@ -40,7 +69,19 @@ class Environment(Generic[TEnvState, TEnvParams]):
         return self._transition_gradients_enabled
 
     def with_transition_gradients(self: TEnvironment) -> TEnvironment:
-        """Return a configured copy that preserves supported transition gradients."""
+        """Return a copy of the environment that preserves transition gradients.
+
+        By default `step` stops gradients at the returned observation and state. The
+        copy keeps them, so `jax.grad` can differentiate through transitions with
+        respect to actions, states and parameters. The original environment is left
+        unchanged.
+
+        Returns:
+            A copy of the environment with transition gradients enabled.
+
+        Raises:
+            ValueError: If the environment does not support transition gradients.
+        """
         if not self.supports_transition_gradients:
             raise ValueError(f"{self.name} does not support transition gradients")
 
@@ -58,6 +99,11 @@ class Environment(Generic[TEnvState, TEnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
+        """Default parameters of the environment.
+
+        Use `params.replace(...)` to override individual fields before passing the
+        parameters to `reset` and `step`.
+        """
         return EnvParams()
 
     @partial(jax.jit, static_argnames=("self",))
@@ -68,7 +114,27 @@ class Environment(Generic[TEnvState, TEnvParams]):
         action: int | float | jax.Array,
         params: TEnvParams | None = None,
     ) -> tuple[Any, TEnvState, jax.Array, jax.Array, jax.Array, dict[Any, Any]]:
-        """Performs step transitions in the environment."""
+        """Advance the environment by one step and reset it if the episode ended.
+
+        When the episode terminates or is truncated, the returned observation and
+        state already belong to a freshly reset episode. The last observation of the
+        finished episode is available as `info["final_observation"]`; use it for
+        bootstrapping.
+
+        Args:
+            key: PRNG key. It is split internally into one key for the transition
+                and one for the potential reset.
+            state: Current environment state.
+            action: Action to take.
+            params: Environment parameters. Defaults to `default_params`.
+
+        Returns:
+            A tuple `(obs, state, reward, terminated, truncated, info)`. `terminated`
+            marks a natural end of the episode and `truncated` marks the time limit
+            `params.max_steps_in_episode`; both can be true at once. `info` holds the
+            environment-specific entries plus `terminated`, `truncated` and
+            `final_observation`, which equals `obs` unless the episode ended.
+        """
         if params is None:
             params = self.default_params
 
@@ -103,7 +169,15 @@ class Environment(Generic[TEnvState, TEnvParams]):
     def reset(
         self, key: jax.Array, params: TEnvParams | None = None
     ) -> tuple[Any, TEnvState]:
-        """Performs resetting of environment."""
+        """Start a new episode.
+
+        Args:
+            key: PRNG key.
+            params: Environment parameters. Defaults to `default_params`.
+
+        Returns:
+            A tuple `(obs, state)` of the first observation and the initial state.
+        """
         if params is None:
             params = self.default_params
 
@@ -119,13 +193,35 @@ class Environment(Generic[TEnvState, TEnvParams]):
         action: int | float | jax.Array,
         params: TEnvParams,
     ) -> tuple[Any, TEnvState, jax.Array, jax.Array, dict[Any, Any]]:
-        """Environment-specific step transition."""
+        """Environment-specific transition, implemented by subclasses.
+
+        Unlike `step`, this neither resets the environment nor applies the time
+        limit. Time limits must not be folded into `terminated`.
+
+        Args:
+            key: PRNG key.
+            state: Current environment state.
+            action: Action to take.
+            params: Environment parameters.
+
+        Returns:
+            A tuple `(obs, state, reward, terminated, info)` describing the raw
+            transition.
+        """
         raise NotImplementedError
 
     def reset_env(
         self, key: jax.Array, params: TEnvParams
     ) -> tuple[jax.Array, TEnvState]:
-        """Environment-specific reset."""
+        """Environment-specific reset, implemented by subclasses.
+
+        Args:
+            key: PRNG key.
+            params: Environment parameters.
+
+        Returns:
+            A tuple `(obs, state)` of the first observation and the initial state.
+        """
         raise NotImplementedError
 
     def observe(
@@ -135,10 +231,19 @@ class Environment(Generic[TEnvState, TEnvParams]):
         action: int | float | jax.Array | None,
         params: TEnvParams,
     ) -> Any:
-        """Return the observation for a state and its producing action.
+        """Return the observation for a state and the action that produced it.
 
-        Built-ins that still implement ``get_obs`` are adapted here; new
-        environments should implement this keyed method directly.
+        Built-in environments that still implement `get_obs` are adapted here; new
+        environments should implement this method directly.
+
+        Args:
+            key: PRNG key, for stochastic observations.
+            state: Environment state to observe.
+            action: Action that produced `state`, or `None` after a reset.
+            params: Environment parameters.
+
+        Returns:
+            The observation, an array or any PyTree of arrays.
         """
         del action
         return self.get_obs(state, params=params, key=key)
@@ -148,39 +253,43 @@ class Environment(Generic[TEnvState, TEnvParams]):
         raise NotImplementedError
 
     def is_truncated(self, state: TEnvState, params: TEnvParams) -> jax.Array:
-        """Check whether the transition reached its configured time limit."""
+        """Check whether the episode reached `params.max_steps_in_episode`."""
         return state.time >= params.max_steps_in_episode
 
     def is_terminal(self, state: TEnvState, params: TEnvParams) -> jax.Array:
-        """Legacy natural-terminal helper; no longer includes time limits."""
+        """Legacy alias of `is_terminated`; does not include the time limit."""
         return self.is_terminated(state, params)
 
     def is_terminated(self, state: TEnvState, params: TEnvParams) -> jax.Array:
-        """Optional helper for natural terminal conditions."""
+        """Check whether the state is a natural end of the episode.
+
+        Optional helper for subclasses; `step` uses the `terminated` flag returned by
+        `step_env`.
+        """
         raise NotImplementedError
 
     def discount(self, state: TEnvState, params: TEnvParams) -> jax.Array:
-        """Legacy natural-terminal discount helper for transition metadata."""
+        """Legacy helper returning 0 for terminated states and 1 otherwise."""
         return jax.lax.select(self.is_terminated(state, params), 0.0, 1.0)
 
     @property
     def name(self) -> str:
-        """Environment name."""
+        """Name of the environment; for built-ins, the ID passed to `gymnax.make`."""
         return type(self).__name__
 
     @property
     def num_actions(self) -> int:
-        """Number of actions possible in environment."""
+        """Number of discrete actions, or the action dimension if continuous."""
         raise NotImplementedError
 
     def action_space(self, params: TEnvParams):
-        """Action space of the environment."""
+        """Space of valid actions for the given parameters."""
         raise NotImplementedError
 
     def observation_space(self, params: TEnvParams):
-        """Observation space of the environment."""
+        """Space of observations for the given parameters."""
         raise NotImplementedError
 
     def state_space(self, params: TEnvParams):
-        """State space of the environment."""
+        """Space of environment states for the given parameters."""
         raise NotImplementedError

@@ -1,4 +1,4 @@
-"""Wrappers for Gymnax environments to be used in Gym."""
+"""Wrappers exposing Gymnax environments through the Gymnasium API."""
 
 import copy
 from typing import Any
@@ -12,7 +12,17 @@ from gymnax.environments import environment, spaces
 
 
 class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
-    """Wrap Gymnax environment as OOP Gym environment."""
+    """Wrap a Gymnax environment as a stateful `gymnasium.Env`.
+
+    The wrapper stores the environment state, parameters and PRNG key, so `step`
+    only takes an action. The wrapped environment still resets automatically when
+    an episode ends.
+
+    Args:
+        env: Gymnax environment to wrap.
+        params: Environment parameters. Defaults to `env.default_params`.
+        seed: Seed for the PRNG key. Defaults to 0.
+    """
 
     def __init__(
         self,
@@ -20,15 +30,6 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         params: environment.EnvParams | None = None,
         seed: int | None = None,
     ):
-        """Wrap Gymnax environment as OOP Gym environment.
-
-
-        Args:
-            env: Gymnax Environment instance
-            params: If provided, gymnax EnvParams for environment (otherwise uses
-              default)
-            seed: If provided, seed for JAX Pkey (otherwise picks 0)
-        """
         super().__init__()
         self._env = copy.deepcopy(env)
         self.env_params = params if params is not None else env.default_params
@@ -46,12 +47,12 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
 
     @property
     def action_space(self):
-        """Dynamically adjust action space depending on params."""
+        """Gymnasium action space for the current parameters."""
         return spaces.gymnax_space_to_gym_space(self._env.action_space(self.env_params))
 
     @property
     def observation_space(self):
-        """Dynamically adjust state space depending on params."""
+        """Gymnasium observation space for the current parameters."""
         return spaces.gymnax_space_to_gym_space(
             self._env.observation_space(self.env_params)
         )
@@ -63,7 +64,14 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
     def step(
         self, action: core.ActType
     ) -> tuple[core.ObsType, float, bool, bool, dict[Any, Any]]:
-        """Step environment, follow new step API."""
+        """Take one step and update the stored state.
+
+        Args:
+            action: Action to take.
+
+        Returns:
+            A tuple `(obs, reward, terminated, truncated, info)`.
+        """
         self.key, step_key = jax.random.split(self.key)
         o, self.env_state, r, terminated, truncated, info = self._env.step(
             step_key, self.env_state, action, self.env_params
@@ -77,7 +85,17 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         return_info: bool = False,
         options: Any | None = None,  # dict
     ) -> tuple[core.ObsType, Any]:  # dict]:
-        """Reset environment, update parameters and seed if provided."""
+        """Start a new episode.
+
+        Args:
+            seed: If given, reseeds the PRNG key before resetting.
+            return_info: Accepted for compatibility and ignored.
+            options: If it contains the key `"env_params"`, its value replaces the
+                stored environment parameters.
+
+        Returns:
+            A tuple `(obs, info)` with an empty `info` dictionary.
+        """
         if seed is not None:
             self._seed(seed)
         if options is not None:
@@ -89,14 +107,27 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         return o, {}
 
     def render(self, mode="human") -> core.RenderFrame | list[core.RenderFrame] | None:
-        """use underlying environment rendering if it exists, otherwise return None."""
+        """Render the current state if the environment defines `render`.
+
+        Returns `None` otherwise. `mode` is accepted for compatibility and ignored.
+        """
         return getattr(self._env, "render", lambda x, y: None)(
             self.env_state, self.env_params
         )
 
 
 class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
-    """Wrap Gymnax environment as OOP Gym Vector Environment."""
+    """Wrap a Gymnax environment as a stateful `gymnasium.vector.VectorEnv`.
+
+    Runs `num_envs` copies of the environment in parallel with `jax.vmap`. All
+    copies share the same parameters and each has its own PRNG key.
+
+    Args:
+        env: Gymnax environment to wrap.
+        num_envs: Number of environments to run in parallel.
+        params: Environment parameters. Defaults to `env.default_params`.
+        seed: Seed for the PRNG keys. Defaults to 0.
+    """
 
     def __init__(
         self,
@@ -105,16 +136,6 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         params: environment.EnvParams | None = None,
         seed: int | None = None,
     ):
-        """Wrap Gymnax environment as OOP Gym Vector Environment.
-
-
-        Args:
-            env: Gymnax Environment instance
-            num_envs: Desired number of environments to run in parallel
-            params: If provided, gymnax EnvParams for environment (otherwise uses
-              default)
-            seed: If provided, seed for JAX Pkey (otherwise picks 0)
-        """
         self._env = copy.deepcopy(env)
         self.num_envs = num_envs
         self.is_vector_env = True
@@ -135,24 +156,24 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
 
     @property
     def single_action_space(self):
-        """Dynamically adjust action space depending on params."""
+        """Gymnasium action space of a single environment."""
         return spaces.gymnax_space_to_gym_space(self._env.action_space(self.env_params))
 
     @property
     def single_observation_space(self):
-        """Dynamically adjust state space depending on params."""
+        """Gymnasium observation space of a single environment."""
         return spaces.gymnax_space_to_gym_space(
             self._env.observation_space(self.env_params)
         )
 
     @property
     def action_space(self):
-        """Dynamically adjust action space depending on params."""
+        """Batched Gymnasium action space of all environments."""
         return utils.batch_space(self.single_action_space, self.num_envs)
 
     @property
     def observation_space(self):
-        """Dynamically adjust state space depending on params."""
+        """Batched Gymnasium observation space of all environments."""
         return utils.batch_space(self.single_observation_space, self.num_envs)
 
     def _seed(self, seed: int | None = None):
@@ -168,7 +189,18 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         return_info: bool = False,
         options: Any | None = None,  # dict
     ):  # -> Tuple[core.ObsType, Any]:  # dict]:
-        """Reset environment, update parameters and seed if provided."""
+        """Reset all environments.
+
+        Args:
+            seed: If given, reseeds the PRNG keys before resetting.
+            return_info: Accepted for compatibility and ignored.
+            options: If it contains the key `"env_params"`, its value replaces the
+                stored environment parameters.
+
+        Returns:
+            (tuple): A tuple `(obs, info)` with batched observations and an empty
+                `info` dictionary.
+        """
         if seed is not None:
             self._seed(seed)
         if options is not None:
@@ -183,7 +215,15 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         self,
         action,  #: core.ActType
     ):  # -> Tuple[core.ObsType, float, bool, bool, Any]:  # dict]:
-        """Step environment, follow new step API."""
+        """Step all environments and update the stored states.
+
+        Args:
+            action (Array): Batch of actions, one per environment.
+
+        Returns:
+            (tuple): A tuple `(obs, reward, terminated, truncated, info)` of batched
+                arrays.
+        """
         self.key, step_key = self._batched_key_split(self.key)
         o, self.env_state, r, terminated, truncated, info = self._env.step(
             step_key, self.env_state, action, self.env_params
@@ -191,7 +231,10 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         return o, r, terminated, truncated, info
 
     def render(self, mode="human") -> core.RenderFrame | list[core.RenderFrame] | None:
-        """Use underlying environment rendering if it exists, otherwise return None."""
+        """Render the first environment if the environment defines `render`.
+
+        Returns `None` otherwise. `mode` is accepted for compatibility and ignored.
+        """
         return getattr(self._env, "render", lambda x, y: None)(
             jax.tree.map(lambda x: x[0], self.env_state), self.env_params
         )

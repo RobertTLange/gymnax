@@ -1,4 +1,4 @@
-"""JAX implementation of CartPole-v1 OpenAI gym environment."""
+"""JAX implementation of the CartPole-v1 Gymnasium environment."""
 
 from typing import Any
 
@@ -11,6 +11,16 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the CartPole environment.
+
+    Attributes:
+        x: Horizontal position of the cart.
+        x_dot: Velocity of the cart.
+        theta: Angle of the pole from vertical, in radians.
+        theta_dot: Angular velocity of the pole.
+        time: Number of steps taken in the current episode.
+    """
+
     x: jax.Array
     x_dot: jax.Array
     theta: jax.Array
@@ -20,6 +30,24 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the CartPole environment.
+
+    Attributes:
+        gravity: Gravitational acceleration.
+        masscart: Mass of the cart.
+        masspole: Mass of the pole.
+        total_mass: Combined mass of cart and pole. Not derived from `masscart` and
+            `masspole`; update it when changing either.
+        length: Half the length of the pole.
+        polemass_length: Product of `masspole` and `length`. Not derived; update it
+            when changing either.
+        force_mag: Magnitude of the force applied to the cart by either action.
+        tau: Duration of one step in seconds, used for Euler integration.
+        theta_threshold_radians: Pole angle beyond which the episode terminates.
+        x_threshold: Cart position beyond which the episode terminates.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     gravity: float = 9.8
     masscart: float = 1.0
     masspole: float = 0.1
@@ -34,10 +62,22 @@ class EnvParams(environment.EnvParams):
 
 
 class CartPole(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of CartPole-v1 OpenAI gym environment.
+    """Balance a pole on a cart by pushing the cart left or right.
 
+    JAX port of the Gymnasium `CartPole-v1` environment. The cart, pole and their
+    velocities start at uniformly random values in `[-0.05, 0.05]`.
 
-    Source: github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
+    - Observation: `Box` of shape `(4,)` with the cart position, cart velocity, pole
+      angle and pole angular velocity.
+    - Actions: `Discrete(2)`. 0 pushes the cart to the left, 1 to the right.
+    - Reward: 1 for every step, including the terminating one.
+    - Termination: the pole angle exceeds `params.theta_threshold_radians` or the
+      cart position exceeds `params.x_threshold`.
+    - Truncation: after `params.max_steps_in_episode` steps (500 by default).
+
+    References:
+        - [Barto, Sutton & Anderson (1983)](https://ieeexplore.ieee.org/document/6313077)
+        - [Gymnasium implementation](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/classic_control/cartpole.py)
     """
 
     def __init__(self):
@@ -46,7 +86,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters for CartPole-v1
+        """Default environment parameters for CartPole-v1."""
         return EnvParams()
 
     def step_env(

@@ -13,7 +13,7 @@ def active_mask(count: jax.Array) -> jax.Array:
 
 
 def compact(entities: jax.Array, keep: jax.Array) -> tuple[jax.Array, jax.Array]:
-    """Remove entity rows while retaining their source-list ordering."""
+    """Keep the rows selected by `keep`, packed to the front in their old order."""
     destinations = jnp.maximum(jnp.cumsum(keep.astype(jnp.int32)) - 1, 0)
     values = jnp.where(keep[:, None], entities, 0)
     compacted = jnp.zeros_like(entities).at[destinations].add(values)
@@ -23,7 +23,7 @@ def compact(entities: jax.Array, keep: jax.Array) -> tuple[jax.Array, jax.Array]
 def append(
     entities: jax.Array, count: jax.Array, entity: jax.Array, enabled: jax.Array
 ) -> tuple[jax.Array, jax.Array]:
-    """Append one entity when fixed capacity remains."""
+    """Append one entity if `enabled` and fixed capacity remains."""
     can_append = jnp.logical_and(enabled, count < MAX_ENTITIES)
     safe_index = jnp.minimum(count, MAX_ENTITIES - 1)
     updated = jnp.where(can_append, entity, entities[safe_index])
@@ -33,7 +33,7 @@ def append(
 def append_many(
     entities: jax.Array, count: jax.Array, new_entities: jax.Array, enabled: jax.Array
 ) -> tuple[jax.Array, jax.Array]:
-    """Append a bounded set of entities in row order."""
+    """Append the `enabled` rows of `new_entities` in row order, up to capacity."""
     available = jnp.maximum(MAX_ENTITIES - count, 0)
     ranks = jnp.cumsum(enabled.astype(jnp.int32)) - 1
     add_mask = jnp.logical_and(enabled, ranks < available)
@@ -47,7 +47,7 @@ def append_many(
 def move_entities(
     entities: jax.Array, count: jax.Array, move_speed: jax.Array
 ) -> tuple[jax.Array, jax.Array]:
-    """Advance fish, subs, or divers when their movement timer reaches zero."""
+    """Advance fish, subs, or divers whose move timer is zero; drop those leaving."""
     active = active_mask(count)
     ready = jnp.logical_and(active, entities[:, 3] == 0)
     direction = jnp.where(entities[:, 2] != 0, 1, -1)
@@ -72,7 +72,7 @@ def collide_bullets(
     targets: jax.Array,
     target_count: jax.Array,
 ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array, jax.Array]:
-    """Remove colliding bullets and targets, returning their total reward."""
+    """Remove colliding bullets and targets, returning the number of targets hit."""
     bullet_active = active_mask(bullet_count)
     target_active = active_mask(target_count)
     same_position = jnp.all(bullets[:, None, :2] == targets[None, :, :2], axis=-1)

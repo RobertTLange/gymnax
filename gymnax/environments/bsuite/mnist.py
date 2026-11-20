@@ -1,4 +1,4 @@
-"""JAX implementation of MNIST bandit environment."""
+"""JAX implementation of the bsuite MNISTBandit environment."""
 
 from typing import Any
 
@@ -12,6 +12,15 @@ from gymnax.utils import load_mnist
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the MNISTBandit environment.
+
+    Attributes:
+        correct_label: Label of the image shown in the current episode.
+        regret: Sum of `params.optimal_return - reward` over the steps of the
+            current episode.
+        time: Number of steps taken in the current episode.
+    """
+
     correct_label: jax.Array
     regret: jax.Array
     time: int
@@ -19,12 +28,43 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the MNISTBandit environment.
+
+    Attributes:
+        optimal_return: Reward of a correct classification, used to compute the
+            regret.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     optimal_return: int = 1
     max_steps_in_episode: int = 1
 
 
 class MNISTBandit(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of MNIST bandit environment."""
+    """Classify an MNIST digit in a contextual bandit with one step per episode.
+
+    JAX port of the bsuite MNIST bandit environment. Constructing the environment
+    loads the MNIST training set with `gymnax.utils.load_mnist`, which downloads it
+    if it is not cached. Each reset shows an image drawn uniformly at random from
+    the first `fraction` of the training set.
+
+    - Observation: `Box` with the shape of one MNIST image, `(28, 28)`. `reset`
+      returns the sampled image as `float32` divided by 255. Every step ends the
+      episode, so `step` returns the image of the next episode, while
+      `info["final_observation"]` is an array of zeros.
+    - Actions: `Discrete(10)`. The predicted digit.
+    - Reward: 1 if the action equals the label of the image and -1 otherwise.
+    - Termination: after every step.
+    - Truncation: after `params.max_steps_in_episode` steps (1 by default), so
+      every step is flagged as both terminated and truncated.
+
+    Args:
+        fraction: Fraction of the MNIST training set to sample images from. The
+            first `int(fraction * num_images)` images are kept.
+
+    References:
+        - [Osband et al. (2020)](https://arxiv.org/abs/1908.03568)
+    """
 
     def __init__(self, fraction: float = 1.0):
         super().__init__()
@@ -37,7 +77,7 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for MNISTBandit-bsuite."""
         return EnvParams()
 
     def step_env(
@@ -70,7 +110,7 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling a new image and its label."""
         idx = jax.random.randint(key, minval=0, maxval=self.num_data, shape=())
         image = self.images[idx].astype(jnp.float32) / 255
         state = EnvState(
@@ -88,7 +128,7 @@ class MNISTBandit(environment.Environment[EnvState, EnvParams]):
     @property
     def name(self) -> str:
         """Environment name."""
-        return "MNSITBandit-bsuite"
+        return "MNISTBandit-bsuite"
 
     @property
     def num_actions(self) -> int:

@@ -1,4 +1,4 @@
-"""JAX implementation of a Bernoulli bandit environment as in Wang et al. 2017."""
+"""JAX implementation of a two-armed Bernoulli bandit for meta-learning."""
 
 from typing import Any
 
@@ -11,6 +11,17 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the BernoulliBandit environment.
+
+    Attributes:
+        last_action: Arm pulled in the previous step (0 after a reset).
+        last_reward: Reward received in the previous step (0 after a reset).
+        exp_reward_best: Reward probability of the better arm.
+        reward_probs: Array of shape `(2,)` with the reward probability of each
+            arm.
+        time: Number of steps taken in the current episode.
+    """
+
     last_action: jax.Array
     last_reward: jax.Array
     exp_reward_best: jax.Array
@@ -20,6 +31,19 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the BernoulliBandit environment.
+
+    Attributes:
+        reward_prob: Reward probability of one arm. The other arm pays out with
+            probability `1 - reward_prob`.
+        normalize_time: Whether the time step in the observation is rescaled to
+            `[min_lim, max_lim]` instead of given as a raw step count.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+        min_lim: Normalized time value at step 0.
+        max_lim: Normalized time value at step `t_max`.
+        t_max: Step count that is mapped to `max_lim` by the time normalization.
+    """
+
     reward_prob: float = 0.1
     normalize_time: bool = True
     max_steps_in_episode: float = 100.0
@@ -29,11 +53,27 @@ class EnvParams(environment.EnvParams):
 
 
 class BernoulliBandit(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of a Bernoulli bandit environment as in Wang et al. 2017."""
+    """Find and exploit the better of two Bernoulli arms within an episode.
+
+    Two-armed Bernoulli bandit for meta-learning as in Wang et al. (2017). At every
+    reset one arm is assigned the reward probability `params.reward_prob` and the
+    other `1 - params.reward_prob`, with the assignment chosen uniformly at random.
+    The probabilities stay fixed for the whole episode.
+
+    - Observation: `Box` of shape `(4,)` with the last reward, the one-hot encoded
+      last action and the time step (normalized if `params.normalize_time`).
+    - Actions: `Discrete(2)`. The index of the arm to pull.
+    - Reward: 1 with the reward probability of the pulled arm, otherwise 0.
+    - Termination: never.
+    - Truncation: after `params.max_steps_in_episode` steps (100 by default).
+
+    References:
+        - [Wang et al. (2017)](https://arxiv.org/abs/1611.05763)
+    """
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for BernoulliBandit-misc."""
         return EnvParams()
 
     def step_env(
@@ -64,7 +104,7 @@ class BernoulliBandit(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling the arm reward probabilities."""
         # Sample reward function + construct state as concat with timestamp
         p1 = jax.random.choice(
             key,
@@ -156,5 +196,5 @@ def time_normalization(
     max_lim: float = 1.0,
     t_max: int = 100,
 ) -> float:
-    """Normalize time integer into range given max time."""
+    """Linearly rescale `t` so that 0 maps to `min_lim` and `t_max` to `max_lim`."""
     return (max_lim - min_lim) * t / t_max + min_lim

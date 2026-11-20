@@ -1,5 +1,17 @@
 ### [Unreleased] - TBD
 
+- Added a documentation website at
+  [roberttlange.github.io/gymnax](https://roberttlange.github.io/gymnax/) with
+  guides, an environment overview and an API reference, built with Zensical and
+  deployed to GitHub Pages.
+- Documented the public API with Google-style docstrings: the `Environment`
+  contract, spaces, wrappers, and the dynamics, constructor arguments,
+  parameters and state fields of every built-in environment.
+- Fixed `DiscountingChain.name` and `MNISTBandit.name` to return their registered
+  IDs (`DiscountingChain-bsuite`, `MNISTBandit-bsuite`).
+- Fixed `import gymnax` failing with `ModuleNotFoundError: No module named 'six'`
+  when `six` is not installed. The MNIST loader imported `six` and `absl-py`
+  without gymnax declaring them; it now uses the standard library instead.
 - Added `Snake-misc`, a JAX-native Snake environment with configurable grid sizes,
   three-channel observations, and JIT/vmap support (#119).
 - Fixed `Box` representations for traced bounds under JIT and autodiff, using

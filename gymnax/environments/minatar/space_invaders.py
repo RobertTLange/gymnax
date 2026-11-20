@@ -1,26 +1,4 @@
-"""JAX implementation of Space Invaders MinAtar environment.
-
-
-Source:
-github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py
-
-
-ENVIRONMENT DESCRIPTION - 'SpaceInvaders-MinAtar'
-- Player controls cannon at bottom of screen and can shoot bullets at aliens
-- Aliens move across screen until one of them hits the edge.
-- At this point all move down and switch directions.
-- Current alien dir indicated by 2 channels (left/right) - active at position.
-- Reward of +1 is given each time alien is shot and alien is removed.
-- Aliens will also shoot bullets back at player.
-- Alien speed increases when only few of them are left.
-- When only one alien is left, it will move at one cell per frame.
-- When wave of aliens is cleared, slightly faster new one will spawn.
-- Termination occurs when an alien or bullet hits the player.
-- Channels are encoded as follows: 'cannon':0, 'alien':1, 'alien_left':2,
-- 'alien_right':3, 'friendly_bullet':4, 'enemy_bullet':5
-- Observation has dimensionality (10, 10, 6)
-- Actions are encoded as follows: ['n','l','r','f']
-"""
+"""JAX implementation of the MinAtar Space Invaders environment."""
 
 from typing import Any
 
@@ -33,7 +11,25 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
-    """State of the environment."""
+    """State of the Space Invaders environment.
+
+    Attributes:
+        pos: Column of the cannon.
+        f_bullet_map: Array of shape `(10, 10)` marking the bullets of the player.
+        e_bullet_map: Array of shape `(10, 10)` marking the bullets of the aliens.
+        alien_map: Array of shape `(10, 10)` marking the aliens.
+        alien_dir: Horizontal direction of the aliens: -1 left, 1 right.
+        enemy_move_interval: Current maximum number of steps between alien moves.
+            Decreases by one for each cleared wave, down to 6.
+        alien_move_timer: Steps left until the aliens move next.
+        alien_shot_timer: Steps left until the aliens shoot next.
+        ramp_index: Number of difficulty increases so far.
+        shot_timer: Steps left until the cannon can fire again.
+        ramping: Whether clearing a wave makes the next one faster. Set to `True`
+            on reset.
+        time: Number of steps taken in the current episode.
+        terminal: Whether the episode has terminated.
+    """
 
     pos: int
     f_bullet_map: jax.Array
@@ -52,6 +48,15 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
+    """Parameters of the Space Invaders environment.
+
+    Attributes:
+        shot_cool_down: Number of steps between two shots of the cannon.
+        enemy_move_interval: Initial maximum number of steps between alien moves.
+        enemy_shot_interval: Number of steps between alien shots.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
     shot_cool_down: int = 5
     enemy_move_interval: int = 12
     enemy_shot_interval: int = 10
@@ -59,7 +64,36 @@ class EnvParams(environment.EnvParams):
 
 
 class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of Space Invaders MinAtar environment."""
+    """Shoot down waves of aliens with a cannon before they reach the bottom.
+
+    JAX port of the MinAtar Space Invaders environment. The player controls a cannon
+    in the bottom row of a 10x10 grid and can shoot bullets at a block of 4x6 aliens.
+    The aliens move across the screen until one of them hits the edge, at which point
+    they all move down one row and switch direction. Every
+    `params.enemy_shot_interval` steps, the lowest alien in the column closest to the
+    cannon shoots back. The aliens move faster when only few of them are left; a
+    single remaining alien moves one cell per step. When a wave is cleared, a new,
+    slightly faster one spawns.
+
+    - Observation: `Box` of shape `(10, 10, 6)` with binary channels: 0 cannon, 1
+      alien, 2 alien while the aliens move left, 3 alien while the aliens move
+      right, 4 friendly bullet, 5 enemy bullet.
+    - Actions: `Discrete(4)` with the minimal action set: 0 no-op, 1 left, 2 right,
+      3 fire. `Discrete(6)` with the full action set: 0 no-op, 1 left, 3 right, 5
+      fire; the actions 2 and 4 have no effect.
+    - Reward: +1 for each alien shot.
+    - Termination: an enemy bullet or an alien hits the cannon, or the aliens move
+      down while one of them is already in the bottom row.
+    - Truncation: after `params.max_steps_in_episode` steps (1000 by default).
+
+    Args:
+        use_minimal_action_set: Whether to expose only the actions that have an
+            effect in this game instead of all six MinAtar actions.
+
+    References:
+        - [Young & Tian (2019)](https://arxiv.org/abs/1903.03176)
+        - [MinAtar implementation](https://github.com/kenjyoung/MinAtar/blob/master/minatar/environments/space_invaders.py)
+    """
 
     def __init__(self, use_minimal_action_set: bool = True):
         super().__init__()
@@ -77,7 +111,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for SpaceInvaders-MinAtar."""
         return EnvParams()
 
     def step_env(
@@ -139,7 +173,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state to the fixed initial configuration."""
         state = EnvState(
             pos=5,
             f_bullet_map=jnp.zeros((10, 10)),
@@ -330,7 +364,7 @@ def step_shoot(state: EnvState, params: EnvParams) -> tuple[EnvState, jax.Array]
 def get_nearest_alien(
     pos: int, alien_map: jax.Array
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
-    """Find alien closest to player in manhattan distance -> shot target."""
+    """Find the lowest alien in the column closest to the player -> shot target."""
     ids = jnp.array([jnp.abs(jnp.array([i for i in range(10)]) - pos)])
     search_order = jnp.argsort(ids).squeeze()
     results_temp = jnp.zeros(3)

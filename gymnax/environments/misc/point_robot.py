@@ -1,4 +1,4 @@
-"""JAX implementation of Point Robot environment."""
+"""JAX implementation of a 2D semi-circle point robot environment."""
 
 from typing import Any
 
@@ -12,6 +12,19 @@ from gymnax.environments import environment, spaces
 
 @struct.dataclass
 class EnvState(environment.EnvState):
+    """State of the PointRobot environment.
+
+    Attributes:
+        last_action: Action passed to the previous step, before clipping (zeros
+            after a reset).
+        last_reward: Reward received in the previous step (0 after a reset).
+        pos: Position of the robot as `(x, y)`.
+        goal: Position of the goal as `(x, y)` on the semi-circle.
+        goals_reached: Number of times the goal was reached in the current
+            episode.
+        time: Number of steps taken in the current episode.
+    """
+
     last_action: jax.Array
     last_reward: jax.Array
     pos: jax.Array
@@ -22,27 +35,63 @@ class EnvState(environment.EnvState):
 
 @struct.dataclass
 class EnvParams(environment.EnvParams):
-    max_force: float = 0.1  # Max action (+/-)
-    circle_radius: float = 1.0  # Radius of semi-circle
-    dense_reward: bool = False  # Distance reward at each timestep
-    goal_radius: float = 0.2  # Radius for success
-    center_init: bool = False  # Init at [0, 0]. Otherwise sample in radius
-    normalize_time: bool = True  # Normalize timestep into [-1, 1]
-    max_steps_in_episode: int = 100  # Steps in an episode (constant goal)
+    """Parameters of the PointRobot environment.
+
+    Attributes:
+        max_force: Bound to which each action component is clipped (`+/-`).
+        circle_radius: Radius of the semi-circle on which the goal is sampled.
+        dense_reward: Whether the reward is the negative distance to the goal at
+            every step instead of a sparse reward for being within the goal
+            radius.
+        goal_radius: Distance to the goal within which the goal counts as reached.
+        center_init: Whether the robot starts at `(0, 0)` instead of a position
+            sampled within the semi-circle.
+        normalize_time: Whether the time step in the observation is rescaled so
+            that steps 0 and 100 map to -1 and 1, instead of given as a raw step
+            count.
+        max_steps_in_episode: Number of steps after which the episode is truncated.
+    """
+
+    max_force: float = 0.1
+    circle_radius: float = 1.0
+    dense_reward: bool = False
+    goal_radius: float = 0.2
+    center_init: bool = False
+    normalize_time: bool = True
+    max_steps_in_episode: int = 100
 
 
 class PointRobot(environment.Environment[EnvState, EnvParams]):
-    """JAX implementation of 2D Semi-Circle Point Robot environment as in Dorfman et al.
+    """Navigate a 2D point robot to a hidden goal on a semi-circle.
 
+    2D semi-circle point robot environment as in Dorfman et al. (2021). At every
+    reset the goal is sampled uniformly on the upper semi-circle of radius
+    `params.circle_radius` and stays fixed for the whole episode. The robot starts
+    at a position sampled within the semi-circle, or at the origin if
+    `params.center_init`. Each step adds the clipped action to the position. When
+    the robot is within `params.goal_radius` of the goal at the start of a step,
+    it is moved to a new start position at the end of that step. Supports
+    differentiable transitions via `with_transition_gradients()`.
 
-    2021 https://openreview.net/pdf?id=IBdEfhLveS
+    - Observation: `Box` of shape `(6,)` with the robot position, the last reward,
+      the last action and the time step (normalized if `params.normalize_time`).
+    - Actions: `Box` of shape `(2,)` with the displacement in x and y, clipped to
+      `[-params.max_force, params.max_force]`.
+    - Reward: 1 if the robot is within `params.goal_radius` of the goal at the
+      start of the step, otherwise 0. If `params.dense_reward`, the negative
+      distance to the goal at the start of the step instead.
+    - Termination: never.
+    - Truncation: after `params.max_steps_in_episode` steps (100 by default).
+
+    References:
+        - [Dorfman et al. (2021)](https://openreview.net/pdf?id=IBdEfhLveS)
     """
 
     _supports_transition_gradients = True
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
+        """Default environment parameters for PointRobot-misc."""
         return EnvParams()
 
     def step_env(
@@ -52,7 +101,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
         action: int | float | jax.Array,
         params: EnvParams,
     ) -> tuple[jax.Array, EnvState, jax.Array, jax.Array, dict[Any, Any]]:
-        """Sample bernoulli reward, increase counter, construct input."""
+        """Move the robot, compute the goal reward and construct the observation."""
         a = jnp.clip(action, -params.max_force, params.max_force)
         pos = state.pos + a
         goal_distance = jnp.linalg.norm(state.goal - state.pos)
@@ -88,7 +137,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
     def reset_env(
         self, key: jax.Array, params: EnvParams
     ) -> tuple[jax.Array, EnvState]:
-        """Reset environment state by sampling initial position."""
+        """Reset environment state by sampling goal and initial position."""
         # Sample reward function + construct state as concat with timestamp
         key_goal, key_pos = jax.random.split(key)
         angle = jax.random.uniform(key_goal, minval=0, maxval=jnp.pi)
@@ -110,7 +159,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
         return self.get_obs(state, params), state
 
     def get_obs(self, state: EnvState, params: EnvParams, key=None) -> jax.Array:
-        """Concatenate reward, one-hot action and time stamp."""
+        """Concatenate position, last reward, last action and time stamp."""
         time_rep = jax.lax.select(
             params.normalize_time, time_normalization(state.time), state.time
         )
@@ -161,7 +210,7 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
         )
 
     def render(self, state: EnvState, params: EnvParams):
-        """Small utility for plotting the agent's state."""
+        """Plot the semi-circle, the goal region and the robot position."""
         fig, ax = plt.subplots()
         angles = jnp.linspace(0, jnp.pi, 100)
         x, y = jnp.cos(angles), jnp.sin(angles)
@@ -187,14 +236,14 @@ class PointRobot(environment.Environment[EnvState, EnvParams]):
 def time_normalization(
     t: float, min_lim: float = -1.0, max_lim: float = 1.0, t_max: int = 100
 ) -> float:
-    """Normalize time integer into range given max time."""
+    """Linearly rescale `t` so that 0 maps to `min_lim` and `t_max` to `max_lim`."""
     return (max_lim - min_lim) * t / t_max + min_lim
 
 
 def sample_agent_position(
     key: jax.Array, circle_radius: float, center_init: bool
 ) -> jax.Array:
-    """Sample a random position in circle (or set position to center)."""
+    """Sample a random position in the semi-circle (or set position to center)."""
     key_radius, key_angle = jax.random.split(key)
     sampled_radius = jax.random.uniform(key_radius, minval=0, maxval=circle_radius)
     sampled_angle = jax.random.uniform(key_angle, minval=0, maxval=jnp.pi)
