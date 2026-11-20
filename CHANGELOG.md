@@ -9,6 +9,9 @@
   parameters and state fields of every built-in environment.
 - Fixed `DiscountingChain.name` and `MNISTBandit.name` to return their registered
   IDs (`DiscountingChain-bsuite`, `MNISTBandit-bsuite`).
+- Fixed `import gymnax` failing with `ModuleNotFoundError: No module named 'six'`
+  when `six` is not installed. The MNIST loader imported `six` and `absl-py`
+  without gymnax declaring them; it now uses the standard library instead.
 - Added `Snake-misc`, a JAX-native Snake environment with configurable grid sizes,
   three-channel observations, and JIT/vmap support (#119).
 - Fixed `Box` representations for traced bounds under JIT and autodiff, using

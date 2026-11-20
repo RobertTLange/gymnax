@@ -23,13 +23,15 @@ and https://github.com/deepmind/bsuite/blob/master/bsuite/utils/datasets.py
 
 import array
 import gzip
+import logging
 import os
 import struct
 from os import path
+from urllib.request import urlretrieve
 
 import numpy as np
-from absl import logging
-from six.moves.urllib.request import urlretrieve
+
+logger = logging.getLogger(__name__)
 
 
 def _download(url, filename, directory="/tmp/mnist"):
@@ -39,7 +41,7 @@ def _download(url, filename, directory="/tmp/mnist"):
     out_file = path.join(directory, filename)
     if not path.isfile(out_file):
         urlretrieve(url, out_file)
-        logging.info("Downloaded %s to %s", url, directory)
+        logger.info("Downloaded %s to %s", url, directory)
 
 
 def load_mnist(directory="/tmp/mnist"):
