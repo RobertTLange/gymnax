@@ -1,5 +1,8 @@
 ### [Unreleased] - TBD
 
+- Fixed per-environment seed lists in `GymnaxToVectorGymWrapper.reset`, keeping
+  integer seed sequences unchanged.
+
 - Added a documentation website at
   [roberttlange.github.io/gymnax](https://roberttlange.github.io/gymnax/) with
   guides, an environment overview and an API reference, built with Zensical and
