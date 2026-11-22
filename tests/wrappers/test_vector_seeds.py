@@ -76,4 +76,4 @@ def test_vector_scalar_seed_keeps_existing_key_sequence(seed):
     chex.assert_trees_all_close(vector.env_state, expected_state)
     chex.assert_trees_all_equal(
         jax.random.key_data(vector.key), jax.random.key_data(next_keys)
-  )
+    )
