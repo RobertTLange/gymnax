@@ -1,10 +1,12 @@
 """Wrappers exposing Gymnax environments through the Gymnasium API."""
 
 import copy
+from collections.abc import Sequence
 from typing import Any
 
 import gymnasium as gym
 import jax
+import numpy as np
 from gymnasium import core
 from gymnasium.vector import utils
 
@@ -176,23 +178,34 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         """Batched Gymnasium observation space of all environments."""
         return utils.batch_space(self.single_observation_space, self.num_envs)
 
-    def _seed(self, seed: int | None = None):
-        """Set key seed (or use 0)."""
-        self.key = jax.random.split(
-            jax.random.key(seed or 0), self.num_envs
-        )  # 1 key per env
+    def _seed(self, seed: int | Sequence[int] | None = None):
+        """Set one key per env from a seed sequence, or split one seed (or 0)."""
+        if np.ndim(seed) > 0:  # list, tuple or array: one seed per env
+            if len(seed) != self.num_envs:
+                raise ValueError(
+                    f"Got {len(seed)} seeds, expected one per env "
+                    f"(num_envs={self.num_envs})"
+                )
+            self.key = jax.numpy.stack([jax.random.key(value) for value in seed])
+        else:
+            self.key = jax.random.split(
+                jax.random.key(seed or 0), self.num_envs
+            )  # 1 key per env
 
     def reset(
         self,
         *,
-        seed: int | list[int] | None = None,
+        seed: int | Sequence[int] | None = None,
         return_info: bool = False,
         options: Any | None = None,  # dict
     ):  # -> Tuple[core.ObsType, Any]:  # dict]:
         """Reset all environments.
 
         Args:
-            seed: If given, reseeds the PRNG keys before resetting.
+            seed: If given, reseeds the PRNG keys before resetting. An integer is
+                split into one key per environment. A sequence of integers
+                (list, tuple or array) seeds each environment independently and
+                must have length `num_envs`.
             return_info: Accepted for compatibility and ignored.
             options: If it contains the key `"env_params"`, its value replaces the
                 stored environment parameters.
