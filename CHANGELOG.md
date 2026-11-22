@@ -1,8 +1,9 @@
 ### [Unreleased] - TBD
 
-- Fixed per-environment seed lists in `GymnaxToVectorGymWrapper.reset`, keeping
-  integer seed sequences unchanged.
-
+- Fixed `GymnaxToVectorGymWrapper.reset` to accept one seed per environment as a
+  list, tuple or array; integer seeds behave as before. A seed sequence whose
+  length differs from `num_envs` (including an empty list, previously treated
+  as seed 0) now raises `ValueError` (#128).
 - Added a documentation website at
   [roberttlange.github.io/gymnax](https://roberttlange.github.io/gymnax/) with
   guides, an environment overview and an API reference, built with Zensical and
@@ -26,8 +27,8 @@
 - Fixed `FlattenObservationWrapper` to broadcast and flatten array bounds with
   observations (#124).
 
-Thanks to @AHMETHAKANBEZIR1, @sanepunk, @mayuriphad, and @YannBerthelot for the
-contributions!
+Thanks to @AHMETHAKANBEZIR1, @sanepunk, @mayuriphad, @YannBerthelot, and
+@Sivadheeraj5356 for the contributions!
 
 ### [v1.0.1] - 18/10/2026
 

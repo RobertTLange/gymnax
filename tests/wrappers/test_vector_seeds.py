@@ -1,6 +1,7 @@
 import chex
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pytest
 
 import gymnax
@@ -77,3 +78,28 @@ def test_vector_scalar_seed_keeps_existing_key_sequence(seed):
     chex.assert_trees_all_equal(
         jax.random.key_data(vector.key), jax.random.key_data(next_keys)
     )
+
+
+@pytest.mark.parametrize(
+    "seeds", [(3, 7), np.array([3, 7]), jnp.array([3, 7], dtype=jnp.uint32)]
+)
+def test_vector_seed_sequence_types_match_list(seeds):
+    env, params = gymnax.make("CartPole-v1")
+    from_list = GymnaxToVectorGymWrapper(env, 2, params)
+    from_sequence = GymnaxToVectorGymWrapper(env, 2, params)
+
+    expected, _ = from_list.reset(seed=[3, 7])
+    observations, _ = from_sequence.reset(seed=seeds)
+
+    chex.assert_trees_all_close(observations, expected)
+
+
+def test_vector_zero_dim_array_seed_is_scalar():
+    env, params = gymnax.make("CartPole-v1")
+    from_int = GymnaxToVectorGymWrapper(env, 2, params)
+    from_array = GymnaxToVectorGymWrapper(env, 2, params)
+
+    expected, _ = from_int.reset(seed=13)
+    observations, _ = from_array.reset(seed=np.array(13))
+
+    chex.assert_trees_all_close(observations, expected)
