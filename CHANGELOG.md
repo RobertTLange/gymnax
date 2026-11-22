@@ -1,4 +1,4 @@
-### [Unreleased] - TBD
+### [v1.1.0] - 22/11/2026
 
 - Added a documentation website at
   [roberttlange.github.io/gymnax](https://roberttlange.github.io/gymnax/) with
