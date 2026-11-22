@@ -176,11 +176,16 @@ class GymnaxToVectorGymWrapper(gym.vector.VectorEnv):
         """Batched Gymnasium observation space of all environments."""
         return utils.batch_space(self.single_observation_space, self.num_envs)
 
-    def _seed(self, seed: int | None = None):
+    def _seed(self, seed: int | list[int] | None = None):
         """Set key seed (or use 0)."""
-        self.key = jax.random.split(
-            jax.random.key(seed or 0), self.num_envs
-        )  # 1 key per env
+        if isinstance(seed, list):
+            if len(seed) != self.num_envs:
+                raise ValueError("Seed list length must match num_envs")
+            self.key = jax.numpy.stack([jax.random.key(value) for value in seed])
+        else:
+            self.key = jax.random.split(
+                jax.random.key(seed or 0), self.num_envs
+            )  # 1 key per env
 
     def reset(
         self,
