@@ -101,7 +101,7 @@ class GymnaxToBraxWrapper(envs.Env):
         """Observation dimensions under the default parameters, as in Brax."""
         obs = self.reset(jax.random.key(0)).obs
         if isinstance(obs, jax.Array):
-            return obs.shape[-1]
+            return obs.shape[-1] if obs.ndim else 1
         return jax.tree.map(lambda x: x.shape, obs)
 
     @property

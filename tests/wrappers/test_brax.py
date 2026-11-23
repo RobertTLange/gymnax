@@ -68,6 +68,7 @@ def test_brax_wrapper_retains_terminal_flags_in_info():
         ("Reacher-misc", 2, 8),
         ("Swimmer-misc", 2, 16),
         ("Snake-misc", 1, 3),
+        ("FrozenLake-misc", 1, 1),
     ],
 )
 def test_brax_wrapper_size_properties(env_name, action_size, observation_size):
