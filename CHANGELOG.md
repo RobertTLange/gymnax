@@ -1,5 +1,9 @@
 ### [Unreleased] - TBD
 
+- Fixed the Brax adapter's `action_size`, `observation_size`, and `backend`
+  properties. Vector dimensions now match the arrays rather than counting
+  pytree leaves, allowing Brax policy networks to initialize.
+
 - Fixed `GymnaxToVectorGymWrapper.reset` to accept one seed per environment as a
   list, tuple or array; integer seeds behave as before. A seed sequence whose
   length differs from `num_envs` (including an empty list, previously treated
