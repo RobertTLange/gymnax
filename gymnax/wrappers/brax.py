@@ -89,18 +89,22 @@ class GymnaxToBraxWrapper(envs.Env):
             info=info,
         )
 
+    @property
     def action_size(self) -> int:
-        """Number of leaves in an action sampled under the default parameters."""
+        """Size of an action under the default parameters."""
         a_space = self.env.action_space(self.env.default_params)
         example_a = a_space.sample(jax.random.key(0))
-        return len(jax.tree.flatten(example_a)[0])
+        return sum(action.size for action in jax.tree.leaves(example_a))
 
-    def observation_size(self) -> int:
-        """Number of leaves in an observation sampled under the default parameters."""
-        o_space = self.env.observation_space(self.env.default_params)
-        example_o = o_space.sample(jax.random.key(0))
-        return len(jax.tree.flatten(example_o)[0])
+    @property
+    def observation_size(self) -> int | dict[str, tuple[int, ...]]:
+        """Observation dimensions under the default parameters, as in Brax."""
+        obs = self.reset(jax.random.key(0)).obs
+        if isinstance(obs, jax.Array):
+            return obs.shape[-1] if obs.ndim else 1
+        return jax.tree.map(lambda x: x.shape, obs)
 
+    @property
     def backend(self) -> str:
         """Name of the backend, always `"jax"`."""
         return "jax"

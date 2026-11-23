@@ -4,6 +4,7 @@ import warnings
 
 import chex
 import jax
+import pytest
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -56,3 +57,45 @@ def test_brax_wrapper_retains_terminal_flags_in_info():
     assert next_state.done
     assert not next_state.info["terminated"]
     assert next_state.info["truncated"]
+
+
+@pytest.mark.parametrize(
+    ("env_name", "action_size", "observation_size"),
+    [
+        ("CartPole-v1", 1, 4),
+        ("Pendulum-v1", 1, 3),
+        ("PointRobot-misc", 2, 6),
+        ("Reacher-misc", 2, 8),
+        ("Swimmer-misc", 2, 16),
+        ("Snake-misc", 1, 3),
+        ("FrozenLake-misc", 1, 1),
+    ],
+)
+def test_brax_wrapper_size_properties(env_name, action_size, observation_size):
+    env, _ = gymnax.make(env_name)
+    adapter = brax.GymnaxToBraxWrapper(env)
+
+    assert adapter.action_size == action_size
+    assert adapter.observation_size == observation_size
+    assert adapter.backend == "jax"
+
+
+def test_brax_wrapper_ppo_network_initialization():
+    from brax.training.agents.ppo import networks
+
+    env, _ = gymnax.make("PointRobot-misc")
+    adapter = brax.GymnaxToBraxWrapper(env)
+    wrapped = envs.wrappers.training.EpisodeWrapper(adapter, 100, 1)
+    network = networks.make_ppo_networks(wrapped.observation_size, wrapped.action_size)
+    policy_params = network.policy_network.init(jax.random.key(0))
+    value_params = network.value_network.init(jax.random.key(1))
+    state = adapter.reset(jax.random.key(2))
+
+    logits = network.policy_network.apply(None, policy_params, state.obs)
+    value = network.value_network.apply(None, value_params, state.obs)
+    assert logits.shape == (4,)
+    assert value.shape == ()
+    action = network.parametric_action_distribution.sample(logits, jax.random.key(3))
+    assert action.shape == (2,)
+    next_state = jax.jit(adapter.step)(state, action)
+    assert next_state.obs.shape == state.obs.shape
