@@ -1,15 +1,16 @@
 ### [Unreleased] - TBD
 
-- Fixed the Brax adapter's `action_size`, `observation_size`, and `backend`
-  properties. Vector dimensions now match the arrays rather than counting
-  pytree leaves, allowing Brax policy networks to initialize.
+- Fixed Brax PPO network initialization for environments such as
+  `PointRobot-misc` by exposing `action_size`, `observation_size`, and `backend`
+  as properties and reporting the correct dimensions. Scalar observations
+  report size `1` (#129).
 
 - Fixed `GymnaxToVectorGymWrapper.reset` to accept one seed per environment as a
   list, tuple or array; integer seeds behave as before. A seed sequence whose
   length differs from `num_envs` (including an empty list, previously treated
   as seed 0) now raises `ValueError` (#128).
 
-Thanks to @Sivadheeraj5356 for the contribution!
+Thanks to @Sivadheeraj5356 for both contributions!
 
 ### [v1.1.0] - 22/11/2026
 
