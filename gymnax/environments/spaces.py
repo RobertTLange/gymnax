@@ -221,8 +221,8 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
     if isinstance(space, Discrete):
         return gspc.Discrete(space.n)
     elif isinstance(space, Box):
-        low = _normalize_box_bound(space.low)
-        high = _normalize_box_bound(space.high)
+        low = _normalize_box_bound(space.low, space.shape)
+        high = _normalize_box_bound(space.high, space.shape)
         return gspc.Box(low, high, space.shape, space.dtype)
     elif isinstance(space, Dict):
         return gspc.Dict(
@@ -240,11 +240,11 @@ def gymnax_space_to_gym_space(space: Space) -> gspc.Space:
         )
 
 
-def _normalize_box_bound(bound: Any) -> Any:
+def _normalize_box_bound(bound: Any, shape: Any) -> Any:
     # Gymnasium may normalize array bounds in place for integer spaces.
     array = np.array(bound)
     if array.size != 1:
-        return array
+        return np.broadcast_to(array, shape).copy()
     value = array.item()
     # Gymnasium rejects Python bool bounds, including for boolean spaces.
     return int(value) if isinstance(value, bool) else value
