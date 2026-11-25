@@ -35,6 +35,7 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         super().__init__()
         self._env = copy.deepcopy(env)
         self.env_params = params if params is not None else env.default_params
+        self.metadata = copy.deepcopy(self.metadata)
         self.metadata.update(
             {
                 "name": env.name,
