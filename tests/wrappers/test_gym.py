@@ -1,9 +1,12 @@
 """Tests for the GymnaxToGymWrapper and GymnaxToVectorGymWrapper."""
 
+import copy
+
 import chex
 import gymnasium as gym
 import jax
 import jax.numpy as jnp
+import pytest
 
 import gymnax
 from gymnax.wrappers import gym as wrappers
@@ -101,3 +104,51 @@ def test_vector_gym_wrapper_forwards_terminal_metadata():
     assert not jnp.any(terminated)
     assert jnp.all(truncated)
     assert info["final_observation"].shape == observation.shape
+
+
+@pytest.mark.parametrize(
+    ("first_name", "second_name"),
+    [
+        ("CartPole-v1", "Pendulum-v1"),
+        ("FrozenLake-misc", "CartPole-v1"),
+        ("Pong-misc", "FrozenLake-misc"),
+    ],
+)
+def test_gym_wrapper_metadata_is_independent(first_name, second_name):
+    original_metadata = copy.deepcopy(gym.Env.metadata)
+    try:
+        first = wrappers.GymnaxToGymWrapper(gymnax.make(first_name)[0])
+        second = wrappers.GymnaxToGymWrapper(gymnax.make(second_name)[0])
+
+        assert first.metadata["name"] == first_name
+        assert second.metadata["name"] == second_name
+        assert first.metadata is not second.metadata
+        assert gym.Env.metadata == original_metadata
+
+        first.metadata["render_modes"].append("custom")
+        assert "custom" not in second.metadata["render_modes"]
+        assert gym.Env.metadata == original_metadata
+    finally:
+        gym.Env.metadata.clear()
+        gym.Env.metadata.update(original_metadata)
+
+
+@pytest.mark.parametrize("renderable", [False, True])
+def test_gym_wrapper_preserves_inherited_metadata(renderable):
+    class CustomWrapper(wrappers.GymnaxToGymWrapper):
+        metadata = {"render_fps": 25, "custom": {"values": [1]}}
+
+    env = gymnax.make("CartPole-v1")[0]
+    if renderable:
+        env.render = lambda state, params: None
+    original_metadata = copy.deepcopy(CustomWrapper.metadata)
+    wrapped = CustomWrapper(env)
+
+    assert wrapped.metadata["render_modes"] == (
+        ["human", "rgb_array"] if renderable else []
+    )
+    assert wrapped.metadata["render_fps"] == 25
+    assert CustomWrapper.metadata == original_metadata
+
+    wrapped.metadata["custom"]["values"].append(2)
+    assert CustomWrapper.metadata == original_metadata
