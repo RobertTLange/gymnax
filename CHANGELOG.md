@@ -1,5 +1,8 @@
 ### [Unreleased] - TBD
 
+- Fixed Gymnasium wrapper metadata leaking between environments and into
+  `gymnasium.Env`; each wrapper now owns a copy of its inherited metadata.
+
 - Fixed Brax PPO network initialization for environments such as
   `PointRobot-misc` by exposing `action_size`, `observation_size`, and `backend`
   as properties and reporting the correct dimensions. Scalar observations
