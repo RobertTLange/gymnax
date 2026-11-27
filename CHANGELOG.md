@@ -1,5 +1,8 @@
 ### [Unreleased] - TBD
 
+- Fixed Gymnasium conversion of multidimensional `Box` spaces whose array
+  bounds broadcast to the declared shape, such as row or column bounds.
+
 - Fixed Brax PPO network initialization for environments such as
   `PointRobot-misc` by exposing `action_size`, `observation_size`, and `backend`
   as properties and reporting the correct dimensions. Scalar observations
