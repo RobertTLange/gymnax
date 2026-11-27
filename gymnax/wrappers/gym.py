@@ -35,15 +35,11 @@ class GymnaxToGymWrapper(gym.Env[core.ObsType, core.ActType]):
         super().__init__()
         self._env = copy.deepcopy(env)
         self.env_params = params if params is not None else env.default_params
-        self.metadata = copy.deepcopy(self.metadata)
-        self.metadata.update(
-            {
-                "name": env.name,
-                "render_modes": (
-                    ["human", "rgb_array"] if hasattr(env, "render") else []
-                ),
-            }
-        )
+        self.metadata = {
+            **self.metadata,
+            "name": env.name,
+            "render_modes": ["human", "rgb_array"] if hasattr(env, "render") else [],
+        }
         self.key: jax.Array = jax.random.key(0)  # Placeholder
         self._seed(seed)
         _, self.env_state = self._env.reset(self.key, self.env_params)

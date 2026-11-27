@@ -1,6 +1,7 @@
 """Tests for the GymnaxToGymWrapper and GymnaxToVectorGymWrapper."""
 
 import copy
+from types import MappingProxyType
 
 import chex
 import gymnasium as gym
@@ -135,20 +136,20 @@ def test_gym_wrapper_metadata_is_independent(first_name, second_name):
 
 @pytest.mark.parametrize("renderable", [False, True])
 def test_gym_wrapper_preserves_inherited_metadata(renderable):
+    settings = MappingProxyType({"values": (1,)})
+
     class CustomWrapper(wrappers.GymnaxToGymWrapper):
-        metadata = {"render_fps": 25, "custom": {"values": [1]}}
+        metadata = {"render_fps": 25, "custom": settings}
 
     env = gymnax.make("CartPole-v1")[0]
     if renderable:
         env.render = lambda state, params: None
-    original_metadata = copy.deepcopy(CustomWrapper.metadata)
+    original_metadata = CustomWrapper.metadata.copy()
     wrapped = CustomWrapper(env)
 
     assert wrapped.metadata["render_modes"] == (
         ["human", "rgb_array"] if renderable else []
     )
     assert wrapped.metadata["render_fps"] == 25
-    assert CustomWrapper.metadata == original_metadata
-
-    wrapped.metadata["custom"]["values"].append(2)
+    assert wrapped.metadata["custom"] is settings
     assert CustomWrapper.metadata == original_metadata

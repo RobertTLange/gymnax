@@ -1,12 +1,13 @@
 ### [Unreleased] - TBD
 
-- Fixed Gymnasium wrapper metadata leaking between environments and into
-  `gymnasium.Env`; each wrapper now owns a copy of its inherited metadata.
-
 - Fixed Brax PPO network initialization for environments such as
   `PointRobot-misc` by exposing `action_size`, `observation_size`, and `backend`
   as properties and reporting the correct dimensions. Scalar observations
   report size `1` (#129).
+
+- Fixed `GymnaxToGymWrapper` metadata leaking between environments and into
+  `gymnasium.Env`. Each instance owns its metadata dictionary and render modes
+  while preserving inherited metadata values.
 
 - Fixed `GymnaxToVectorGymWrapper.reset` to accept one seed per environment as a
   list, tuple or array; integer seeds behave as before. A seed sequence whose
