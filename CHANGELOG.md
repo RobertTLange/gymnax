@@ -8,6 +8,10 @@
   as properties and reporting the correct dimensions. Scalar observations
   report size `1` (#129).
 
+- Fixed `GymnaxToGymWrapper` metadata leaking between environments and into
+  `gymnasium.Env`. Each instance owns its metadata dictionary and render modes
+  while preserving inherited metadata values.
+
 - Fixed `GymnaxToVectorGymWrapper.reset` to accept one seed per environment as a
   list, tuple or array; integer seeds behave as before. A seed sequence whose
   length differs from `num_envs` (including an empty list, previously treated
